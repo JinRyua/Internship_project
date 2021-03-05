@@ -38,6 +38,7 @@ public:
             l[i]=num[(size*i)+(size-i-1)];
         }
         distinct(*this,num);
+        //rel(*this,x1[0]+x1[1]+x1[2]==15);
         linear(*this,temp,x1,IRT_EQ,number);
         linear(*this,temp,x2,IRT_EQ,number);
         linear(*this,temp,x3,IRT_EQ,number);

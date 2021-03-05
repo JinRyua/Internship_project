@@ -1,0 +1,5 @@
+*.o
+!./pddl/popf
+./csp/
+!*.cpp
+
