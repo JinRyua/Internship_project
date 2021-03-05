@@ -1,6 +1,2 @@
-*.o
-!./pddl/popf
-./csp/
+csp/
 !*.cpp
-!*.csv
-
