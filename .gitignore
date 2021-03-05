@@ -1,2 +1,4 @@
-csp/
+./csp/
 !*.cpp
+!*.txt
+!*.csv
