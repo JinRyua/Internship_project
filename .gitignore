@@ -1,4 +1,4 @@
 ./csp/
 !*.cpp
 !*.txt
-!*.csv
+*.csv
