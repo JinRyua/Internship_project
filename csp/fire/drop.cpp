@@ -18,7 +18,7 @@ vector<int> firestation;
 vector<vector<int>> scenes;    
 vector<vector<int>> matrix;
 static int car=3;
-static int scene=30;
+static int scene=10;
 int temp=0;
 
 int a=2;
@@ -34,25 +34,26 @@ protected:
     IntVarArray agent;
     IntVar spot; 
     IntVar idx_i;
+    IntVar lunch;
         
 
 public:
-    fire(const Gecode::Options& opt) : Gecode::IntMaximizeScript(opt),agent(*this,matrix.size(),1,matrix.size())
-    ,idx_i(*this,0,0),time(*this,13*3600,13*3600),spot(*this,0,0)
+    fire(const Gecode::Options& opt) : Gecode::IntMaximizeScript(opt),agent(*this,matrix.size()+1,0,matrix.size())
+    ,idx_i(*this,0,0),time(*this,13*3600,13*3600),spot(*this,0,0),lunch(*this,11*3600,11*3600)
     //,temp(*this,3,2,4)//생성자
     {       
         distinct(*this,agent);
 
         time=expr(*this,9*3600);
         idx_i=expr(*this,0);
-        for(int i=0;i<matrix.size();i++){
+        for(int i=0;i<matrix.size()+1;i++){
             idx_i=expr(*this,ite(agent[i]==1,i,idx_i));
         } 
         cout<<idx_i<<endl;
-        for(int i=0;i<matrix.size();i++){
+        for(int i=0;i<matrix.size()+1;i++){
             for(int j=0;j<matrix.size();j++){
                 if(i==0){
-                    time=expr(*this,time+ite(i<=idx_i&&(agent[i]==j+1),scenes[0][j],0));
+                    time=expr(*this,time+ite(i<=idx_i&&(agent[i]==j+1),matrix[0][j],0));
                 }
                 else if(i>0){
                     for(int k=0;k<matrix.size();k++){
@@ -60,16 +61,31 @@ public:
                             time=expr(*this,time+ite(i<=idx_i&&(agent[i]==k+1)&&(agent[i-1]==j+1),matrix[j][k],0));
                         }
                     }
+                    if(i==1)
+                        time=expr(*this,time+ite(i<=idx_i&&agent[i-1]==0&&agent[i]==j+1,matrix[0][j],0));
+                    else
+                        for(int k=0;k<matrix.size();k++)
+                            time=expr(*this,time+ite(i<=idx_i&&agent[i-1]==0&&agent[i]==j+1&&agent[i-2]==k+1,matrix[k][j],0));
                 }
             }
-            time=expr(*this,time+ite(i<=idx_i&&agent[i]!=1,19*60,0));
+            if(scenes[0].size()>1)
+                for(int j=1;j<matrix.size();j++){
+                    rel(*this,!(i<=idx_i&&(agent[i]==j+1)&&time>scenes[j-1][1]));
+                }
+            time=expr(*this,time+ite(i<=idx_i&&(agent[i]>1),19*60,0));
+            lunch=expr(*this,ite(i<=idx_i&&agent[i]==0,time,lunch));
+            time=expr(*this,time+ite(i<=idx_i&&(agent[i]==0),1*3600,0));
+
         }
+        rel(*this,(lunch>=11*3600&&lunch<=13*3600));
+        //rel(*this,(lunch>=44000));
         spot=expr(*this,idx_i);
         objective=expr(*this,spot*18*3600-time);
         rel(*this,time<=18*3600);
 
+
         
-        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAL_MIN());
+        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAL_SPLIT_MIN());
    
         
     }
@@ -81,7 +97,7 @@ public:
         spot.update(*this,v.spot);
 
         objective.update(*this,v.objective);
-        // // hour.update(*this,v.hour);
+        lunch.update(*this,v.lunch);
         // // min.update(*this,v.min);
         // // sec.update(*this,v.sec);
         time.update(*this,v.time);
@@ -101,10 +117,11 @@ public:
     void print(std::ostream& os) const {
 
 
-        os<<agent<<" "<<idx_i<<" "<<endl;
-        os<<spot<<" ";
-        os<<time<<" ";
-        os<<objective<<endl;
+        os<<agent<<endl;
+        os<<" spot : "<<spot;
+        os<<" time : "<<time<<" ";
+        os<<" lunch : "<<lunch<<" ";
+        os<<" objective : "<<objective<<endl;
         
 
     }
@@ -169,7 +186,7 @@ int main(int argc, char* argv[]) {
                 temp4=temp4+stoi(temp3);
                 
                 temp2.push_back(temp4);
-                cout<<temp4<<endl;
+                //cout<<temp4<<endl;
                 }
                 if(max<=scene){
                     scenes.push_back(temp2);
@@ -195,6 +212,7 @@ int main(int argc, char* argv[]) {
                         temp2=temp.substr(com+1);
                     
                     if(i<max){
+                        cout<<stoi(temp2)/27<<endl;
                         if(i!=0)
                             temp3.push_back(stoi(temp2)/27);//+scenes[i-1][0]);
                         else
@@ -221,12 +239,12 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    // for(int i=0;i<matrix.size();i++){
-    //     for(int j=0;j<matrix.size();j++){
-    //         cout<<matrix[i][j]<<" ";
-    //     }
-    //     cout<<endl;
-    // }
+    for(int i=0;i<matrix.size();i++){
+        for(int j=0;j<matrix.size();j++){
+            cout<<matrix[i][j]<<" ";
+        }
+        cout<<endl;
+    }
 
     fs.close();
    
