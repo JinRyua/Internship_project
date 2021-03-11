@@ -18,7 +18,7 @@ vector<int> firestation;
 vector<vector<int>> scenes;    
 vector<vector<int>> matrix;
 static int car=3;
-static int scene=30;
+static int scene=10;
 
 
 int a=2;
@@ -49,7 +49,7 @@ public:
         //     }
         // }
 
-        //rel(*this,agent[matrix.size()-1]==1); //
+        rel(*this,agent[matrix.size()-1]==1); //
 
         //IntVar temp=expr(*this,0);
         // for(int i=0;i<scenes.size();i++){
@@ -97,6 +97,7 @@ public:
         // rel(*this,agent[4]%100==1);
         //rel(*this,agent[5]==0);
         //rel(*this,agent[7]==0);
+        IntVar count(0);
         cout<<"hi"<<endl;
         for(int i=0;i<matrix.size();i++){//3중 포문 쓸것
             for(int j=1;j<=matrix.size();j++){
@@ -129,8 +130,7 @@ public:
             }
             if(i!=matrix.size()-1)
                     objective=expr(*this,objective+(19*60));
-            if(i>0)
-            agent[i-1]==expr(*this,ite(objective<18*3600,1,agent[i-1]));
+
             
 
             
