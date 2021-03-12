@@ -18,7 +18,7 @@ vector<int> firestation;
 vector<vector<int>> scenes;    
 vector<vector<int>> matrix;
 static int car=3;
-static int scene=10;
+static int scene=20;
 int temp=0;
 
 int a=2;
@@ -44,7 +44,8 @@ public:
     {       
         distinct(*this,agent);
 
-        time=expr(*this,9*3600);
+        lunch=expr(*this,0);
+        time=expr(*this,10*3600);
         idx_i=expr(*this,0);
         for(int i=0;i<matrix.size()+1;i++){
             idx_i=expr(*this,ite(agent[i]==1,i,idx_i));
@@ -69,7 +70,7 @@ public:
                 }
             }
             if(scenes[0].size()>1)
-                for(int j=1;j<matrix.size();j++){
+                for(int j=firestation.size();j<matrix.size();j++){
                     rel(*this,!(i<=idx_i&&(agent[i]==j+1)&&time>scenes[j-1][1]));
                 }
             time=expr(*this,time+ite(i<=idx_i&&(agent[i]>1),19*60,0));
@@ -79,13 +80,16 @@ public:
         }
         rel(*this,(lunch>=11*3600&&lunch<=13*3600));
         //rel(*this,(lunch>=44000));
+        //rel(*this,agent[matrix.size()-1]==0);
+        rel(*this,!(time>13*3600&&lunch==0));   //점심시간 지나서 일하는데 lunch안먹으면 안됨
         spot=expr(*this,idx_i);
+        spot=expr(*this,ite(lunch!=0,spot-1,spot));
         objective=expr(*this,spot*18*3600-time);
         rel(*this,time<=18*3600);
 
 
         
-        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAL_SPLIT_MIN());
+        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAL_MIN());
    
         
     }
