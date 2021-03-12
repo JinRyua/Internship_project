@@ -24,35 +24,71 @@ int temp = 0;
 int a = 2;
 vector<string> split(string str, char delimiter); //선호,기피 string list를 vector로 만들어 주는 함수
 
-class assign_spot : public Gecode::IntMaximizeScript{
+class assign_spot : public Gecode::IntMinimizeScript{
 protected:
     Gecode::IntVar objective;    
     IntVarArray area;
     IntVarArray agent;
     IntVarArray time;
 public:
-    assign_spot(const Gecode::Options &opt) : Gecode::IntMaximizeScript(opt),
-        agent(*this,car,0,scenes.size()-1)
+    assign_spot(const Gecode::Options &opt) : Gecode::IntMinimizeScript(opt),
+        agent(*this,car,1,scenes.size())
         ,time(*this,car,0,0)
         ,area(*this,scenes.size(),2,1+scenes.size())
     {
-        distinct(*this,area);
+        IntVar temp_agent=expr(*this,0);
         for(int i=0;i<car;i++){
+            temp_agent=expr(*this,temp_agent+agent[i]);
+        }
+        rel(*this,temp_agent==scenes.size());
+        distinct(*this,area);
+        temp_agent=expr(*this,0);
+        IntVar before_agent=expr(*this,0);
+        for(int i=0;i<car;i++){
+            time[i]=expr(*this,0);
+            temp_agent=expr(*this,temp_agent+agent[i]);
+            cout<<temp_agent<<endl;
             for(int j=0;j<scenes.size();j++){
-                time[i]=expr(*this,time+ite(agent[i]>=j,))
+                for(int k=0;k<scenes.size();k++){
+                    if(j>1){
+                        for(int l=0;l<scenes.size();l++){
+                            if(l!=k){
+                                time[i]=expr(*this,time[i]+ite(temp_agent>j&&j>=before_agent
+                                    &&area[j]==k+2&&area[j-1]==l+2,matrix[l+1][k+1],0));
+                            }
+                        }   
+                    }
+                    else{
+                        time[i]=expr(*this,time[i]+ite(temp_agent>j&&j>=before_agent
+                                    &&area[j]==k+2,matrix[0][k+1],0));
+                    }
+                }
             }
+            before_agent=temp_agent;
+            cout<<time[i]<<endl;
         }
 
-        
-        objective=expr(*this,objective+);
-        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAR_SPLIT_MIN());
-        branch(*this, area, INT_VAR_SIZE_MIN(), INT_VAL_SPLIT_MIN());
+        IntVar min_time=expr(*this,0);
+        IntVar max_agent=expr(*this,0);
+    
+        cout<<time<<endl;
+        max_agent=expr(*this,0);
+        min_time=expr(*this,18*3600);
+        for(int i=0;i<car;i++){
+            min_time=expr(*this,ite(min_time<time[i],time[i],min_time));
+            max_agent=expr(*this,ite(max_agent<agent[i],agent[i],max_agent));
+        }
+        objective=expr(*this,min_time+max_agent*1000);
+        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAL_MIN());
+        branch(*this, area, INT_VAR_SIZE_MIN(), INT_VAL_MIN());
     }
 
-    assign_spot(assign_spot &v) : Gecode::IntMaximizeScript(v)
+    assign_spot(assign_spot &v) : Gecode::IntMinimizeScript(v)
     {
         area.update(*this,v.area);
-        //objective.update(*this, v.objective);
+        agent.update(*this,v.agent);
+        time.update(*this,v.time);
+        objective.update(*this, v.objective);
         
     }
 
@@ -69,7 +105,10 @@ public:
 
     void print(std::ostream &os) const
     {
-        os<<area;
+        os<<agent<<endl;
+        os<<area<<endl;
+        os<<time<<endl;
+        os<<objective<<endl;
     }
 };
 
@@ -419,8 +458,8 @@ int main(int argc, char *argv[])
     opt.parse(argc, argv);
     //opt.mode(Gecode::SM_GIST);
 
-    Gecode::Script::run<assign_spot, Gecode::DFS, Gecode::Options>(opt);
-    Gecode::Script::run<fire, Gecode::BAB, Gecode::Options>(opt); //DFS=>BAB(branch and bound)(분기한정 -> 백트래킹)
+    Gecode::Script::run<assign_spot, Gecode::BAB, Gecode::Options>(opt);
+    //Gecode::Script::run<fire, Gecode::BAB, Gecode::Options>(opt); //DFS=>BAB(branch and bound)(분기한정 -> 백트래킹)
 
     return 0;
 }
