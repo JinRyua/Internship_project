@@ -28,11 +28,25 @@ class assign_spot : public Gecode::IntMaximizeScript{
 protected:
     Gecode::IntVar objective;    
     IntVarArray area;
+    IntVarArray agent;
+    IntVarArray time;
 public:
     assign_spot(const Gecode::Options &opt) : Gecode::IntMaximizeScript(opt),
-        area(*this,scenes.size(),2,1+scenes.size())
+        agent(*this,car,0,scenes.size()-1)
+        ,time(*this,car,0,0)
+        ,area(*this,scenes.size(),2,1+scenes.size())
     {
-            branch(*this, area, INT_VAR_SIZE_MIN(), INT_VAL_SPLIT_MIN());
+        distinct(*this,area);
+        for(int i=0;i<car;i++){
+            for(int j=0;j<scenes.size();j++){
+                time[i]=expr(*this,time+ite(agent[i]>=j,))
+            }
+        }
+
+        
+        objective=expr(*this,objective+);
+        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAR_SPLIT_MIN());
+        branch(*this, area, INT_VAR_SIZE_MIN(), INT_VAL_SPLIT_MIN());
     }
 
     assign_spot(assign_spot &v) : Gecode::IntMaximizeScript(v)
