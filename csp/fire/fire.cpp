@@ -18,7 +18,7 @@ vector<int> firestation;
 vector<vector<int>> scenes;    
 vector<vector<int>> matrix;
 static int car=3;
-static int scene=10;
+static int scene=100;
 
 
 int a=2;
@@ -152,7 +152,7 @@ public:
         //rel(*this,objective<24*3600);
 
         
-        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAL_SPLIT_MIN()); 
+        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAL_MIN()); 
 
 
         

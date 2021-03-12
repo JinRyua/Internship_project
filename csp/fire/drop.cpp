@@ -1,7 +1,7 @@
 #include <gecode/int.hh>
 #include <gecode/minimodel.hh>
 #include <gecode/search.hh>
-#include <gecode/gist.hh>
+//#include <gecode/gist.hh>
 #include <gecode/driver.hh>
 #include <algorithm>
 #include <vector>
@@ -18,11 +18,47 @@ vector<int> firestation;
 vector<vector<int>> scenes;
 vector<vector<int>> matrix;
 static int car = 3;
-static int scene = 30;
+static int scene = 15;
 int temp = 0;
 
 int a = 2;
 vector<string> split(string str, char delimiter); //선호,기피 string list를 vector로 만들어 주는 함수
+
+class assign_spot : public Gecode::IntMaximizeScript{
+protected:
+    Gecode::IntVar objective;    
+    IntVarArray area;
+public:
+    assign_spot(const Gecode::Options &opt) : Gecode::IntMaximizeScript(opt),
+        area(*this,scenes.size(),2,1+scenes.size())
+    {
+            branch(*this, area, INT_VAR_SIZE_MIN(), INT_VAL_SPLIT_MIN());
+    }
+
+    assign_spot(assign_spot &v) : Gecode::IntMaximizeScript(v)
+    {
+        area.update(*this,v.area);
+        //objective.update(*this, v.objective);
+        
+    }
+
+    virtual Space *copy(void)
+    {
+        return new assign_spot(*this);
+    }
+
+    virtual Gecode::IntVar cost(void) const
+    {
+
+        return objective;
+    }
+
+    void print(std::ostream &os) const
+    {
+        os<<area;
+    }
+};
+
 
 class data
 {
@@ -53,6 +89,8 @@ protected:
 
     IntVar max_time;
     IntVar max_spot;
+    IntVar min_spot;
+    IntVar total_spot;
     // vector<IntVarArray> agent;
     // IntVar spot;
     // IntVar idx_i;
@@ -75,7 +113,9 @@ public:
             }
             cout << data_fire[l].idx_i << endl;
         }
-        rel(*this,data_fire[0].agent[1]==1);
+        rel(*this,data_fire[0].agent[6]==1);
+        rel(*this,data_fire[1].agent[3]==1);
+        //rel(*this,data_fire[2].agent[5]==1);
         for(int i=0;i<car;i++){
             for(int l=0;l<car;l++){
                 for(int j=0;j<matrix.size()+1;j++){
@@ -83,7 +123,7 @@ public:
                         if(i!=l){
                             rel(*this,!((j<=data_fire[i].idx_i&&k<=data_fire[l].idx_i&&
                                 data_fire[i].agent[j]>1&&data_fire[l].agent[k]>1)&&
-                                data_fire[i].agent[i]==data_fire[l].agent[k]));
+                                data_fire[i].agent[j]==data_fire[l].agent[k]));
                         }
                     
                     }
@@ -150,13 +190,18 @@ public:
             
             rel(*this, data_fire[l].time <= 18 * 3600);
         }
+        min_spot=expr(*this,matrix.size());
         max_time=expr(*this,0);
         max_spot=expr(*this,0);
+        total_spot=expr(*this,0);
         for(int l=0;l<car;l++){
             max_time=expr(*this,ite(max_time<data_fire[l].time,data_fire[l].time,max_time));
-            max_spot=expr(*this,max_spot+data_fire[l].spot);
+            max_spot=expr(*this,ite(max_spot<data_fire[l].spot,data_fire[l].spot,max_spot));
+            min_spot=expr(*this,ite(min_spot>data_fire[l].spot,data_fire[l].spot,min_spot));
+            total_spot=expr(*this,total_spot+data_fire[l].spot);
         }
-            objective = expr(*this, max_spot * 18 * 3600 - max_time);
+            objective = expr(*this, max_spot * 18 * 3600*100- max_time - 
+            (max_spot-min_spot)*18*3600);
 
         for(int i=0;i<car;i++)
             branch(*this, data_fire[i].agent, INT_VAR_SIZE_MIN(), INT_VAL_SPLIT_MIN());
@@ -176,6 +221,8 @@ public:
         }
         max_time.update(*this,v.max_time);
         max_spot.update(*this,v.max_spot);
+        min_spot.update(*this,v.max_spot);
+        total_spot.update(*this,v.max_spot);
         // agent.update(*this, v.agent);
         // idx_i.update(*this, v.idx_i);
         // spot.update(*this, v.spot);
@@ -358,6 +405,7 @@ int main(int argc, char *argv[])
     opt.parse(argc, argv);
     //opt.mode(Gecode::SM_GIST);
 
+    Gecode::Script::run<assign_spot, Gecode::DFS, Gecode::Options>(opt);
     Gecode::Script::run<fire, Gecode::BAB, Gecode::Options>(opt); //DFS=>BAB(branch and bound)(분기한정 -> 백트래킹)
 
     return 0;
