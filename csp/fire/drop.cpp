@@ -18,8 +18,11 @@ vector<int> firestation;
 vector<vector<int>> scenes;
 vector<vector<int>> matrix;
 static int car = 3;
-static int scene = 15;
+static int scene = 20;
 int temp = 0;
+
+IntVarArray select_number;
+IntVarArray select_area;
 
 int a = 2;
 vector<string> split(string str, char delimiter); //선호,기피 string list를 vector로 만들어 주는 함수
@@ -69,18 +72,21 @@ public:
         }
 
         IntVar min_time=expr(*this,0);
+        IntVar max_time=expr(*this,0);
         IntVar max_agent=expr(*this,0);
     
         cout<<time<<endl;
         max_agent=expr(*this,0);
         min_time=expr(*this,18*3600);
         for(int i=0;i<car;i++){
-            min_time=expr(*this,ite(min_time<time[i],time[i],min_time));
+            min_time=expr(*this,ite(min_time>time[i],time[i],min_time));
+            max_time=expr(*this,ite(max_time<time[i],time[i],max_time));
             max_agent=expr(*this,ite(max_agent<agent[i],agent[i],max_agent));
         }
-        objective=expr(*this,min_time+max_agent*1000);
-        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAL_MIN());
+        objective=expr(*this,max_agent*100000+max_time*10+max_time-min_time);
         branch(*this, area, INT_VAR_SIZE_MIN(), INT_VAL_MIN());
+
+        branch(*this,agent,INT_VAR_SIZE_MIN(),INT_VAL_SPLIT_MIN());
     }
 
     assign_spot(assign_spot &v) : Gecode::IntMinimizeScript(v)
@@ -109,6 +115,7 @@ public:
         os<<area<<endl;
         os<<time<<endl;
         os<<objective<<endl;
+
     }
 };
 
@@ -459,6 +466,8 @@ int main(int argc, char *argv[])
     //opt.mode(Gecode::SM_GIST);
 
     Gecode::Script::run<assign_spot, Gecode::BAB, Gecode::Options>(opt);
+
+    cout<<endl<<"selected : "<<endl<<select_number<<select_area<<endl;
     //Gecode::Script::run<fire, Gecode::BAB, Gecode::Options>(opt); //DFS=>BAB(branch and bound)(분기한정 -> 백트래킹)
 
     return 0;
