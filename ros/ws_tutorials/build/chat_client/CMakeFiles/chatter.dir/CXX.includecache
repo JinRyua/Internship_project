@@ -6,11 +6,29 @@
 
 #IncludeRegexTransform: 
 
+/home/jylee/jylee/ros/ws_tutorials/devel/include/chat_client/Num.h
+string
+-
+vector
+-
+map
+-
+ros/types.h
+-
+ros/serialization.h
+-
+ros/builtin_message_traits.h
+-
+ros/message_operations.h
+-
+
 /home/jylee/jylee/ros/ws_tutorials/src/chat_client/src/chatter.cpp
 ros/ros.h
 /home/jylee/jylee/ros/ws_tutorials/src/chat_client/src/ros/ros.h
 std_msgs/String.h
 /home/jylee/jylee/ros/ws_tutorials/src/chat_client/src/std_msgs/String.h
+chat_client/Num.h
+/home/jylee/jylee/ros/ws_tutorials/src/chat_client/src/chat_client/Num.h
 sstream
 -
 iostream

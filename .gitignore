@@ -2,5 +2,5 @@
 !*.cpp
 !*.txt
 *.csv
-./ros/ws_tutorials/build/
-./ros/ws_tutorials/devel/
+./ros/ws_tutorials/build/*
+./ros/ws_tutorials/devel/*
