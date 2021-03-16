@@ -3,6 +3,9 @@
 		<node pkg="chat_client" name="chat_client1" type="chatter" output="screen"/>
 	</group>
 	<group ns="chat_client">
-		<node pkg="chat_client" name="key_client1" type="keyboard" output="screen"/>
+		<node pkg="chat_client" name="key_client1" type="std_input" output="screen"/>
 	</group>
+		
+		
+
 </launch>

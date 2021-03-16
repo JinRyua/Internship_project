@@ -1,0 +1,74 @@
+
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+#include "chat_client/chatting.h"  //chat msg
+#include "chat_client/login_msg.h"
+#include "chat_client/response.h"
+
+#include <sstream>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+string node_name; //자신의 이름
+
+vector<vector<string>> login_info;
+vector<vector<string>> group_info;
+
+ros::NodeHandle* nn;
+//ros::Publisher login_response_pub; //std_input topic
+
+
+void login_Callback(const chat_client::login_msg& lmsg) //채팅 받았을 때의 콜백
+{
+    vector<string> temp;
+    cout<<"good"<<endl;
+    temp.push_back(lmsg.id); temp.push_back(lmsg.pw);
+
+    cout<<temp[0]<<" "<<temp[1]<<endl;
+    auto it=find(login_info.begin(),login_info.end(),temp);
+    
+    if(it==login_info.end()){
+        
+    }
+    else{
+        string str_temp="login_response/to_"+lmsg.node_id;
+        ros::NodeHandle n_temp;  //node handler
+        ros::Publisher login_response_pub= n_temp.advertise<chat_client::response>(str_temp, 1000);
+        chat_client::response msg_temp;
+        msg_temp.success=true;
+        login_response_pub.publish(msg_temp);
+        cout<<"goood"<<endl;
+
+    }
+}
+/**
+ * This tutorial demonstrates simple sending of messages over the ROS system.
+ */
+int main(int argc, char **argv)
+{
+  
+  ros::init(argc, argv, "server");
+
+  ros::NodeHandle n;  //node handler
+  //nn=&n;
+  vector<string> temp;
+  temp.push_back("id");
+  temp.push_back("pw");
+  
+  login_info.push_back(temp);
+  cout<<login_info[0][0]<<" "<<login_info[0][1]<<endl;
+
+  ros::Subscriber login = n.subscribe("login/to_server", 1000, login_Callback);  //listener-> callback함수를 통해 화면에 출력
+
+
+
+  ros::Rate loop_rate(10);  //loop rate
+
+  ros::spin();            //spin
+
+
+  return 0;
+}

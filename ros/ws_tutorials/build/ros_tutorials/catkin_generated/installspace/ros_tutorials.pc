@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ros/ws_tutorials/install
-
-Name: ros_tutorials
-Description: Description of ros_tutorials
-Version: 0.0.0
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: 

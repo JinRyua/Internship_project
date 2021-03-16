@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs genmsg)
 
 ## Declare ROS messages and services
-add_message_files(FILES Num.msg)
+add_message_files(FILES chatting.msg group.msg stdi.msg login_msg.msg response.msg)
 
 ## Generate added messages and services
 generate_messages(DEPENDENCIES std_msgs)
@@ -34,9 +34,11 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 add_executable(chatter src/chatter.cpp)
 target_link_libraries(chatter ${catkin_LIBRARIES})
 
-add_executable(keyboard src/keyboard.cpp)
-target_link_libraries(keyboard ${catkin_LIBRARIES})
+add_executable(std_input src/std_input.cpp)
+target_link_libraries(std_input ${catkin_LIBRARIES})
 
+add_executable(server src/server.cpp)
+target_link_libraries(server ${catkin_LIBRARIES})
 #add_dependencies(chatter beginner_tutorials_generate_messages_cpp)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

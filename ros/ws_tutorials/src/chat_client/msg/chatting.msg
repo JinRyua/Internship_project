@@ -1,0 +1,2 @@
+string pub
+string str

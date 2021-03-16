@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ros/ws_tutorials/devel
-
-Name: chat_client
-Description: Description of chat_client
-Version: 0.0.0
-Cflags: -I/home/jylee/jylee/ros/ws_tutorials/devel/include
-Libs: -L${prefix}/lib 
-Requires: message_runtime

@@ -1,2 +1,0 @@
-chat_client:ros_tutorials
--DCATKIN_DEVEL_PREFIX=/home/jylee/jylee/ros/ws_tutorials/devel -DCMAKE_INSTALL_PREFIX=/home/jylee/jylee/ros/ws_tutorials/install -G Unix Makefiles

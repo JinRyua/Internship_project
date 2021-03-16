@@ -1,0 +1,5 @@
+<launch>
+	<group ns="chat_client">
+		<node pkg="chat_client" name="server1" type="server" output="screen"/>
+	</group>
+</launch>

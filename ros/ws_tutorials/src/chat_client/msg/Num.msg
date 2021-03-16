@@ -1,2 +1,0 @@
-string pub
-string str
