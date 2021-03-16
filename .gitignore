@@ -1,6 +1,6 @@
-./csp/
 !*.cpp
 !*.txt
 *.csv
 ros/ws_tutorials/build/*
 ros/ws_tutorials/devel/*
+.vscode/*
