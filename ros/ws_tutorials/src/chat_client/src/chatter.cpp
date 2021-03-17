@@ -1,13 +1,15 @@
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
-#include "chat_client/chatting.h"  //chat msg
-#include "chat_client/group.h"  //group
 #include "chat_client/stdi.h"  //std_input msg
 #include "chat_client/response.h"
 #include "chat_client/login_msg.h"
 #include "chat_client/want_list_msg.h"
 #include "chat_client/give_list_msg.h"
+#include "chat_client/select_msg.h"
+#include "chat_client/send_chat_msg.h"
+#include "chat_client/exit_group_msg.h"
+#include "chat_client/spread_chat_msg.h"
 
 #include <sstream>
 #include <iostream>
@@ -17,6 +19,7 @@ using namespace std;
 
 string node_id; //자신의 이름
 string id;   //자신의 id;
+string group;
 string buffer="";
 int state=0;
 ros::NodeHandle* nn;
@@ -28,10 +31,12 @@ vector<string> split(string str, char delimiter);
 
 void login();
 void want_list();
+void select_group();
+void send_chat();
 
 void stdi_Callback(const chat_client::stdi& msg) //채팅 받았을 때의 콜백
 { 
-    cout<<msg.str<<endl;  //출력
+    //cout<<msg.str<<endl;  //출력
     // ros::NodeHandle n;
     // chat_client::login_msg temp_login;
     buffer=msg.str;
@@ -40,7 +45,10 @@ void stdi_Callback(const chat_client::stdi& msg) //채팅 받았을 때의 콜�
       login();
     }
     else if(state==2){
-      //want_list();
+      select_group();
+    }
+    else if(state==4){
+      send_chat();
     }
     // temp_login.node_id=node_id;
     // temp_login.id="id";
@@ -60,7 +68,7 @@ void login_response_Callback(const chat_client::response& msg) //채팅 받았�
       want_list();
     }
     else{
-      cout<<msg<<endl;
+      cout<<msg.msg<<endl;
     }
 }
 
@@ -75,8 +83,14 @@ void give_list_Callback(const chat_client::give_list_msg& msg){
     state=2;
 }
 
-void select_response_Callback(){
-
+void select_response_Callback(const chat_client::response &msg){
+  cout << msg.msg << endl;
+  if (msg.success == true){
+    state = 4;
+    cout << "You join in " << group << ". start chat" << endl;
+  }
+  else
+    state = 2;
 }
 void exit_response_Callback(){
 
@@ -99,7 +113,7 @@ void login()
     string login_str = "login/to_server";
     ros::NodeHandle nnn;
     pub = nn->advertise<chat_client::login_msg>(login_str, 1000); //std_input topic
-    ros::Duration(1.0).sleep();
+    ros::Duration(0.5).sleep();
     pub.publish(temp_login);
     id=id_temp;
   }
@@ -112,11 +126,30 @@ void login()
 void want_list(){
   string want_str = "want_list/to_server";
   pub = nn->advertise<chat_client::want_list_msg>(want_str, 1000); //std_input topic
-  ros::Duration(1.0).sleep();
+  ros::Duration(0.5).sleep();
   chat_client::want_list_msg msg;
   msg.node_id=node_id;
   msg.id=id;
   pub.publish(msg);
+}
+
+
+void select_group(){
+  string select_group_str = "select_group/to_server";
+  pub = nn->advertise<chat_client::select_msg>(select_group_str, 1000); //std_input topic
+  ros::Duration(0.5).sleep();
+  chat_client::select_msg msg;
+  msg.node_id = node_id;
+  msg.id = id;
+  msg.group = buffer;
+  pub.publish(msg);
+  group = msg.group;
+  state = 3;
+}
+
+void send_chat(){
+  string select_group_str = "send_chat/to_server";
+  pub = nn->advertise<chat_client::select_msg>(select_group_str, 1000); //std_input topic
 }
 
 int main(int argc, char **argv)
@@ -139,8 +172,8 @@ int main(int argc, char **argv)
   string give_list_str="give_list/to_"+node_id;
   ros::Subscriber give_list_sub = n.subscribe(give_list_str, 1000, give_list_Callback);
 
-  // string select_res_str="login_response/to_"+node_id;
-  // ros::Subscriber select_response_sub = n.subscribe(select_res_str, 1000, select_response_Callback);
+  string select_res_str="select_response/to_"+node_id;
+  ros::Subscriber select_response_sub = n.subscribe(select_res_str, 1000, select_response_Callback);
 
   // string exit_res_str="login_response/to_"+node_id;
   // ros::Subscriber exit_response_sub = n.subscribe(exit_res_str, 1000, exit_response_Callback);
