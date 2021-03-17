@@ -1,4 +1,3 @@
-
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 
@@ -12,6 +11,7 @@
 #include "chat_client/send_chat_msg.h"    //send_chat_msg
 #include "chat_client/exit_group_msg.h"   //exit_group_msg
 #include "chat_client/spread_chat_msg.h"  //spread_chat_msg
+#include "chat_client/connect_msg.h"      //connect_msg
 
 #include <sstream>
 #include <iostream>
@@ -21,39 +21,67 @@
 #include <map>
 using namespace std;
 
+struct pub_struct{
+  ros::Publisher connect_response_pub;
+  ros::Publisher login_response_pub; //노드들의 publisher
+  ros::Publisher give_list_pub;
+  ros::Publisher select_response_pub;
+  ros::Publisher spread_chat_pub;
+  ros::Publisher exit_response_pub;
+  string node_id;
+  string id;
+  string group;
+};
+
 vector<vector<string>> login_info;        //id pw=>info
 map<string, vector<string>> group_info;   //id가 가지고 있는 group info
+map<string, pub_struct> session;
 
 ros::NodeHandle *nn;                      //NodeHandler
 
-ros::Publisher login_response_pub;        //토픽들의 publisher 
-ros::Publisher give_list_pub;
-ros::Publisher select_response_pub;
-ros::Publisher spread_chat_pub;
-ros::Publisher exit_response_pub;
+void connect_Callback(const chat_client::connect_msg& msg){
+  struct pub_struct temp;
+  string str_temp = "connect_response/to_" + msg.node_id;
+  temp.connect_response_pub = nn->advertise<chat_client::response>(str_temp, 1000);  //connnect_response를 위한 publisher
+  str_temp = "login_response/to_" + msg.node_id;
+  temp.login_response_pub = nn->advertise<chat_client::response>(str_temp, 1000);  //login_response를 위한 publisher
+  str_temp = "give_list/to_" + msg.node_id;
+  temp.give_list_pub = nn->advertise<chat_client::give_list_msg>(str_temp, 1000);    //publisher
+  str_temp = "select_response/to_" + msg.node_id;
+  temp.select_response_pub = nn->advertise<chat_client::response>(str_temp, 1000); //publisher
+  str_temp = "exit_response/to_" + msg.node_id;
+  temp.exit_response_pub = nn->advertise<chat_client::response>(str_temp, 1000);  //publisher
+  temp.node_id = msg.node_id;
+  session.insert(pair<string, pub_struct> (msg.node_id, temp) );
+  
+  ros::Duration(0.5).sleep();
+  chat_client::response msg_temp;
+  msg_temp.success=true;
+  session[msg.node_id].connect_response_pub.publish(msg_temp);
+}
 
-void login_Callback(const chat_client::login_msg &lmsg){ //로그인 시도를 받았을 때의 콜백
+void login_Callback(const chat_client::login_msg &msg)
+{                             //로그인 시도를 받았을 때의 콜백
   vector<string> temp;        //받은 로그인 정보를 담기 위한 vector
-  temp.push_back(lmsg.id);
-  temp.push_back(lmsg.pw);
+  temp.push_back(msg.id);
+  temp.push_back(msg.pw);
   auto it = find(login_info.begin(), login_info.end(), temp); //서버가 가지고 있는 정보에 있는지 확인
 
-  string str_temp = "login_response/to_" + lmsg.node_id;
-  login_response_pub = nn->advertise<chat_client::response>(str_temp, 1000);  //login_response를 위한 publisher
-  ros::Duration(0.5).sleep();     //publisher를 위한 대기
+  //ros::Duration(0.5).sleep();     //publisher를 위한 대기
   chat_client::response msg_temp; //msg type
 
   if (it == login_info.end()){  //정보가 없으면
     msg_temp.success = false;   //실패
     msg_temp.msg = "일치하는 id 또는 pw가 없음";  
-    login_response_pub.publish(msg_temp); //전송
+    session[msg.node_id].login_response_pub.publish(msg_temp); //전송
     cout << "login false : " << temp[0] << " " << temp[1] << endl;
   }
   else{
     msg_temp.success = true;  //성공
     msg_temp.msg = "";
-    login_response_pub.publish(msg_temp); //전송
+    session[msg.node_id].login_response_pub.publish(msg_temp); //전송
     cout << "login success :" << temp[0] << " " << temp[1] << endl;
+    session[msg.node_id].id = msg.id;
   }
 }
 
@@ -76,75 +104,75 @@ void want_list_Callback(const chat_client::want_list_msg &msg){ //그룹 리스�
     group_info.insert(pair<string, vector<string>>(msg.id, temp));    //새롭게 id의 그룹 저장소를 추가하여 만듬
   }
 
-  string str_temp = "give_list/to_" + msg.node_id;
-  give_list_pub = nn->advertise<chat_client::give_list_msg>(str_temp, 1000);    //publisher
-  ros::Duration(0.5).sleep();       //wait
+  // string str_temp = "give_list/to_" + msg.node_id;
+  // give_list_pub = nn->advertise<chat_client::give_list_msg>(str_temp, 1000);    //publisher
+  // ros::Duration(0.5).sleep();       //wait
 
   chat_client::give_list_msg msg_temp;    //msg type
   msg_temp.list_group = give_list_msg;
-  give_list_pub.publish(msg_temp);      //publish
+  session[msg.node_id].give_list_pub.publish(msg_temp);      //publish
 
   cout << "send give list to " << msg.node_id << " : " << give_list_msg << endl;
 }
 
-void select_group_Callback(const chat_client::select_msg &msg){ //group을 선택했을 때 콜백
-  cout << msg.node_id << " , " << msg.id << " select group : " << msg.group << endl;
+// void select_group_Callback(const chat_client::select_msg &msg){ //group을 선택했을 때 콜백
+//   cout << msg.node_id << " , " << msg.id << " select group : " << msg.group << endl;
 
-  map<string, vector<string>>::iterator iter;     //group이 있는 지 확인하기 위한 이터레이터
-  iter = group_info.find(msg.id);                 //id로 탐색
-  string give_list_msg = "";
+//   map<string, vector<string>>::iterator iter;     //group이 있는 지 확인하기 위한 이터레이터
+//   iter = group_info.find(msg.id);                 //id로 탐색
+//   string give_list_msg = "";
 
-  if (iter != group_info.end()){   //있으면
-    vector<string> temp = iter->second;
-    vector<string>::iterator it = find(temp.begin(), temp.end(), msg.group);  //그룹 벡터에서 선택한 group이 있는지 확인
+//   if (iter != group_info.end()){   //있으면
+//     vector<string> temp = iter->second;
+//     vector<string>::iterator it = find(temp.begin(), temp.end(), msg.group);  //그룹 벡터에서 선택한 group이 있는지 확인
 
-    string str_temp = "select_response/to_" + msg.node_id;
-    select_response_pub = nn->advertise<chat_client::response>(str_temp, 1000); //publisher
-    ros::Duration(0.5).sleep();
-    chat_client::response msg_temp; //msg_type
+//     string str_temp = "select_response/to_" + msg.node_id;
+//     select_response_pub = nn->advertise<chat_client::response>(str_temp, 1000); //publisher
+//     ros::Duration(0.5).sleep();
+//     chat_client::response msg_temp; //msg_type
 
-    if (it != temp.end()) {  //그룹 벡터에 있으면
-      msg_temp.msg = "";   
-    }
-    else{       //없으면
-      iter->second.push_back(msg.group);    //그룹 벡터에 그룹을 새롭게 추가해줌 
-      msg_temp.msg = "enter new group";
-    }
+//     if (it != temp.end()) {  //그룹 벡터에 있으면
+//       msg_temp.msg = "";   
+//     }
+//     else{       //없으면
+//       iter->second.push_back(msg.group);    //그룹 벡터에 그룹을 새롭게 추가해줌 
+//       msg_temp.msg = "enter new group";
+//     }
 
-    msg_temp.success = true;                //성공
-    select_response_pub.publish(msg_temp);  //publish
+//     msg_temp.success = true;                //성공
+//     select_response_pub.publish(msg_temp);  //publish
 
-    cout << msg.node_id << " , " << msg.id << " select group : " << msg.group << endl;
-  }
-}
+//     cout << msg.node_id << " , " << msg.id << " select group : " << msg.group << endl;
+//   }
+// }
 
-void send_chat_Callback(const chat_client::send_chat_msg &msg){  //메세지를 보내는 걸 받았을 때 콜백
-  cout << msg.node_id << " , " << msg.id << " send msg : " << msg.msg << " to " << msg.group << endl;
+// void send_chat_Callback(const chat_client::send_chat_msg &msg){  //메세지를 보내는 걸 받았을 때 콜백
+//   cout << msg.node_id << " , " << msg.id << " send msg : " << msg.msg << " to " << msg.group << endl;
 
-  string send_chat_str_temp = "spread_chat/to_" + msg.group;      //보내는 group들에게 spread
-  spread_chat_pub = nn->advertise<chat_client::spread_chat_msg>(send_chat_str_temp, 1000);  //publisher
-  ros::Duration(0.5).sleep();
+//   string send_chat_str_temp = "spread_chat/to_" + msg.group;      //보내는 group들에게 spread
+//   spread_chat_pub = nn->advertise<chat_client::spread_chat_msg>(send_chat_str_temp, 1000);  //publisher
+//   ros::Duration(0.5).sleep();
 
-  chat_client::spread_chat_msg msg_temp;    //msg_type
-  msg_temp.id = msg.id;
-  msg_temp.msg = msg.msg;
+//   chat_client::spread_chat_msg msg_temp;    //msg_type
+//   msg_temp.id = msg.id;
+//   msg_temp.msg = msg.msg;
 
-  spread_chat_pub.publish(msg_temp);    //publish
-}
+//   spread_chat_pub.publish(msg_temp);    //publish
+// }
 
-void exit_group_Callback(const chat_client::exit_group_msg &msg){   //그룹 탈출을 받았을 때 콜백
-  cout << msg.node_id << " , " << msg.id << " exit : " << msg.group << endl;
+// void exit_group_Callback(const chat_client::exit_group_msg &msg){   //그룹 탈출을 받았을 때 콜백
+//   cout << msg.node_id << " , " << msg.id << " exit : " << msg.group << endl;
 
-  string exit_group_str_temp = "exit_response/to_" + msg.node_id;
-  exit_response_pub = nn->advertise<chat_client::response>(exit_group_str_temp, 1000);  //publisher
-  ros::Duration(0.5).sleep();
+//   string exit_group_str_temp = "exit_response/to_" + msg.node_id;
+//   exit_response_pub = nn->advertise<chat_client::response>(exit_group_str_temp, 1000);  //publisher
+//   ros::Duration(0.5).sleep();
 
-  chat_client::response msg_temp;   //msg type
-  msg_temp.success = true;
-  msg_temp.msg = "";
+//   chat_client::response msg_temp;   //msg type
+//   msg_temp.success = true;
+//   msg_temp.msg = "";
 
-  exit_response_pub.publish(msg_temp);    //publish
-}
+//   exit_response_pub.publish(msg_temp);    //publish
+// }
 
 int main(int argc, char **argv){
 
@@ -169,12 +197,12 @@ int main(int argc, char **argv){
 
   cout << login_info[0][0] << " " << login_info[0][1] << endl;
 
+  ros::Subscriber connect_sub = n.subscribe("connect/to_server", 1000, connect_Callback);
   ros::Subscriber login_sub = n.subscribe("login/to_server", 1000, login_Callback);                      //login/to_server topic sub
   ros::Subscriber want_list_sub = n.subscribe("want_list/to_server", 1000, want_list_Callback);          //want_list topic sub
-  ros::Subscriber select_group_sub = n.subscribe("select_group/to_server", 1000, select_group_Callback); //select_group sub
-  ros::Subscriber exit_group_sub = n.subscribe("exit_group/to_server", 1000, exit_group_Callback);       //exit_group sub
-  ros::Subscriber send_chat_sub = n.subscribe("send_chat/to_server", 1000, send_chat_Callback);          //send_chat sub
-
+  // ros::Subscriber select_group_sub = n.subscribe("select_group/to_server", 1000, select_group_Callback); //select_group sub
+  // ros::Subscriber exit_group_sub = n.subscribe("exit_group/to_server", 1000, exit_group_Callback);       //exit_group sub
+  // ros::Subscriber send_chat_sub = n.subscribe("send_chat/to_server", 1000, send_chat_Callback);          //send_chat sub
   ros::Rate loop_rate(10); //loop rate
 
   ros::spin(); //spin
