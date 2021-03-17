@@ -18,30 +18,37 @@ vector<vector<string>> login_info;
 vector<vector<string>> group_info;
 
 ros::NodeHandle* nn;
+
+ros::Publisher login_response_pub;
 //ros::Publisher login_response_pub; //std_input topic
 
 
 void login_Callback(const chat_client::login_msg& lmsg) //채팅 받았을 때의 콜백
 {
     vector<string> temp;
-    cout<<"good"<<endl;
+    cout<<"Hi"<<endl;
     temp.push_back(lmsg.id); temp.push_back(lmsg.pw);
-
-    cout<<temp[0]<<" "<<temp[1]<<endl;
     auto it=find(login_info.begin(),login_info.end(),temp);
     
-    if(it==login_info.end()){
-        
-    }
-    else{
-        string str_temp="login_response/to_"+lmsg.node_id;
-        ros::NodeHandle n_temp;  //node handler
-        ros::Publisher login_response_pub= n_temp.advertise<chat_client::response>(str_temp, 1000);
-        chat_client::response msg_temp;
-        msg_temp.success=true;
-        login_response_pub.publish(msg_temp);
-        cout<<"goood"<<endl;
+    string str_temp="login_response/to_"+lmsg.node_id;
+    cout<<str_temp<<endl;
+    login_response_pub= nn->advertise<chat_client::response>(str_temp, 1000);
+    ros::Duration(1.0).sleep();
+    chat_client::response msg_temp;
 
+    if (it == login_info.end())
+    {
+      msg_temp.success = false;
+      msg_temp.msg = "일치하는 id 또는 pw가 없음";
+      login_response_pub.publish(msg_temp);
+      cout << "login false : " << temp[0] << " " << temp[1] << endl;
+    }
+    else
+    {
+      msg_temp.success = true;
+      msg_temp.msg="";
+      login_response_pub.publish(msg_temp);
+      cout << "login success :" << temp[0] << " " << temp[1] << endl;
     }
 }
 /**
@@ -53,7 +60,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "server");
 
   ros::NodeHandle n;  //node handler
-  //nn=&n;
+  nn=&n;
   vector<string> temp;
   temp.push_back("id");
   temp.push_back("pw");
