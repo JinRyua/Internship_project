@@ -1,15 +1,17 @@
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
-#include "chat_client/stdi.h"  //std_input msg
-#include "chat_client/response.h"
-#include "chat_client/login_msg.h"
-#include "chat_client/want_list_msg.h"
-#include "chat_client/give_list_msg.h"
-#include "chat_client/select_msg.h"
-#include "chat_client/send_chat_msg.h"
-#include "chat_client/exit_group_msg.h"
-#include "chat_client/spread_chat_msg.h"
+
+//msg include
+#include "chat_client/stdi.h"             //std_input_msg 
+#include "chat_client/response.h"         //response_msg
+#include "chat_client/login_msg.h"        //login_msg
+#include "chat_client/want_list_msg.h"    //want_list_msg
+#include "chat_client/give_list_msg.h"    //give_list_msg
+#include "chat_client/select_msg.h"       //select_msg
+#include "chat_client/send_chat_msg.h"    //send_chat_msg
+#include "chat_client/exit_group_msg.h"   //exit_group_msg
+#include "chat_client/spread_chat_msg.h"  //spread_chat_msg
 
 #include <sstream>
 #include <iostream>
@@ -19,21 +21,25 @@ using namespace std;
 
 string node_id; //자신의 이름
 string id;   //자신의 id;
-string group;
-string buffer="";
-int state=0;
-ros::NodeHandle* nn;
+string group; //이 노드의 group
+string buffer="";   //buffer(입력)
 
-ros::Publisher pub;
-ros::Subscriber chat_sub;
+int state=0;    //현재 상태
+ros::NodeHandle* nn;  //전역 nodehandler
 
-vector<string> split(string str, char delimiter);
+ros::Publisher pub;   //전역 publisher
+ros::Subscriber chat_sub; //spread_chat subscriber
 
-void login();
+vector<string> split(string str, char delimiter); //문자열을 vector로 나누기 위한 함수
+
+//function=> 입력을 받았을 때 작동
+void login();           
 void want_list();
 void select_group();
 void send_chat();
+void exit_group();
 
+//Callback들 topic_Callback 구조
 void stdi_Callback(const chat_client::stdi& msg);
 void login_response_Callback(const chat_client::response& msg);
 void give_list_Callback(const chat_client::give_list_msg& msg);
@@ -41,182 +47,209 @@ void select_response_Callback(const chat_client::response& msg);
 void exit_response_Callback(const chat_client::response& msg);
 void spread_chat_Callback(const chat_client::spread_chat_msg& msg);
 
-void stdi_Callback(const chat_client::stdi& msg) //채팅 받았을 때의 콜백
-{ 
-    //cout<<msg.str<<endl;  //출력
-    // ros::NodeHandle n;
-    // chat_client::login_msg temp_login;
-    buffer=msg.str;
+void stdi_Callback(const chat_client::stdi& msg) {  //입력 받았을 때의 콜백 
+    buffer=msg.str;   //buffer에 입력 스트링 저장
 
-    if(state==0){
+    if(state==0){   //로그인 상태
       login();
     }
-    else if(state==2){
+    else if(state==2){    //그룹 선택 상태
       select_group();
     }
-    else if(state==4){
-      send_chat();
+    else if(state==4){    //채팅 상태
+      if(buffer!="/exit") //  /exit을 입력받으면 exit 아니면 채팅
+        send_chat();
+      else
+        exit_group();
     }
-    // temp_login.node_id=node_id;
-    // temp_login.id="id";
-    // temp_login.pw="pw";
-    // string login_str="login/to_server";
-    // ros::Publisher login_pub = nn->advertise<chat_client::login_msg>(login_str, 1000); //std_input topic
-    // login_pub.publish(temp_login);
-    buffer = "";
+    buffer = "";    //buffer 제거
 }
 
-void login_response_Callback(const chat_client::response& msg) //채팅 받았을 때의 콜백
-{ 
-    cout<<"good"<<endl;
-    if(msg.success==true){
-      cout<<"login success!"<<endl;
-      state=1;
-      want_list();
-    }
-    else{
-      cout<<msg.msg<<endl;
-    }
+void login_response_Callback(const chat_client::response &msg){ //로그인 응답을 받았을 때의 콜백
+  if (msg.success == true){   //성공일 경우
+    cout << "login success!" << endl<<endl;
+    state = 1;    //list를 요구하는 상태
+    want_list();    //그룹 list 요구
+  }
+  else{
+    cout << msg.msg << endl;
+  }
 }
 
-void give_list_Callback(const chat_client::give_list_msg& msg){
-    cout<<endl<<"give_list"<<endl;
-    int point=0;
-    vector<string> temp=split(msg.list_group,',');
-    cout<<"possible group : "<<endl;
-    for(int i=0;i<temp.size();i++){
-        cout<<temp[i]<<endl;
-    }
-    state=2;
+void give_list_Callback(const chat_client::give_list_msg &msg){   //리스트를 받았을 때 콜백
+  vector<string> temp = split(msg.list_group, ',');   //받은 리스트들을 vector로 분리 => a,b,c... [a][b][c]
+
+  cout << "possible group : " << endl;
+  for (int i = 0; i < temp.size(); i++)   //출력
+  {
+    cout << temp[i] << endl;
+  }
+  cout<<endl;
+
+  state = 2; //그룹 입력 상태
 }
 
-void select_response_Callback(const chat_client::response& msg){
-  cout << msg.msg << endl;
-  if (msg.success == true){
-    state = 4;
+void select_response_Callback(const chat_client::response &msg){    //그룹 선택 응답을 받았을 때 콜백
+  if (msg.success == true){ //성공이라면
+    state = 4;              //채팅상태로
+
+    cout<<msg.msg<<endl;
     cout << "You join in " << group << ". start chat" << endl;
-    string spread_chat_str="spread_chat/to_"+group;
-    chat_sub = nn->subscribe(spread_chat_str, 1000, spread_chat_Callback);
+
+    string spread_chat_str = "spread_chat/to_" + group;       //선택한 그룹에서 채팅을 받을 수 있도록
+    chat_sub = nn->subscribe(spread_chat_str, 1000, spread_chat_Callback);    //spread_chat
     ros::Duration(0.5).sleep();
   }
-  else
+  else  //아니라면 다시 그룹 선택
     state = 2;
 }
 
-void exit_response_Callback(){
-
-}
-void spread_chat_Callback(const chat_client::spread_chat_msg& msg){
-  if(msg.id != id){
-    cout << msg.id<<" : "<<msg.msg<<endl;
+void exit_response_Callback(const chat_client::response &msg){    // 그룹 탈출 응답 받았을 때 콜백
+  if (msg.success == true){
+    cout << "exit " << group << "!" << endl<<endl;
+    state = 1;    //그룹 리스트를 받는 상태
+    group = "";   //속한 group 제거
+    want_list();  //리스트 요구
   }
-  state=4;
+  else{
+    cout << msg.msg << endl;
+  }
 }
-void login()
-{
+
+void spread_chat_Callback(const chat_client::spread_chat_msg &msg){  //채팅을 받았을 떄 콜백
+  if (msg.id != id){
+    cout << msg.id << " : " << msg.msg << endl; //자신이 아니라면(id) 출력
+  }
+  state = 4;    //채팅 상태
+}
+
+void login(){       //로그인 함수
   int point = buffer.find(" ");
-  string id_temp = buffer.substr(0, point);
-  if (point != -1)
-  {
-    string pw_temp = buffer.substr(point+1);
-    chat_client::login_msg temp_login;
+  string id_temp = buffer.substr(0, point);   //buffer에서 (한줄) id,pw 분리
+
+  if (point != -1){     //2개 이상을 입력했다면
+    string pw_temp = buffer.substr(point + 1);  //pw 분리
+
+    chat_client::login_msg temp_login;    //msg type
     temp_login.node_id = node_id;
     temp_login.id = id_temp;
     temp_login.pw = pw_temp;
-    string login_str = "login/to_server";
-    pub = nn->advertise<chat_client::login_msg>(login_str, 1000); //std_input topic
-    ros::Duration(0.5).sleep();
-    pub.publish(temp_login);
-    id=id_temp;
+
+    string login_str = "login/to_server";   //login topic
+    pub = nn->advertise<chat_client::login_msg>(login_str, 1000); //login=->topic
+    ros::Duration(0.5).sleep();   //대기
+
+    pub.publish(temp_login);    //publish
+
+    id = id_temp; //id 접속 상태
+    state=1;      //리스트 대기 상태
   }
   else{
-    cout<<"please chat (id pw)"<<endl;
+    cout << "please chat (id pw)" << endl;
   }
-  
 }
 
-void want_list(){
+void want_list(){   //그룹 리스트 요구 함수
   string want_str = "want_list/to_server";
-  pub = nn->advertise<chat_client::want_list_msg>(want_str, 1000); //std_input topic
+  pub = nn->advertise<chat_client::want_list_msg>(want_str, 1000); //want group list topic
   ros::Duration(0.5).sleep();
+
   chat_client::want_list_msg msg;
-  msg.node_id=node_id;
-  msg.id=id;
+  msg.node_id = node_id;
+  msg.id = id;
+  
   pub.publish(msg);
 }
 
-
-void select_group(){
+void select_group(){    //그룹 선택 함수
   string select_group_str = "select_group/to_server";
-  pub = nn->advertise<chat_client::select_msg>(select_group_str, 1000); //std_input topic
+  pub = nn->advertise<chat_client::select_msg>(select_group_str, 1000); //select group topic
   ros::Duration(0.5).sleep();
+
   chat_client::select_msg msg;
   msg.node_id = node_id;
   msg.id = id;
   msg.group = buffer;
   pub.publish(msg);
-  group = msg.group;
-  state = 3;
+
+  group = msg.group;      //선택한 그룹으로 일시적 저장
+  state = 3;              //그룹 선택 대기 상태
 }
 
-void send_chat(){
+void send_chat()    {     //채팅을 보내는 함수
   string send_chat_str = "send_chat/to_server";
-  pub = nn->advertise<chat_client::send_chat_msg>(send_chat_str, 1000); //std_input topic
+  pub = nn->advertise<chat_client::send_chat_msg>(send_chat_str, 1000); //send_chat
   ros::Duration(0.5).sleep();
+
   chat_client::send_chat_msg msg;
-  msg.node_id=node_id;
-  msg.id=id;
-  msg.group=group;
-  msg.msg=buffer;
+  msg.node_id = node_id;
+  msg.id = id;
+  msg.group = group;
+  msg.msg = buffer;
+  
   pub.publish(msg);
-  state=5;
+  state = 5;  //응답 대기 상태
 }
 
-int main(int argc, char **argv)
-{
-  
+void exit_group(){      //그룹 탈출 함수
+  string exit_group_str = "exit_group/to_server";
+  pub = nn->advertise<chat_client::exit_group_msg>(exit_group_str, 1000); //exit_group topic
+  ros::Duration(0.5).sleep();
+
+  chat_client::exit_group_msg msg;
+  msg.node_id = node_id;
+  msg.id = id;
+  msg.group = group;
+
+  pub.publish(msg);     //publish
+  state = 5;    //응답 대기 상태
+}
+
+int main(int argc, char **argv){
   ros::init(argc, argv, "chatter");
-  ros::NodeHandle n;  //node handler
-  nn=&n;
+  ros::NodeHandle n; //node handler
+  nn = &n;    //전역 node handler
 
-  node_id =ros::this_node::getName();    //자신의 노드 이름 확인
-  int point=node_id.find("_",10);         //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
-  node_id=node_id.substr(point+1);
+  node_id = ros::this_node::getName(); //자신의 노드 이름 확인
+  int point = node_id.find("_", 10);   //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
+  node_id = node_id.substr(point + 1);
 
-  string stdi_str="get_input/to_"+node_id;
-  ros::Subscriber get_input_sub = n.subscribe(stdi_str, 1000, stdi_Callback);  //listener-> callback함수를 통해 화면에 출력
+  cout<<"typing login info : id pw"<<endl;
   
-  string login_res_str="login_response/to_"+node_id;
-  ros::Subscriber login_response_sub = n.subscribe(login_res_str, 1000, login_response_Callback);
+  //subscriber
 
-  string give_list_str="give_list/to_"+node_id;
-  ros::Subscriber give_list_sub = n.subscribe(give_list_str, 1000, give_list_Callback);
+  string stdi_str = "get_input/to_" + node_id;
+  ros::Subscriber get_input_sub = n.subscribe(stdi_str, 1000, stdi_Callback); //get_input
 
-  string select_res_str="select_response/to_"+node_id;
-  ros::Subscriber select_response_sub = n.subscribe(select_res_str, 1000, select_response_Callback);
+  string login_res_str = "login_response/to_" + node_id;
+  ros::Subscriber login_response_sub = n.subscribe(login_res_str, 1000, login_response_Callback);   //login_response
 
-  // string exit_res_str="login_response/to_"+node_id;
-  // ros::Subscriber exit_response_sub = n.subscribe(exit_res_str, 1000, exit_response_Callback);
+  string give_list_str = "give_list/to_" + node_id;
+  ros::Subscriber give_list_sub = n.subscribe(give_list_str, 1000, give_list_Callback);   //give_list
 
-  
+  string select_res_str = "select_response/to_" + node_id;
+  ros::Subscriber select_response_sub = n.subscribe(select_res_str, 1000, select_response_Callback);    //select_response
 
-  ros::Rate loop_rate(10);  //loop rate
+  string exit_res_str = "exit_response/to_" + node_id;
+  ros::Subscriber exit_response_sub = n.subscribe(exit_res_str, 1000, exit_response_Callback);      //exit_response
 
-  ros::spin();            //spin
+  ros::Rate loop_rate(10); //loop rate
 
-
+  ros::spin(); //spin
 
   return 0;
 }
 
-vector<string> split(string input, char delimiter) {
-    vector<string> answer;
-    stringstream ss(input);
-    string temp;
- 
-    while (getline(ss, temp, delimiter)) {
-        answer.push_back(temp);
-    }
- 
-    return answer;
+vector<string> split(string input, char delimiter)
+{
+  vector<string> answer;
+  stringstream ss(input);
+  string temp;
+
+  while (getline(ss, temp, delimiter))
+  {
+    answer.push_back(temp);
+  }
+
+  return answer;
 }
