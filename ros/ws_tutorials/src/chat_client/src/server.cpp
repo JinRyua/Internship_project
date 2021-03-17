@@ -29,6 +29,7 @@ ros::NodeHandle* nn;
 ros::Publisher login_response_pub;
 ros::Publisher give_list_pub;
 ros::Publisher select_response_pub;
+ros::Publisher spread_chat_pub;
 
 
 void login_Callback(const chat_client::login_msg& lmsg) //채팅 받았을 때의 콜백
@@ -120,6 +121,18 @@ void select_group_Callback(const chat_client::select_msg &msg)//id 안씀 세션
   }
 }
 
+void send_chat_Callback(const chat_client::send_chat_msg& msg){
+  cout<<msg.node_id<<" , "<<msg.id<<" send msg : "<<msg.msg<<" to "<<msg.group<<endl;
+  string str_temp = "spread_chat/to_" + msg.group;
+  spread_chat_pub = nn->advertise<chat_client::spread_chat_msg>(str_temp, 1000);
+  ros::Duration(0.5).sleep();
+  chat_client::spread_chat_msg msg_temp;
+  msg_temp.id=msg.id;
+  msg_temp.msg=msg.msg;
+  spread_chat_pub.publish(msg_temp);
+  
+}
+
 int main(int argc, char **argv)
 {
   
@@ -133,6 +146,8 @@ int main(int argc, char **argv)
   login_info.push_back(temp);
   temp[0]="id2";
   login_info.push_back(temp);
+  temp[0]="id3";
+  login_info.push_back(temp);
 
   vector<string> group_temp;
   group_temp.push_back("group1");
@@ -145,7 +160,7 @@ int main(int argc, char **argv)
   ros::Subscriber want_list_sub = n.subscribe("want_list/to_server", 1000, want_list_Callback);  //listener-> callback함수를 통해 화면에 출력
   ros::Subscriber select_group_sub = n.subscribe("select_group/to_server", 1000, select_group_Callback);  //listener-> callback함수를 통해 화면에 출력
   ros::Subscriber exit_group_sub = n.subscribe("exit_group/to_server", 1000, want_list_Callback);  //listener-> callback함수를 통해 화면에 출력
-  ros::Subscriber send_chat_sub = n.subscribe("send_chat/to_server", 1000, want_list_Callback);  //listener-> callback함수를 통해 화면에 출력
+  ros::Subscriber send_chat_sub = n.subscribe("send_chat/to_server", 1000, send_chat_Callback);  //listener-> callback함수를 통해 화면에 출력
 
 
 

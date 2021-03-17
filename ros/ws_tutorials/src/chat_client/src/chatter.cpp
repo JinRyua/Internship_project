@@ -34,6 +34,13 @@ void want_list();
 void select_group();
 void send_chat();
 
+void stdi_Callback(const chat_client::stdi& msg);
+void login_response_Callback(const chat_client::response& msg);
+void give_list_Callback(const chat_client::give_list_msg& msg);
+void select_response_Callback(const chat_client::response& msg);
+void exit_response_Callback(const chat_client::response& msg);
+void spread_chat_Callback(const chat_client::spread_chat_msg& msg);
+
 void stdi_Callback(const chat_client::stdi& msg) //채팅 받았을 때의 콜백
 { 
     //cout<<msg.str<<endl;  //출력
@@ -83,20 +90,27 @@ void give_list_Callback(const chat_client::give_list_msg& msg){
     state=2;
 }
 
-void select_response_Callback(const chat_client::response &msg){
+void select_response_Callback(const chat_client::response& msg){
   cout << msg.msg << endl;
   if (msg.success == true){
     state = 4;
     cout << "You join in " << group << ". start chat" << endl;
+    string spread_chat_str="spread_chat/to_"+group;
+    chat_sub = nn->subscribe(spread_chat_str, 1000, spread_chat_Callback);
+    ros::Duration(0.5).sleep();
   }
   else
     state = 2;
 }
+
 void exit_response_Callback(){
 
 }
-void spread_chat_Callback(){
-
+void spread_chat_Callback(const chat_client::spread_chat_msg& msg){
+  if(msg.id != id){
+    cout << msg.id<<" : "<<msg.msg<<endl;
+  }
+  state=4;
 }
 void login()
 {
@@ -105,13 +119,11 @@ void login()
   if (point != -1)
   {
     string pw_temp = buffer.substr(point+1);
-    ros::NodeHandle n;
     chat_client::login_msg temp_login;
     temp_login.node_id = node_id;
     temp_login.id = id_temp;
     temp_login.pw = pw_temp;
     string login_str = "login/to_server";
-    ros::NodeHandle nnn;
     pub = nn->advertise<chat_client::login_msg>(login_str, 1000); //std_input topic
     ros::Duration(0.5).sleep();
     pub.publish(temp_login);
@@ -148,8 +160,16 @@ void select_group(){
 }
 
 void send_chat(){
-  string select_group_str = "send_chat/to_server";
-  pub = nn->advertise<chat_client::select_msg>(select_group_str, 1000); //std_input topic
+  string send_chat_str = "send_chat/to_server";
+  pub = nn->advertise<chat_client::send_chat_msg>(send_chat_str, 1000); //std_input topic
+  ros::Duration(0.5).sleep();
+  chat_client::send_chat_msg msg;
+  msg.node_id=node_id;
+  msg.id=id;
+  msg.group=group;
+  msg.msg=buffer;
+  pub.publish(msg);
+  state=5;
 }
 
 int main(int argc, char **argv)
@@ -178,8 +198,7 @@ int main(int argc, char **argv)
   // string exit_res_str="login_response/to_"+node_id;
   // ros::Subscriber exit_response_sub = n.subscribe(exit_res_str, 1000, exit_response_Callback);
 
-  // string spread_chat_str="login_response/to_"+node_id;
-  // ros::Subscriber spread_chat_sub = n.subscribe(spread_chat_str, 1000, spread_chat_Callback);
+  
 
   ros::Rate loop_rate(10);  //loop rate
 
