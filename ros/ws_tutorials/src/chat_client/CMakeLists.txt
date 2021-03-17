@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs genmsg)
 
 ## Declare ROS messages and services
-add_message_files(FILES chatting.msg group.msg stdi.msg login_msg.msg response.msg)
+add_message_files(FILES chatting.msg group.msg stdi.msg login_msg.msg response.msg want_list_msg.msg give_list_msg.msg)
 
 ## Generate added messages and services
 generate_messages(DEPENDENCIES std_msgs)

@@ -4,23 +4,26 @@
 #include "chat_client/chatting.h"  //chat msg
 #include "chat_client/login_msg.h"
 #include "chat_client/response.h"
+#include "chat_client/want_list_msg.h"
+#include "chat_client/give_list_msg.h"
 
 #include <sstream>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <map>
 using namespace std;
 
 string node_name; //자신의 이름
 
 vector<vector<string>> login_info;
-vector<vector<string>> group_info;
+map<string,vector<string>> group_info;
 
 ros::NodeHandle* nn;
 
 ros::Publisher login_response_pub;
-//ros::Publisher login_response_pub; //std_input topic
+ros::Publisher give_list_pub;
 
 
 void login_Callback(const chat_client::login_msg& lmsg) //채팅 받았을 때의 콜백
@@ -51,6 +54,32 @@ void login_Callback(const chat_client::login_msg& lmsg) //채팅 받았을 때�
       cout << "login success :" << temp[0] << " " << temp[1] << endl;
     }
 }
+
+void want_list_Callback(const chat_client::want_list_msg& msg){
+  map<string,vector<string>>::iterator iter;
+  iter=group_info.find(msg.id);
+  string give_list_msg="";
+  if(iter != group_info.end()){
+      vector<string> temp=iter->second;
+      for(int i=0; i<temp.size(); i++){
+        give_list_msg = give_list_msg + temp[i];
+        if(i!=temp.size()-1)
+          give_list_msg = give_list_msg + ",";
+      }
+  }
+  else{
+      vector<string> temp;
+      group_info.insert( pair<string, vector<string>>(msg.id, temp) );
+  }
+  string str_temp="give_list/to_"+msg.node_id;
+  give_list_pub= nn->advertise<chat_client::give_list_msg>(str_temp, 1000);
+  ros::Duration(1.0).sleep();
+  chat_client::give_list_msg msg_temp;
+  msg_temp.list_group=give_list_msg;
+  give_list_pub.publish(msg_temp);
+  cout<<"send give list to "<<msg.node_id<< " : "<<give_list_msg<<endl;
+
+}
 /**
  * This tutorial demonstrates simple sending of messages over the ROS system.
  */
@@ -64,11 +93,17 @@ int main(int argc, char **argv)
   vector<string> temp;
   temp.push_back("id");
   temp.push_back("pw");
-  
   login_info.push_back(temp);
+
+  vector<string> group_temp;
+  group_temp.push_back("group1");
+  group_temp.push_back("group2");
+  group_info.insert(pair<string, vector<string>>("id",group_temp));
+
   cout<<login_info[0][0]<<" "<<login_info[0][1]<<endl;
 
   ros::Subscriber login = n.subscribe("login/to_server", 1000, login_Callback);  //listener-> callback함수를 통해 화면에 출력
+  ros::Subscriber give_list = n.subscribe("want_list/to_server", 1000, want_list_Callback);  //listener-> callback함수를 통해 화면에 출력
 
 
 
