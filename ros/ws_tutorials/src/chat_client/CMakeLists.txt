@@ -10,22 +10,21 @@ project(chat_client)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-  message_generation
 )
 
 
 ## Find catkin and any catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs genmsg)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs genmsg message_generation)
 
 ## Declare ROS messages and services
 add_message_files(FILES stdi.msg login_msg.msg response.msg want_list_msg.msg select_msg.msg exit_group_msg.msg give_list_msg.msg spread_chat_msg.msg send_chat_msg.msg connect_msg.msg)
 
 ## Generate added messages and services
-generate_messages(DEPENDENCIES std_msgs)
+generate_message(DEPENDENCIES std_msgs)
 
 ## Declare a catkin package
 catkin_package(
- CATKIN_DEPENDS message_runtime
+ CATKIN_DEPENDS message_runtime message_generation
 )
 
 ## Build talker and listener

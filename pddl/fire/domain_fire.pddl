@@ -36,6 +36,7 @@
 (:functions ;todo: define numeric functions here
     (distance ?r - route)
     (fire-size ?ac -accident)
+    (fire1)
 )
 
 

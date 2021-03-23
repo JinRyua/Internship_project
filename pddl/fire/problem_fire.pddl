@@ -34,6 +34,8 @@
     (=(fire-size acc2)4)
     (=(fire-size acc3)2)
 
+    (=(fire1) 1)
+
     (ing-fire acc1)
     (ing-fire acc2)
     (ing-fire acc3)

@@ -4,3 +4,6 @@
 ros/ws_tutorials/build/*
 ros/ws_tutorials/devel/*
 .vscode/*
+ROSPlan/*
+!ROSPlan/src/rosplan/new_Interface/*
+
