@@ -35,14 +35,16 @@ find_package(FLEX REQUIRED)
 # Disable deprecated declarations warning (about std::auto_ptr)
 add_definitions(-Wno-deprecated-declarations)
 
-add_message_files(FILES action_feedback.msg order_msg.msg)
+add_message_files(FILES order_msg.msg order_feedback.msg
+)
 
-generate_messages(DEPENDENCIES std_msgs)
+generate_messages(DEPENDENCIES std_msgs diagnostic_msgs)
 
 
 ## Declare things to be passed to dependent projects
 catkin_package(
   INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
+  LIBRARIES new_Interface
   CATKIN_DEPENDS roscpp rospy actionlib std_msgs std_srvs diagnostic_msgs
                  rosplan_dispatch_msgs rosplan_knowledge_msgs roslib rostest message_runtime message_generation genmsg
   DEPENDS
@@ -53,10 +55,36 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(agent_manager src/agent_manager.cpp)
+add_dependencies(agent_manager ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(agent_manager ${catkin_LIBRARIES})
 
 add_executable(car_interface src/car_interface.cpp)
+add_dependencies(car_interface ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(car_interface ${catkin_LIBRARIES})
+
+#add_executable(ActionInterface src/SimulatedActionInterface.cpp src/ActionInterface.cpp)
+#add_dependencies(ActionInterface ${PROJECT_NAME}_generate_messages_cpp)
+#target_link_libraries(ActionInterface ${catkin_LIBRARIES})
+
+
+#add_library(action_interface src/ActionInterface.cpp)
+#add_dependencies(action_interface ${catkin_EXPORTED_TARGETS})
+
+#install(TARGETS action_interface ActionInterface
+##  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#)
+
+#install(DIRECTORY include/${PROJECT_NAME}/
+#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#  PATTERN ".svn" EXCLUDE
+#)
+
+#install(DIRECTORY include/new_Interface
+#  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+##  PATTERN ".svn" EXCLUDE
+#)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

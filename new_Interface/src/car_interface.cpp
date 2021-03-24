@@ -180,12 +180,23 @@ vector<string> split(string str, char delimiter); //문자열을 vector로 나�
 
 #include "rosplan_dispatch_msgs/ActionDispatch.h"
 #include "rosplan_dispatch_msgs/ActionFeedback.h"
-#include "new_Interface/action_feedback.h"
 #include "new_Interface/order_msg.h"
+#include "new_Interface/order_feedback.h"
+
+ros::Publisher order_feedback;
 
 void order_Callback(const new_Interface::order_msg& msg){
-
+  new_Interface::order_feedback msg_temp;
+  msg_temp.status = "action enabled";
+  order_feedback.publish(msg_temp);
+  if(msg.duration > 0) {
+    ros::Rate wait = 1.0 / msg.duration;
+    wait.sleep();
+  }
+  msg_temp.status = "action achieved";
+  order_feedback.publish(msg_temp);
 }
+
 
 int main(int argc, char **argv){
   ros::init(argc, argv, "car_interface");
@@ -193,16 +204,13 @@ int main(int argc, char **argv){
 
   node_id = ros::this_node::getName(); //자신의 노드 이름 확인
   int point = node_id.find("/", 10);   //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
-  node_id = node_id.substr(point + 1);  //노드 이름 저장
+  node_id = node_id.substr(point + 2);  //노드 이름 저장
 
   cout<<node_id<<endl;
 
-  ros::Publisher action_feedback = n.advertise<rosplan_dispatch_msgs::ActionFeedback>("/new_Interface/feedback_order", 1000);                  
+  order_feedback = n.advertise<new_Interface::order_feedback>("/agent_manager/feedback_order", 1000);                  
 
-  ros::Subscriber order_action = n.subscribe("/new_Interface/order"+node_id, 1000, order_Callback); //get_input/to_node_id 키보드 입력을 받는 sub
-  
- 
-
+  ros::Subscriber order_action = n.subscribe("/agent_manager/order/to_"+node_id, 1000, order_Callback); //get_input/to_node_id 키보드 입력을 받는 sub
 
   ros::spin();
 		
