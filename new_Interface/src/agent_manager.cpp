@@ -10,6 +10,8 @@
 #include <string>
 #include <stdlib.h>
 #include <unistd.h>
+#include <chrono>
+#include <cstdlib>
 
 using namespace std;
 
@@ -32,6 +34,7 @@ vector<string> split(string str, char delimiter); //문자열을 vector로 나�
 
 ros::Publisher dispatch_feedback;
 ros::ServiceClient update_knowledge_client;
+string node_name;
 
 struct oper_info{
 	std::map<std::string, rosplan_knowledge_msgs::DomainFormula> predicates;
@@ -54,6 +57,7 @@ int matrix[7][7]={{0, 1, 1, 3, 2, 4, 5},
               {4, 4, 2, 3, 2, 0, 1},
               {5, 3, 5, 2, 1, 1, 0}};
 map<string, int> key_place;
+map<string, vector<int>> place_vector;
 
 void write_launch(vector<string>& f);
 void make_node_name(string&);  //publisher_name에서 node_id를 추출
@@ -61,71 +65,101 @@ void init_oper();
 void update_start(string);
 void update_end(string);
 
+chrono::milliseconds millisec_start_time;
+double time(){
+	auto time = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()) - millisec_start_time;
+	return double(time.count())/1000;
+}
 
-
+void print_log(string func,string str){
+	cout<< "[";
+	cout.width(9);cout.fill(' ');cout<<fixed;cout.precision(3);
+	cout<<time()<<"][";
+	cout.width(13);cout.fill(' ');
+	cout<<node_name<<"][";
+	cout.width(17);cout.fill(' ');
+	cout<<func<<"] ( "<<str<<" )"<<endl;
+}
 
 
 void order_feedback_Callback(const ros::MessageEvent<new_Interface::order_feedback>& msg){
   string node_id = msg.getPublisherName();    //subcribe를 받았을 때 event의 publisher를 가져옴
   make_node_name(node_id);    //publisher에서 node_id 추출
-
   new_Interface::order_feedback::ConstPtr data = msg.getConstMessage(); //login_msg 데이터 가져옴
   rosplan_dispatch_msgs::ActionFeedback temp;
   temp.action_id = agent_action[node_id].action_id;
   temp.status = data -> status;
+  string parameter_temp = to_string(temp.action_id) + " " + temp.status;
+  print_log("order_feedback", "received order feedback from " + node_id + " [ " + parameter_temp + " ]");
+
 
   if(temp.status == "action achieved"){
     update_end(node_id);
-    ROS_INFO("KCL: agent_manager update_knowledge at end");
+	ros::spinOnce();
     dispatch_feedback.publish(temp);
-    ROS_INFO("KCL: agent_manager publish achieved");
+	print_log("dispatch_feedback", "publish dispatch feedback [ " + parameter_temp + " ]");
   }
   else if(temp.status == "action enabled"){
     dispatch_feedback.publish(temp);
     ros::spinOnce();
-    ROS_INFO("KCL: agent_manager publish enabled");
+	print_log("dispatch_feedback", "publish dispatch feedback [ " + parameter_temp + " ]");
     update_start(node_id);
-    ROS_INFO("KCL: agent_manager update_knowledge at start");
   }
 }
 
 void Dispatch_Callback(const rosplan_dispatch_msgs::ActionDispatch& msg){
   
+  print_log("Dispatch_callback", "received Dispatch : " + to_string(msg.action_id) + " [" + msg.name + "]");
   vector<diagnostic_msgs::KeyValue> temp = msg.parameters;
   vector<diagnostic_msgs::KeyValue>::iterator it;
   if(msg.name == "cancel_action") {
       return;
   }
-  string node_name;
+  string node_id;
   for( it = temp.begin(); it != temp.end(); it++){
     if(it->key == "x" || it->key == "c"){
-      node_name = it->value;
-      cout<<node_name<<endl;
+      node_id = it->value;
       break;
     }
   }
-  agent_action[node_name] = msg;
+  agent_action[node_id] = msg;
   new_Interface::order_msg msg_temp;
+  std::string parameter_temp = " ";
+  string from, to; 
   if(msg.name == "move"){
-    string from, to;
     for( it = temp.begin(); it != temp.end(); it++){
+
       if(it->key == "from")
         from = it->value;
       if(it->key == "to")
         to = it->value;
+
+	  parameter_temp+= it->value+" ";
     }
     msg_temp.duration = matrix[ key_place[from] ][ key_place[to] ];
   }
   else
-    msg_temp.duration = msg.duration;
-  cout<<node_name<<" published"<<endl;
-  agent_pub[node_name].publish(msg_temp);
+  msg_temp.duration = msg.duration;
+  msg_temp.name = msg.name;
+  if(msg.name == "move"){
+  	msg_temp.x= place_vector[to][0];
+  	msg_temp.y= place_vector[to][1];
+  }
+  
+  agent_pub[node_id].publish(msg_temp);
+  print_log("order/to_car_name","order publish to " + node_id + " ["+parameter_temp+"]");
+  
 
 }
 
 int main(int argc, char **argv){
   ros::init(argc, argv, "agent_manager");
   ros::NodeHandle n; //node handler
+  millisec_start_time = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch());
+
+  node_name = ros::this_node::getName(); //자신의 노드 이름 확인
+  int point = node_name.find("/", 10);   //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
+  node_name = node_name.substr(point + 2);  //노드 이름 저장
 
   std::string kb; //= "knowledge_base";
 	n.getParam("knowledge_base", kb);
@@ -166,7 +200,6 @@ int main(int argc, char **argv){
  
   for(int i=0; i<firecarIns.size(); i++){
     ros::Publisher temp_pub = n.advertise<new_Interface::order_msg>("/agent_manager/order/to_"+firecarIns[i], 1000);
-    cout<<"/agent_manager/order/to_"<<firecarIns[i]<<endl;
     agent_pub.insert( pair<string, ros::Publisher>{ firecarIns[i], temp_pub} );
   }
 
@@ -178,20 +211,27 @@ int main(int argc, char **argv){
   key_place.insert( pair< string, int >{"fst2", 5});
   key_place.insert( pair< string, int >{"hos2", 6});
 
+  for( map<string,int>::iterator it = key_place.begin();it!=key_place.end();it++){
+  	vector<int> point_temp;
+  	point_temp.clear();
+  	point_temp.push_back(rand()%40);
+  	point_temp.push_back(rand()%40);
+  	place_vector.insert( pair< string, vector<int>>( it->first, point_temp));
+  }
+
   init_oper();
 
   ROS_INFO("%d",agent_pub.size());
 
-  write_launch(firecarIns);
-  //execlp("roslaunch","roslaunch","/home/jylee/ROSPlan/node.launch",NULL);
+  write_launch(firecarIns);		//instance들을 가지고 launch 파일 작성
   system("roslaunch /home/jylee/ROSPlan/node.launch &");
-  //ShellExecute(NULL,"roslaunch","/home/jylee/ROSPlan/node.launch &");
-  cout<<"hi"<<endl;
+  
+  print_log("init","ready for start");		//준비 완료
 
   ros::Rate loopRate(1);
-	ros::AsyncSpinner spinner(4);
+  ros::AsyncSpinner spinner(4);		//다중 스레드 사용
   spinner.start();
-  ros::waitForShutdown();
+  ros::waitForShutdown();		//끝날때까지 대기 -> spin()
 
   //ros::spin();
 
@@ -221,9 +261,10 @@ void write_launch(vector<string>& f){
 
     wf<<"<!-- arguments -->"<<endl;
     wf<<"<arg name=\"pddl_action_name\" />"<<endl
+	    <<"<arg name=\"manager_start_time\"		default=\""<<millisec_start_time.count()<<"a\" />"<<endl
 	    <<"<arg name=\"action_duration\"		default=\"-1.0\" />"<<endl
-      <<"<arg name=\"action_duration_stddev\"		default=\"0.0\" />"<<endl
-      <<"<arg name=\"action_probability\"	default=\"1.0\" />"<<endl
+      	<<"<arg name=\"action_duration_stddev\"		default=\"0.0\" />"<<endl
+      	<<"<arg name=\"action_probability\"	default=\"1.0\" />"<<endl
     	<<"<arg name=\"knowledge_base\"		default=\"rosplan_knowledge_base\" />"<<endl
 	    <<"<arg name=\"action_dispatch_topic\"	default=\"/rosplan_plan_dispatcher/action_dispatch\" />"<<endl
 	    <<"<arg name=\"order_feedback_topic\"	default=\"/rosplan_plan_dispatcher/order_feedback\" />"<<endl;
@@ -231,15 +272,17 @@ void write_launch(vector<string>& f){
 
       wf<<"<node name=\""<<f[i]<<"\" pkg=\"new_Interface\" type=\"car_interface\" respawn=\"false\" output=\"screen\">"<<endl;
       wf<<"<param name=\"knowledge_base\"		 value=\"$(arg knowledge_base)\" />"<<endl
+		    <<"<param name=\"manager_start_time\"		 value=\"$(arg manager_start_time)\" />"<<endl
 		    <<"<param name=\"action_duration\"		 value=\"$(arg action_duration)\" />"<<endl
 		    <<"<param name=\"action_duration_stddev\" value=\"$(arg action_duration_stddev)\" />"<<endl
 		    <<"<param name=\"action_probability\"	 value=\"$(arg action_probability)\" />"<<endl;
 		    wf<<"</node>"<<endl;
     }
-    
     wf<<"</launch>"; 
     wf.close();
   }
+
+  print_log(__func__,"launch"); //log 출력
 }
 
 void init_oper(){
@@ -264,7 +307,6 @@ void init_oper(){
 		}
 		
 		for(int i = 0; i < opNames.size(); i++){
-			//std::cout<<opNames[i].name<<std::endl;
 			ss.str("");
 			ss << "/" << kb << "/domain/operator_details";
 			ros::service::waitForService(ss.str(),ros::Duration(20));
@@ -437,6 +479,9 @@ void update_start(string node_id){
 
 	if(updatePredSrv.request.knowledge.size()>0 && !update_knowledge_client.call(updatePredSrv))
 		ROS_INFO("KCL: (%s) failed to update PDDL model in knowledge base", params.name.c_str());
+
+	std::string parameter_temp = agent_action[node_id].name + " " + to_string(agent_action[node_id].action_id);
+	print_log("update_start", "update at start by " + node_id + " [ "+parameter_temp+" ]");
 }
 
 
@@ -511,10 +556,12 @@ void update_end(string node_id){
 
 	if(updatePredSrv.request.knowledge.size()>0 && !update_knowledge_client.call(updatePredSrv))
 		ROS_INFO("KCL: (%s) failed to update PDDL model in knowledge base", params.name.c_str());
+	
+	std::string parameter_temp = agent_action[node_id].name + " " + to_string(agent_action[node_id].action_id);
+	print_log("update_start", "update at start by " + node_id + " [ "+parameter_temp+" ]");
 }
 
 void make_node_name(string& name){
   int point = name.find("/", 10);   //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
   name = name.substr(point + 2);
-  
 }
