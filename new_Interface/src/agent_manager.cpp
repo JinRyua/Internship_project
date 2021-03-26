@@ -94,16 +94,20 @@ void order_feedback_Callback(const ros::MessageEvent<new_Interface::order_feedba
 
 
   if(temp.status == "action achieved"){
+	dispatch_feedback.publish(temp);
+	ros::spinOnce();
     update_end(node_id);
 	ros::spinOnce();
-    dispatch_feedback.publish(temp);
 	print_log("dispatch_feedback", "publish dispatch feedback [ " + parameter_temp + " ]");
   }
   else if(temp.status == "action enabled"){
-    dispatch_feedback.publish(temp);
-    ros::spinOnce();
+
 	print_log("dispatch_feedback", "publish dispatch feedback [ " + parameter_temp + " ]");
     update_start(node_id);
+	ros::spinOnce();
+	dispatch_feedback.publish(temp);
+	ros::spinOnce();
+
   }
 }
 
@@ -558,7 +562,7 @@ void update_end(string node_id){
 		ROS_INFO("KCL: (%s) failed to update PDDL model in knowledge base", params.name.c_str());
 	
 	std::string parameter_temp = agent_action[node_id].name + " " + to_string(agent_action[node_id].action_id);
-	print_log("update_start", "update at start by " + node_id + " [ "+parameter_temp+" ]");
+	print_log("update_start", "update at end by " + node_id + " [ "+parameter_temp+" ]");
 }
 
 void make_node_name(string& name){

@@ -108,57 +108,34 @@
     )
 )
 
-(:durative-action resque_human
+(:action resque_human
     :parameters (?x -resque ?bd -accident)
-    :duration (= ?duration 0.001)
-    :condition (and 
-        (at start (and 
-            (at-building ?x ?bd)
-            (exist-injure ?bd)
-            (empty-car ?x)
-            (not-acting ?x)
-        ))
+    :precondition (and 
+        (at-building ?x ?bd)
+        (exist-injure ?bd)
+        (empty-car ?x)
     )
     :effect (and 
-        (at start (and 
-            (acting ?x)
-            (not(not-acting ?x))
-        ))
-        (at end (and 
-            (not(acting ?x))
-            (not-acting ?x)
-            (not(exist-injure ?bd))
-            (not-injure ?bd)
-            (injure-resque ?x)
-            (not(empty-car ?x))  
-        ))
+        (not(exist-injure ?bd))
+        (not-injure ?bd)
+        (injure-resque ?x)
+        (not(empty-car ?x))    
     )
 )
 
-(:durative-action put_human
+(:action put_human
     :parameters (?x - resque ?bd -hosp)
-    :duration (= ?duration 0.001)
-    :condition (and 
-        (at start (and 
-            (at-building ?x ?bd)
-            (injure-resque ?x)
-            (my-hospital ?x ?bd)
-            (not-acting ?x)
-        ))
+    :precondition (and 
+        (at-building ?x ?bd)
+        (injure-resque ?x)
+        (my-hospital ?x ?bd)
     )
     :effect (and 
-        (at start (and 
-            (acting ?x)
-            (not(not-acting ?x))
-        ))
-        (at end (and 
-            (not(acting ?x))
-            (not-acting ?x)
-            (not(injure-resque ?x))
-            (empty-car ?x)
-        ))
+        (not(injure-resque ?x))
+        (empty-car ?x)
     )
 )
+
 
 
 ;define actions here

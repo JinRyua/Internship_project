@@ -80,14 +80,13 @@ void order_Callback(const new_Interface::order_msg& msg){
   while(1){
     if(msg.name == "move"){
       double start_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
-      cout <<std::setprecision(9)<<start_time/1000000000<<endl;
+      //cout <<std::setprecision(9)<<start_time/1000000000<<endl;
         //위치 계산
 
       double mount_x = dis_x / distance; //거리 1당 변하는 x 크기
       double mount_y = dis_y / distance; //거리 1당 변하는 y 크기
       mount_x = (mount_x * per_hour * act_time) + x;
       mount_y = (mount_y * per_hour * act_time) + y;
-      cout<<x<<" "<<mount_x<<" "<<y<<" "<<mount_y<<" "<<endl;
       if( (xx - mount_x) * (xx - x) < 0)
         x = xx;
       else
@@ -98,24 +97,21 @@ void order_Callback(const new_Interface::order_msg& msg){
         y = mount_y;
     
       
-      print_log("matrix", to_string(x)+", "+to_string(y));
+      //print_log("matrix", to_string(x)+", "+to_string(y));
     
       double finish_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
       double rate = (double)(act_time * 1000000000 - (finish_time - start_time)) / 1000000000;
-      cout<<rate<<endl;
       if(rate > 0){
         ros::Rate wait = 1 / rate;
         wait.sleep();
         act_time = 0.023;
       }
       else{
-        cout<<act_time<<" "<<rate<<endl;
         act_time = rate;
       }
       std_msgs::Empty msgg;
       give_matrix.publish(msgg);
-      cout<<act_time<<endl;
-      cout<<x<<" "<<y<<endl;
+      ros::spinOnce();
       if( x == xx && y == yy){
         break;
       }
@@ -132,6 +128,7 @@ void order_Callback(const new_Interface::order_msg& msg){
       }
       std_msgs::Empty msgg;
       give_matrix.publish(msgg);
+      ros::spinOnce();
       if(i>10)
         break;
     }
@@ -139,9 +136,11 @@ void order_Callback(const new_Interface::order_msg& msg){
   state = false;
    std_msgs::Empty msgg;
   give_matrix.publish(msgg);
+  ros::spinOnce();
 
   msg_temp.status = "action achieved";
   order_feedback.publish(msg_temp);
+  ros::spinOnce();
   print_log("order_feedback", "publish to manager : " + msg_temp.status);
 }
 
