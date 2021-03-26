@@ -36,15 +36,39 @@ vector<string> split(string str, char delimiter); //문자열을 vector로 나�
 #include "new_Interface/order_feedback.h"
 #include "new_Interface/matrix.h"
 #include "new_Interface/GetInstanceMatrixService.h"
+#include "new_Interface/display_msg.h"
 
 ros::Publisher order_feedback;
 ros::ServiceClient get_instance_matrix_client;
 
+#define IDLE 0
+#define MOVING 1
+#define EXTINGUISH 2
+#define EXTINGUISH_FINISH 3
+#define RESQUE 4
+#define PUT_HUMAN 5
+
+
+
 double x = 0;
 double y = 0;
+double xx, yy;
+double past_x = 0;
+double past_y = 0;
 double per_hour = 2;
 double act_time = 0.023;
+double twinkle_time = 0;
+bool end_action = false;
+int agent_state = 0;
+int light_count = 0;
 bool state = false;
+
+void start_agent();
+void moving();
+void extinguish();
+void extinguish_finish();
+void resque();
+void put_human();
 
 chrono::milliseconds::rep manager_start_time;
 double time(){
@@ -67,86 +91,23 @@ void order_Callback(const new_Interface::order_msg& msg){
   order_feedback.publish(msg_temp);
   print_log("order_callback","subscribe from manager : " + msg_temp.status + " and start action");
   
-  double xx, yy;
-  double dis_x;
-  double dis_y;
-  double distance;
-  int i=0;
-  if(msg.name == "move"){
-    
-    xx= msg.x;
-    yy= msg.y;
-    dis_x = xx - x;
-    dis_y = yy - y;
-    distance = sqrt( pow((xx - x), 2) / pow((yy - y), 2) ) / 1; //거리
-  }
-  while(1){
-    if(msg.name == "move"){
-      double start_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
-      //cout <<std::setprecision(9)<<start_time/1000000000<<endl;
-        //위치 계산
+  if(msg.name == "move"){ agent_state = MOVING;}
+  else if(msg.name == "extinguish"){ agent_state = EXTINGUISH;}
+  else if(msg.name == "extinguish_finish"){ agent_state = EXTINGUISH_FINISH;}
+  else if(msg.name == "resque_human"){ agent_state = RESQUE;}
+  else if(msg.name == "put_human"){ agent_state = PUT_HUMAN;}
 
-      double mount_x = dis_x / distance; //거리 1당 변하는 x 크기
-      double mount_y = dis_y / distance; //거리 1당 변하는 y 크기
-      mount_x = (mount_x * per_hour * act_time) + x;
-      mount_y = (mount_y * per_hour * act_time) + y;
-      if( (xx - mount_x) * (xx - x) < 0)
-        x = xx;
-      else
-        x = mount_x;
-      if( (yy - mount_y) * (yy - y) < 0)
-        y = yy;
-      else
-        y = mount_y;
-    
-      
-      //print_log("matrix", to_string(x)+", "+to_string(y));
-    
-      double finish_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
-      double rate = (double)(act_time * 1000000000 - (finish_time - start_time)) / 1000000000;
-      if(rate > 0){
-        ros::Rate wait = 1 / rate;
-        wait.sleep();
-        act_time = 0.023;
-      }
-      else{
-        act_time = rate;
-      }
-      std_msgs::Empty msgg;
-      give_matrix.publish(msgg);
-      ros::spinOnce();
-      if( x == xx && y == yy){
-        break;
-      }
-    }
-    else{
-      double start_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
-      state = !state;
-      i++;
-      double finish_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
-      double rate = (double)(0.5 * 1000000000 - (finish_time - start_time)) / 1000000000;
-      if(rate > 0){
-        ros::Rate wait = 1 / rate;
-        wait.sleep();
-      }
-      std_msgs::Empty msgg;
-      give_matrix.publish(msgg);
-      ros::spinOnce();
-      if(i>10)
-        break;
-    }
+  if(msg.name != "move"){
+    twinkle_time = 0;
+    light_count = 0;
   }
-  state = false;
-   std_msgs::Empty msgg;
-  give_matrix.publish(msgg);
-  ros::spinOnce();
-
-  msg_temp.status = "action achieved";
-  order_feedback.publish(msg_temp);
-  ros::spinOnce();
-  print_log("order_feedback", "publish to manager : " + msg_temp.status);
+  else{
+    xx = msg.x + 1;
+    yy = msg.y + 1;
+    past_x = x;
+    past_y = y;
+  }
 }
-
 
 int main(int argc, char **argv){
   ros::init(argc, argv, "car_interface");
@@ -174,17 +135,20 @@ int main(int argc, char **argv){
 		return 0;
 	}
 
-  give_matrix = n.advertise<std_msgs::Empty>("/car/display",1000);
+  give_matrix = n.advertise<new_Interface::display_msg>("/car/display",1000);
 
   order_feedback = n.advertise<new_Interface::order_feedback>("/agent_manager/feedback_order", 1000);                  
 
   ros::Subscriber order_action = n.subscribe("/agent_manager/order/to_"+node_id, 1000, order_Callback); //get_input/to_node_id 키보드 입력을 받는 sub
 
   print_log("init", "ready for start");
-  
- 
 
-  ros::spin();
+  per_hour=per_hour/2;
+  start_agent();
+  
+  
+
+  //ros::spin();
 		
   return 0;
 }
@@ -201,4 +165,107 @@ vector<string> split(string input, char delimiter)
   }
 
   return answer;
+}
+      
+void start_agent(){
+
+  int i=0;
+  twinkle_time = 0;
+  while(1){
+    ros::spinOnce();
+    sleep(0);
+    if(agent_state == IDLE){ continue;}
+
+    double start_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
+  
+    if(agent_state == MOVING) { moving(); }
+    else if(agent_state == EXTINGUISH){ extinguish();}
+    else if(agent_state == EXTINGUISH_FINISH){ extinguish_finish();}
+    else if(agent_state == RESQUE){ resque();}
+    else if(agent_state == PUT_HUMAN){ put_human();}
+    
+    //위치 계산
+    double finish_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
+    double rate = (double)(act_time * 1000000000 - (finish_time - start_time)) / 1000000000;
+    if (rate > 0){
+      ros::Rate wait = 1 / rate;
+      wait.sleep();
+      if (rate >= 0.023)
+        act_time = act_time - rate;
+      if (act_time < 0.023)
+        act_time = 0.023;
+    }
+    else{
+      act_time = act_time - rate;
+    }
+    twinkle_time += act_time;
+    
+    new_Interface::display_msg msgg;
+    msgg.mat.x = x;
+    msgg.mat.y = y;
+    if (end_action == true)
+      state = false;
+    msgg.state = state;
+    give_matrix.publish(msgg);
+    ros::spinOnce();
+
+    if (end_action == true){
+      new_Interface::order_feedback msg_temp;
+      msg_temp.status = "action achieved";
+      order_feedback.publish(msg_temp);
+      ros::spinOnce();
+      agent_state = IDLE;
+      end_action = false;
+      print_log("order_feedback", "publish to manager : " + msg_temp.status);
+    }
+  }
+}
+
+void moving(){
+
+  double dis_x;
+  double dis_y;
+  double distance;
+  dis_x = xx - past_x;
+  dis_y = yy - past_y;
+  double start_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
+  //cout <<std::setprecision(9)<<start_time/1000000000<<endl;
+  //위치 계산
+  distance = sqrt( pow((dis_x), 2) + pow((dis_y), 2) ); //거리
+  double mount_x = dis_x / distance; //거리 1당 변하는 x 크기
+  double mount_y = dis_y / distance; //거리 1당 변하는 y 크기
+  mount_x = (mount_x * per_hour * act_time) + x;
+  mount_y = (mount_y * per_hour * act_time) + y;
+  if ((xx - mount_x) * (xx - x) < 0)
+    x = xx;
+  else
+    x = mount_x;
+  if ((yy - mount_y) * (yy - y) < 0)
+    y = yy;
+  else
+    y = mount_y;
+  if (x == xx && y == yy){
+    end_action = true;
+  }
+  cout<< x<< " "<<y<<endl;
+}
+
+void extinguish(){
+  if( twinkle_time >= 1){
+    state = !state;
+    twinkle_time = 0;
+    light_count++;
+  }
+  if( light_count >= 10)
+    end_action = true;
+}
+
+void extinguish_finish(){
+  extinguish();
+}
+void resque(){
+  extinguish();
+}
+void put_human(){
+  extinguish();
 }

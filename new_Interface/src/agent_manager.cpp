@@ -177,33 +177,34 @@ int main(int argc, char **argv){
   node_name = node_name.substr(point + 2);  //노드 이름 저장
 
   std::string kb; //= "knowledge_base";
-	n.getParam("knowledge_base", kb);
+  n.getParam("knowledge_base", kb);
 
-		std::stringstream ss;
-		ss << "/rosplan_knowledge_base/state/instances";
-		ros::service::waitForService(ss.str(),ros::Duration(20));
-		ros::ServiceClient client = n.serviceClient<rosplan_knowledge_msgs::GetInstanceService>(ss.str());
-		rosplan_knowledge_msgs::GetInstanceService srv;
-		srv.request.type_name = "firecar";
-		std::vector<std::string> firecarIns;
-		if(client.call(srv)) {
-			firecarIns = srv.response.instances;
-		} else {
-			ROS_ERROR("KCL: (RPActionInterface) could not call Knowledge Base for instances, firecar");
-			return 0;
-		}
+  std::stringstream ss;
+  ss << "/rosplan_knowledge_base/state/instances";
+  ros::service::waitForService(ss.str(), ros::Duration(20));
+  ros::ServiceClient client = n.serviceClient<rosplan_knowledge_msgs::GetInstanceService>(ss.str());
+  rosplan_knowledge_msgs::GetInstanceService srv;
+  srv.request.type_name = "firecar";
+  std::vector<std::string> firecarIns;
+  if (client.call(srv)){
+	  firecarIns = srv.response.instances;
+  }
+  else{
+	  ROS_ERROR("KCL: (RPActionInterface) could not call Knowledge Base for instances, firecar");
+	  return 0;
+  }
 
-		std::vector<std::string> resqueIns;
-    srv.request.type_name = "resque";
-    if(client.call(srv)) {
-			resqueIns = srv.response.instances;
-		} else {
-			ROS_ERROR("KCL: (RPActionInterface) could not call Knowledge Base for instances, resque");
-			return 0;
-		}
+  std::vector<std::string> resqueIns;
+  srv.request.type_name = "resque";
+  if (client.call(srv)){
+	  resqueIns = srv.response.instances;
+  }
+  else{
+	  ROS_ERROR("KCL: (RPActionInterface) could not call Knowledge Base for instances, resque");
+	  return 0;
+  }
 
-    
-    //server에 관한 publisher
+	//server에 관한 publisher
   dispatch_feedback = n.advertise<rosplan_dispatch_msgs::ActionFeedback>("/rosplan_plan_dispatcher/action_feedback", 1000);                  
 
   ros::Subscriber dispatch_action = n.subscribe("/rosplan_plan_dispatcher/action_dispatch", 1000, Dispatch_Callback); //get_input/to_node_id 키보드 입력을 받는 sub
@@ -246,6 +247,7 @@ int main(int argc, char **argv){
 	point_temp.push_back(place_vector[ start_building[firecarIns[i]] ][1]);
 	place_vector.insert(pair<string, vector<int>>(firecarIns[i], point_temp));
   }
+  
 
   init_oper();
 
@@ -309,6 +311,11 @@ void write_launch(vector<string>& f){
 		    <<"<param name=\"velocity\"	 value=\""<< to_string(velocity) <<"\" />"<<endl;
 		    wf<<"</node>"<<endl;
     }
+	wf<<"<node name=\""<<"display"
+		<<"\" pkg=\"new_Interface\" type=\"display_interface\" respawn=\"false\""
+		<<" output=\"screen\" launch-prefix=\"gnome-terminal --geometry 100x39+100+39 -e\">"<<endl;
+    wf<<"<param name=\"knowledge_base\"		 value=\"$(arg knowledge_base)\" />"<<endl;
+	wf<<"</node>"<<endl;
     wf<<"</launch>"; 
     wf.close();
   }

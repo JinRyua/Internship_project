@@ -35,7 +35,7 @@ find_package(FLEX REQUIRED)
 # Disable deprecated declarations warning (about std::auto_ptr)
 add_definitions(-Wno-deprecated-declarations)
 
-add_message_files(FILES order_msg.msg order_feedback.msg matrix.msg
+add_message_files(FILES order_msg.msg order_feedback.msg matrix.msg display_msg.msg
 )
 
 add_service_files(
@@ -67,6 +67,9 @@ add_executable(car_interface src/car_interface.cpp)
 add_dependencies(car_interface ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(car_interface ${catkin_LIBRARIES})
 
+add_executable(display_interface src/display_interface.cpp)
+add_dependencies(display_interface ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(display_interface ${catkin_LIBRARIES})
 #add_executable(ActionInterface src/SimulatedActionInterface.cpp src/ActionInterface.cpp)
 #add_dependencies(ActionInterface ${PROJECT_NAME}_generate_messages_cpp)
 #target_link_libraries(ActionInterface ${catkin_LIBRARIES})
