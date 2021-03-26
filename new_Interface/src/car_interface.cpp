@@ -34,14 +34,17 @@ vector<string> split(string str, char delimiter); //문자열을 vector로 나�
 #include "rosplan_dispatch_msgs/ActionFeedback.h"
 #include "new_Interface/order_msg.h"
 #include "new_Interface/order_feedback.h"
+#include "new_Interface/matrix.h"
+#include "new_Interface/GetInstanceMatrixService.h"
 
 ros::Publisher order_feedback;
+ros::ServiceClient get_instance_matrix_client;
+
 double x = 0;
 double y = 0;
 double per_hour = 2;
 double act_time = 0.023;
 bool state = false;
-      
 
 chrono::milliseconds::rep manager_start_time;
 double time(){
@@ -154,10 +157,22 @@ int main(int argc, char **argv){
 	n.getParam(str_time, temp_time);
   temp_time.pop_back();
   manager_start_time = stol(temp_time);
+  n.getParam("velocity", per_hour);
 
   node_id = ros::this_node::getName(); //자신의 노드 이름 확인
   int point = node_id.find("/", 10);   //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
   node_id = node_id.substr(point + 2);  //노드 이름 저장
+
+  get_instance_matrix_client = n.serviceClient<new_Interface::GetInstanceMatrixService>("/agent_manager/Get_Instance_Matrix");
+  new_Interface::GetInstanceMatrixService srv;
+	srv.request.instance_name = node_id;
+	if(get_instance_matrix_client.call(srv)) {
+    x = srv.response.point.x;
+    y = srv.response.point.y;
+	} else {
+		ROS_ERROR("KCL: (RPActionInterface) could not call Agent_manager_Instance_Service");
+		return 0;
+	}
 
   give_matrix = n.advertise<std_msgs::Empty>("/car/display",1000);
 

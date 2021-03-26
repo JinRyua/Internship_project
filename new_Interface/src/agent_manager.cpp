@@ -29,11 +29,14 @@ using namespace std;
 #include "rosplan_knowledge_msgs/GetInstanceService.h"
 #include "new_Interface/order_msg.h"
 #include "new_Interface/order_feedback.h"
+#include "new_Interface/matrix.h"
+#include "new_Interface/GetInstanceMatrixService.h"
 
 vector<string> split(string str, char delimiter); //문자열을 vector로 나누기 위한 함수
 
 ros::Publisher dispatch_feedback;
 ros::ServiceClient update_knowledge_client;
+ros::ServiceServer Get_Instance_Matrix_Server;
 string node_name;
 
 struct oper_info{
@@ -48,6 +51,7 @@ struct oper_info{
 map<string, ros::Publisher> agent_pub;
 map<string, rosplan_dispatch_msgs::ActionDispatch> agent_action;
 std::map<std::string, struct oper_info> operator_info;
+map<string, string> start_building;
 
 int matrix[7][7]={{0, 1, 1, 3, 2, 4, 5},
               {1, 0, 1, 2, 4, 4, 3},
@@ -156,6 +160,13 @@ void Dispatch_Callback(const rosplan_dispatch_msgs::ActionDispatch& msg){
 
 }
 
+bool returnMatrix(new_Interface::GetInstanceMatrixService::Request& req, new_Interface::GetInstanceMatrixService::Response& res){
+	string InsName = req.instance_name;
+	res.point.x = place_vector[InsName][0];
+	res.point.y = place_vector[InsName][1];
+	return true;
+}
+
 int main(int argc, char **argv){
   ros::init(argc, argv, "agent_manager");
   ros::NodeHandle n; //node handler
@@ -201,7 +212,7 @@ int main(int argc, char **argv){
   
   firecarIns.insert( firecarIns.end(), resqueIns.begin(), resqueIns.end() );
 
- 
+  Get_Instance_Matrix_Server = n.advertiseService("/agent_manager/Get_Instance_Matrix", returnMatrix);
   for(int i=0; i<firecarIns.size(); i++){
     ros::Publisher temp_pub = n.advertise<new_Interface::order_msg>("/agent_manager/order/to_"+firecarIns[i], 1000);
     agent_pub.insert( pair<string, ros::Publisher>{ firecarIns[i], temp_pub} );
@@ -215,12 +226,25 @@ int main(int argc, char **argv){
   key_place.insert( pair< string, int >{"fst2", 5});
   key_place.insert( pair< string, int >{"hos2", 6});
 
-  for( map<string,int>::iterator it = key_place.begin();it!=key_place.end();it++){
-  	vector<int> point_temp;
-  	point_temp.clear();
-  	point_temp.push_back(rand()%40);
-  	point_temp.push_back(rand()%40);
-  	place_vector.insert( pair< string, vector<int>>( it->first, point_temp));
+  for (map<string, int>::iterator it = key_place.begin(); it != key_place.end(); it++){
+	vector<int> point_temp;
+	point_temp.clear();
+	point_temp.push_back(rand() % 40);
+	point_temp.push_back(rand() % 40);
+	place_vector.insert(pair<string, vector<int>>(it->first, point_temp));
+  }
+
+  start_building.insert( pair< string, string>("firecar1", "fst1"));
+  start_building.insert( pair< string, string>("firecar2", "fst2"));
+  start_building.insert( pair< string, string>("rescar1", "hos1"));
+  start_building.insert( pair< string, string>("rescar2", "hos2"));
+
+  for( int i = 0; i < firecarIns.size(); i++){
+	vector<int> point_temp;
+	point_temp.clear();
+	point_temp.push_back(place_vector[ start_building[firecarIns[i]] ][0] + 1);	//건물 옆
+	point_temp.push_back(place_vector[ start_building[firecarIns[i]] ][1]);
+	place_vector.insert(pair<string, vector<int>>(firecarIns[i], point_temp));
   }
 
   init_oper();
@@ -273,13 +297,16 @@ void write_launch(vector<string>& f){
 	    <<"<arg name=\"action_dispatch_topic\"	default=\"/rosplan_plan_dispatcher/action_dispatch\" />"<<endl
 	    <<"<arg name=\"order_feedback_topic\"	default=\"/rosplan_plan_dispatcher/order_feedback\" />"<<endl;
     for(int i=0;i<f.size();i++){
-
-      wf<<"<node name=\""<<f[i]<<"\" pkg=\"new_Interface\" type=\"car_interface\" respawn=\"false\" output=\"screen\">"<<endl;
-      wf<<"<param name=\"knowledge_base\"		 value=\"$(arg knowledge_base)\" />"<<endl
+		float velocity = rand() % 3;
+		if(velocity < 1.5)
+			velocity += 1.5;
+      	wf<<"<node name=\""<<f[i]<<"\" pkg=\"new_Interface\" type=\"car_interface\" respawn=\"false\" output=\"screen\">"<<endl;
+      	wf<<"<param name=\"knowledge_base\"		 value=\"$(arg knowledge_base)\" />"<<endl
 		    <<"<param name=\"manager_start_time\"		 value=\"$(arg manager_start_time)\" />"<<endl
 		    <<"<param name=\"action_duration\"		 value=\"$(arg action_duration)\" />"<<endl
 		    <<"<param name=\"action_duration_stddev\" value=\"$(arg action_duration_stddev)\" />"<<endl
-		    <<"<param name=\"action_probability\"	 value=\"$(arg action_probability)\" />"<<endl;
+		    <<"<param name=\"action_probability\"	 value=\"$(arg action_probability)\" />"<<endl
+		    <<"<param name=\"velocity\"	 value=\""<< to_string(velocity) <<"\" />"<<endl;
 		    wf<<"</node>"<<endl;
     }
     wf<<"</launch>"; 

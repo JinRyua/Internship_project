@@ -35,7 +35,12 @@ find_package(FLEX REQUIRED)
 # Disable deprecated declarations warning (about std::auto_ptr)
 add_definitions(-Wno-deprecated-declarations)
 
-add_message_files(FILES order_msg.msg order_feedback.msg
+add_message_files(FILES order_msg.msg order_feedback.msg matrix.msg
+)
+
+add_service_files(
+  FILES
+  GetInstanceMatrixService.srv
 )
 
 generate_messages(DEPENDENCIES std_msgs diagnostic_msgs)
