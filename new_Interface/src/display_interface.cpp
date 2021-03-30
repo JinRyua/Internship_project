@@ -57,6 +57,8 @@ int main(int argc, char **argv){
 
     sleep(0);
     double start_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
+    ros::spinOnce();
+
     display();
 
     double finish_time = chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count();
@@ -64,16 +66,9 @@ int main(int argc, char **argv){
     if (rate > 0){
       ros::Rate wait = 1 / rate;
       wait.sleep();
-      if (rate >= 1)
-        act_time = act_time - rate;
-      if (act_time < 1)
-        act_time = 1;
-    }
-    else{
-      act_time = act_time - rate;
     }
 
-    ros::spinOnce();
+    
   }
   //ros::spin();
 		
@@ -186,6 +181,7 @@ void display(){
   for( map<string, struct inst>::iterator it = Instances.begin();
       it != Instances.end(); it++){
         string shape;
+        if(it->second.state==false)
          screen[ it->second.y*101 + it->second.x]= it->second.shape;
         // cout<<"\033["<<(int)it->second.y<<"d\033["<<(int)it->second.x<<"G";
         // cout<<"F";

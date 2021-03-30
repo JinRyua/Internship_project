@@ -226,13 +226,14 @@ int main(int argc, char **argv){
   key_place.insert( pair< string, int >{"acc3", 4});
   key_place.insert( pair< string, int >{"fst2", 5});
   key_place.insert( pair< string, int >{"hos2", 6});
-
+  srand(time(NULL));
   for (map<string, int>::iterator it = key_place.begin(); it != key_place.end(); it++){
 	vector<int> point_temp;
 	point_temp.clear();
-	point_temp.push_back(rand() % 40);
-	point_temp.push_back(rand() % 40);
+	point_temp.push_back(rand() % 90);
+	point_temp.push_back(rand() % 38);
 	place_vector.insert(pair<string, vector<int>>(it->first, point_temp));
+	cout<<point_temp[0]<<" : "<<point_temp[1]<<endl;
   }
 
   start_building.insert( pair< string, string>("firecar1", "fst1"));
