@@ -37,6 +37,7 @@
     (distance ?r - route)
     (fire-size ?ac -accident)
     (fire1)
+    (total)
 )
 
 

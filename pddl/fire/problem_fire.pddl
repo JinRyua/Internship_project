@@ -17,7 +17,9 @@
     (at-building firecar1 fst1)
     (at-building rescar1 hos1)
     (at-building firecar2 fst2)
-    (at-building rescar2 hos2)
+    (at-building rescar2 acc1)
+    
+    (at 2(at-building rescar2 acc1))
 
     (empty-car rescar1)
     (empty-car rescar2)
