@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ROSPlan/install
-
-Name: rosplan_planning_system
-Description: Description of rosplan_planning_system
-Version: 0.0.0
-Cflags: -I${prefix}/include -I/home/jylee/jylee/ROSPlan/devel/.private/rosplan_dispatch_msgs/include -I/home/jylee/jylee/ROSPlan/devel/.private/rosplan_knowledge_msgs/include -I/opt/ros/melodic/include -I/opt/ros/melodic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include
-Libs: -L${prefix}/lib -lrosplan_planning_system -lrosplan_action_interface
-Requires: roscpp rospy actionlib std_msgs std_srvs diagnostic_msgs rosplan_dispatch_msgs rosplan_knowledge_msgs

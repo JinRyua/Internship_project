@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ROSPlan/devel/.private/rosplan_rqt
-
-Name: rosplan_rqt
-Description: Description of rosplan_rqt
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

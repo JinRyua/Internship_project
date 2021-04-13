@@ -1,8 +1,0 @@
-# generated from catkin/cmake/template/pkg.context.pc.in
-CATKIN_PACKAGE_PREFIX = ""
-PROJECT_PKG_CONFIG_INCLUDE_DIRS = "/home/jylee/jylee/ROSPlan/devel/.private/Display/include".split(';') if "/home/jylee/jylee/ROSPlan/devel/.private/Display/include" != "" else []
-PROJECT_CATKIN_DEPENDS = "".replace(';', ' ')
-PKG_CONFIG_LIBRARIES_WITH_PREFIX = "".split(';') if "" != "" else []
-PROJECT_NAME = "Display"
-PROJECT_SPACE_DIR = "/home/jylee/jylee/ROSPlan/devel/.private/Display"
-PROJECT_VERSION = "0.0.0"

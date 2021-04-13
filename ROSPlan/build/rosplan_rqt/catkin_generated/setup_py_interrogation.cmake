@@ -1,7 +1,0 @@
-set(rosplan_rqt_SETUP_PY_SETUP_MODULE "distutils.core")
-set(rosplan_rqt_SETUP_PY_VERSION "0.0.0")
-set(rosplan_rqt_SETUP_PY_SCRIPTS "")
-set(rosplan_rqt_SETUP_PY_PACKAGES "rosplan_rqt")
-set(rosplan_rqt_SETUP_PY_PACKAGE_DIRS "src/rosplan_rqt")
-set(rosplan_rqt_SETUP_PY_MODULES "")
-set(rosplan_rqt_SETUP_PY_MODULE_DIRS "")

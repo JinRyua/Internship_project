@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ROSPlan/devel/.private/Board
-
-Name: Board
-Description: Description of Board
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

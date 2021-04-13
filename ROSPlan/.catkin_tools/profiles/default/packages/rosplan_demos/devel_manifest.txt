@@ -1,2 +1,0 @@
-ROSPlan/rosplan_demos
-/home/jylee/jylee/ROSPlan/devel/.private/rosplan_demos/cmake.lock /home/jylee/jylee/ROSPlan/devel/./cmake.lock

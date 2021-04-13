@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ROSPlan/install
-
-Name: rosplan_interface_movebase
-Description: Description of rosplan_interface_movebase
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib -lrosplan_interface_movebase
-Requires: roscpp rospy std_msgs std_srvs actionlib rosplan_dispatch_msgs rosplan_knowledge_msgs mongodb_store diagnostic_msgs rosplan_planning_system

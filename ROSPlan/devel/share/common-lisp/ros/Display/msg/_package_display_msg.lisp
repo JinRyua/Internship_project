@@ -1,1 +1,0 @@
-/home/jylee/jylee/ROSPlan/devel/.private/Display/share/common-lisp/ros/Display/msg/_package_display_msg.lisp

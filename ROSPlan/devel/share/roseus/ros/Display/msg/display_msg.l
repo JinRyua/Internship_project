@@ -1,1 +1,0 @@
-/home/jylee/jylee/ROSPlan/devel/.private/Display/share/roseus/ros/Display/msg/display_msg.l

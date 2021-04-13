@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ROSPlan/devel/.private/rosplan_interface_mapping
-
-Name: rosplan_interface_mapping
-Description: Description of rosplan_interface_mapping
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib -lrosplan_interface_mapping
-Requires: roscpp rospy std_msgs rosplan_knowledge_msgs nav_msgs mongodb_store geometry_msgs diagnostic_msgs visualization_msgs tf

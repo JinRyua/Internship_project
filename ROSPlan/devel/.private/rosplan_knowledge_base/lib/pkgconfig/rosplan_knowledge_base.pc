@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ROSPlan/devel/.private/rosplan_knowledge_base
-
-Name: rosplan_knowledge_base
-Description: Description of rosplan_knowledge_base
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib -lrosplan_knowledge_base
-Requires: roscpp rospy std_msgs std_srvs rosplan_knowledge_msgs nav_msgs mongodb_store geometry_msgs diagnostic_msgs visualization_msgs tf

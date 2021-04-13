@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ROSPlan/devel/.private/occupancy_grid_utils
-
-Name: occupancy_grid_utils
-Description: Description of occupancy_grid_utils
-Version: 0.0.10
-Cflags: -I/home/jylee/jylee/ROSPlan/devel/.private/occupancy_grid_utils/include -I/home/jylee/jylee/ROSPlan/src/ROSPlan/occupancy_grid_utils/include
-Libs: -L${prefix}/lib -lgrid_utils
-Requires: nav_msgs geometry_msgs sensor_msgs laser_geometry roscpp rospy tf tf2_bullet message_runtime

@@ -1,8 +1,0 @@
-prefix=/home/jylee/jylee/ROSPlan/install
-
-Name: Display
-Description: Description of Display
-Version: 0.0.0
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: 

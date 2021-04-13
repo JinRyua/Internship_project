@@ -1,1 +1,0 @@
-/home/jylee/jylee/ROSPlan/devel/.private/rosplan_rqt/lib/pkgconfig/rosplan_rqt.pc
