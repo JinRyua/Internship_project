@@ -1,0 +1,6 @@
+devel_space: /home/jylee/jylee/ROSPlan/devel
+install: false
+install_space: /home/jylee/jylee/ROSPlan/install
+profile: default
+source_space: /home/jylee/jylee/ROSPlan/src
+workspace: /home/jylee/jylee/ROSPlan

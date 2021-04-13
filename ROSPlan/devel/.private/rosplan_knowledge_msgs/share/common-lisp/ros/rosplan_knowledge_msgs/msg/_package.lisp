@@ -1,0 +1,19 @@
+(cl:defpackage rosplan_knowledge_msgs-msg
+  (:use )
+  (:export
+   "<DOMAINASSIGNMENT>"
+   "DOMAINASSIGNMENT"
+   "<DOMAINFORMULA>"
+   "DOMAINFORMULA"
+   "<DOMAININEQUALITY>"
+   "DOMAININEQUALITY"
+   "<DOMAINOPERATOR>"
+   "DOMAINOPERATOR"
+   "<EXPRBASE>"
+   "EXPRBASE"
+   "<EXPRCOMPOSITE>"
+   "EXPRCOMPOSITE"
+   "<KNOWLEDGEITEM>"
+   "KNOWLEDGEITEM"
+  ))
+

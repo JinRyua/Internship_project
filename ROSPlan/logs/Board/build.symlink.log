@@ -1,0 +1,8 @@
+Linked: (/home/jylee/jylee/ROSPlan/devel/.private/Board/share/Board/cmake/BoardConfig-version.cmake, /home/jylee/jylee/ROSPlan/devel/share/Board/cmake/BoardConfig-version.cmake)
+Linked: (/home/jylee/jylee/ROSPlan/devel/.private/Board/share/Board/cmake/BoardConfig.cmake, /home/jylee/jylee/ROSPlan/devel/share/Board/cmake/BoardConfig.cmake)
+Symlinking /home/jylee/jylee/ROSPlan/devel/share/Board/cmake/Board-msg-paths.cmake
+Symlinking /home/jylee/jylee/ROSPlan/devel/share/Board/cmake/Board-msg-extras.cmake
+Symlinking /home/jylee/jylee/ROSPlan/devel/share/roseus/ros/Board/manifest.l
+Linked: (/home/jylee/jylee/ROSPlan/devel/.private/Board/lib/pkgconfig/Board.pc, /home/jylee/jylee/ROSPlan/devel/lib/pkgconfig/Board.pc)
+Symlinking /home/jylee/jylee/ROSPlan/devel/lib/python2.7/dist-packages/Board/__init__.py
+Symlinking /home/jylee/jylee/ROSPlan/devel/lib/Board/Board

@@ -1,0 +1,8 @@
+prefix=/home/jylee/jylee/ROSPlan/devel/.private/Display
+
+Name: Display
+Description: Description of Display
+Version: 0.0.0
+Cflags: -I/home/jylee/jylee/ROSPlan/devel/.private/Display/include
+Libs: -L${prefix}/lib 
+Requires: 

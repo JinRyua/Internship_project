@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+<!-- arguments -->
+	<arg name="display_name"	default="Display/display" />
+	<arg name="exit_name"	default="Board/exit_call" />
+<!-- arguments -->
+	<!-- knowledge base -->
+	<node name="Display" pkg="Display" type="Display" respawn="false" output="screen">
+		<param name="display_name" value="$(arg display_name)" />
+		<param name="exit_name" value="$(arg exit_name)" />
+	</node>
+
+
+
+</launch>

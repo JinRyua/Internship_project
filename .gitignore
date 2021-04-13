@@ -7,3 +7,6 @@ ros/ws_tutorials/devel/*
 !ROSPlan/src/rosplan/new_Interface/*
 rosplan/new/
 !rosplan/new/aa
+rosplan/build/
+rosplan/devel/
+rosplan/logs/

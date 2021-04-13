@@ -1,0 +1,16 @@
+WARNING: Package name "Display" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+WARNING: Package name "Board" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+WARNING: Package name "Display" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+WARNING: Package name "new_Interface" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+WARNING: Package name "Display" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+WARNING: Package name "Board" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+WARNING: Package name "Display" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+WARNING: Package name "new_Interface" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+WARNING: Package name "Display" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+[01m[K/home/jylee/jylee/ROSPlan/src/Custom/Display/src/display.cpp:[m[K In constructor ‘[01m[KCustom::Display_Interface::Display_Interface(ros::NodeHandle&)[m[K’:
+[01m[K/home/jylee/jylee/ROSPlan/src/Custom/Display/src/display.cpp:12:23:[m[K [01;31m[Kerror: [m[Kcannot convert ‘[01m[Kros::NodeHandle[m[K’ to ‘[01m[Kros::NodeHandle*[m[K’ in assignment
+         node_handle = [01;31m[Knh[m[K;
+                       [01;31m[K^~[m[K
+make[2]: *** [CMakeFiles/Display.dir/src/display.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Display.dir/all] Error 2
+make: *** [all] Error 2

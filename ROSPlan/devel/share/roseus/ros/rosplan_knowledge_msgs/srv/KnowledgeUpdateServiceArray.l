@@ -1,0 +1,1 @@
+/home/jylee/jylee/ROSPlan/devel/.private/rosplan_knowledge_msgs/share/roseus/ros/rosplan_knowledge_msgs/srv/KnowledgeUpdateServiceArray.l
