@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(Board)
+project(board)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -8,23 +8,32 @@ find_package(catkin REQUIRED COMPONENTS
   genmsg
   actionlib
   message_generation
+  rosplan_knowledge_msgs
+  custom_msgs
 )
 
 add_message_files(FILES )
 
+add_service_files(
+  FILES
+  ask_map_size.srv
+)
+
 generate_messages(DEPENDENCIES std_msgs)
+
+
 
 catkin_package(
   INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp rospy actionlib std_msgs message_generation message_runtime genmsg actionlib
+  CATKIN_DEPENDS roscpp rospy actionlib std_msgs message_generation message_runtime genmsg actionlib rosplan_knowledge_msgs custom_msgs
   DEPENDS
 )
 
 
-add_executable(Board src/board.cpp)
-add_dependencies(Board ${catkin_EXPORTED_TARGETS})
-target_link_libraries(Board ${catkin_LIBRARIES})
+add_executable(board src/board.cpp)
+add_dependencies(board ${catkin_EXPORTED_TARGETS})
+target_link_libraries(board ${catkin_LIBRARIES})
 
 include_directories(
 # include

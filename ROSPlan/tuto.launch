@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 <!-- arguments -->
-	<arg name="domain_path"	default="/home/jylee/jylee/pddl/fire/domain_fire.pddl" />
-	<arg name="problem_path"	default="/home/jylee/jylee/pddl/fire/problem_fire.pddl" />
+	<arg name="domain_path"	default="/home/jylee/jylee/ROSPlan/domain_pacman.pddl" />
+	<arg name="problem_path"	default="/home/jylee/jylee/ROSPlan/problem_pacman.pddl" />
 <!-- arguments -->
 	<arg name="node_name"                default="rosplan_plan_dispatcher" />
 	<arg name="knowledge_base"           default="rosplan_knowledge_base" />
