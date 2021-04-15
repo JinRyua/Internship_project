@@ -1,49 +1,22 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(board)
+project(cranberry_topic)
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  std_msgs
-  genmsg
-  actionlib
-  message_generation
-  rosplan_knowledge_msgs
-  custom_msgs
-  
-)
-
-add_message_files(FILES 
-  display_info.msg
-)
-
-add_service_files(
-  FILES
-  ask_map_size.srv
-)
-
-generate_messages(DEPENDENCIES std_msgs custom_msgs)
-
-
-
+find_package(catkin REQUIRED COMPONENTS message_generation std_msgs roscpp)
+ 
+add_service_files(FILES CommLight.srv)
+ 
+generate_messages(DEPENDENCIES std_msgs)
+ 
 catkin_package(
-  INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
-  LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp rospy actionlib std_msgs message_generation message_runtime genmsg actionlib rosplan_knowledge_msgs custom_msgs 
-  DEPENDS
-)
-
-
-add_executable(board src/board.cpp)
-add_dependencies(board ${catkin_EXPORTED_TARGETS})
-target_link_libraries(board ${catkin_LIBRARIES})
-
-include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
-)
-include_directories(include)
-
+LIBRARIES cranberry_topic
+CATKIN_DEPENDS std_msgs roscpp message_runtime)
+ 
+include_directories(${catkin_INCLUDE_DIRS})
+ 
+add_executable(comm_light_server src/comm_light_server.cpp)
+add_dependencies(comm_light_server ${${PROJECT_NAME}_EXPORTED_TARGETS}
+${catkin_EXPORTED_TARGETS})
+target_link_libraries(comm_light_server ${catkin_LIBRARIES})
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -101,7 +74,7 @@ include_directories(include)
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   std_msgs  # Or other packages containing msgs
 # )
 
 ################################################
@@ -135,8 +108,8 @@ include_directories(include)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES Board
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  LIBRARIES cranberry_topic
+#  CATKIN_DEPENDS message_runtime roscpp std_msg
 #  DEPENDS system_lib
 )
 
@@ -153,7 +126,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/Board.cpp
+#   src/${PROJECT_NAME}/cranberry_topic.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -164,7 +137,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/Board_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/cranberry_topic_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -228,7 +201,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_Board.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_cranberry_topic.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

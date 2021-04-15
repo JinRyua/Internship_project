@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   board
 )
 
-add_message_files(FILES display_info.msg)
+add_message_files(FILES)
 
 generate_messages(DEPENDENCIES std_msgs custom_msgs)
 
