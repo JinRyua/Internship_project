@@ -1,4 +1,4 @@
 # axis
-int32 row
-int32 col
+float64 row
+float64 col
 int32 direction

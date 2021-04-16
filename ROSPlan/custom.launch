@@ -15,12 +15,12 @@
 		<param name="exit_name" value="$(arg exit_name)" />
 	</node>
 	-->
-	<node name="display" pkg="display" type="display" respawn="false"
- 		output="screen" launch-prefix="gnome-terminal --geometry 21x28+21+28 -e">
+	<!--<node name="display" pkg="display" type="display" respawn="false"
+ 		output="screen" launch-prefix="gnome-terminal -geometry 21x28+21+28 -e">
 		<param name="display_name" value="$(arg display_name)" />
 		<param name="exit_name" value="$(arg exit_name)" />
 	</node>
-
+	-->
 
 
 

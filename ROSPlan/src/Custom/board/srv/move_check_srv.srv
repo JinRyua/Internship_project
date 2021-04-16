@@ -1,0 +1,4 @@
+# move_check
+int32 want_direction
+---
+int32 direction

@@ -33,17 +33,17 @@ var iLightClient = new ROSLIB.Service({
 var listener = new ROSLIB.Topic({
   ros : ros,
   name : '/listener',
-  messageType : 'std_msgs/Int32'
+  messageType : 'custom_msgs/axis'
 });
 
 listener.subscribe(function(message) {
-  console.log('Received message on ' + listener.name + ': ' + message.data);
+  console.log('Received message on ' + listener.name + ': ' + message.row);
   listener.unsubscribe();
 });
  
 var state = 0;
  
-var canvas = document.getElementById("myCanvas");
+var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
 ctx.beginPath();

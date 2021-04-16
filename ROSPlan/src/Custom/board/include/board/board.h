@@ -2,6 +2,12 @@
 #include "custom_msgs/axis.h"
 #include "custom_msgs/map.h"
 #include "board/ask_map_size.h"
+#include "board/ask_agent_srv.h"
+#include "board/move_check_srv.h"
+#include "board/set_ai_loc_msg.h"
+#include "board/player_act_msg.h"
+#include "board/select_menu_msg.h"
+#include "std_msgs/Empty.h"
 
 
 #include <utility>
@@ -18,6 +24,12 @@
 
 #define IN_MENU 0
 #define IN_GAME 1
+
+#define LEFT 1
+#define UP 2
+#define RIGHT 3
+#define DOWN 4
+
 namespace Custom
 {
     class Board
@@ -40,16 +52,25 @@ namespace Custom
 
         std::vector<custom_msgs::axis> init_player; //플레이어 초기상태
         std::vector<custom_msgs::axis> player;      //플레이어 현 상태
+        bool in_grid;
 
         int life;       //목숨
         int score;      //점수
 
         std::vector<std::pair<custom_msgs::axis, bool>> init_agents;    //AI 초기상태
         std::vector<std::pair<custom_msgs::axis, bool>> agents;         //AI 현상태
-
+        
         std::vector<std::vector<std::string>> init_map;     //초기 맵
         std::vector<std::vector<std::string>> map;          //현 맵
 
+        std::vector<custom_msgs::axis> block;
+
+        
+        std::vector<custom_msgs::axis> scookies;
+        std::vector<custom_msgs::axis> lcookies;
+        std::vector<custom_msgs::axis> init_scookies;
+        std::vector<custom_msgs::axis> init_lcookies;
+        
         std::vector<std::vector<std::string>> menu;          //메뉴 맵
 
         std::vector<custom_msgs::axis> menu_axis; //start, end 좌표
@@ -62,12 +83,29 @@ namespace Custom
         ~Board();
         //run board
         void run_board();
+
         //publisher
         ros::Publisher display_pub;
+        ros::Publisher state_response_pub;
+        ros::Publisher exit_call_pub;
+        std::vector<ros::Publisher> set_AI_pub;
+        ros::Publisher reset_AI_pub;
+        ros::Publisher change_state_pub;
+        ros::Publisher set_player_pub;
         //select_
 
         //service
         bool ask_map_size_callback(board::ask_map_size::Request& req, board::ask_map_size::Response& res);
+        bool ask_agent_srv_callback(board::ask_agent_srv::Request& req, board::ask_agent_srv::Response& res);
+        bool move_check_srv_callback(board::move_check_srv::Request& req, board::move_check_srv::Response& res);
+
+        //sub callback
+        void ask_state_callback(const ros::MessageEvent<std_msgs::Empty>& msg);
+        void select_menu_callback(const board::select_menu_msg& msg);
+        void player_action_callback(const board::player_act_msg& msg);
+        void set_ai_loc_callback(const ros::MessageEvent<board::set_ai_loc_msg>& msg);
+        
+        
 
 
     };

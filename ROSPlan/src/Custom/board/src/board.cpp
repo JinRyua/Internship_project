@@ -2,11 +2,16 @@
 #include "rosplan_knowledge_msgs/GetInstanceService.h"
 #include "rosplan_knowledge_msgs/GetAttributeService.h"
 #include "board/display_info.h"
+#include "board/game_state_msg.h"
+#include "board/set_ai_msg.h"
+#include "board/change_state_msg.h"
+#include "board/reset_ai_msg.h"
 
 
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <algorithm>
 
 using namespace std;
 
@@ -21,11 +26,33 @@ namespace Custom{
 
         life = 3;
         score = 0;
+        in_grid = true;
         
         //set publisher
-        std::string display_topic = "/display/display";
+        std::string display_topic = "/board/display";
         nh.getParam("display_name", display_topic);
         display_pub = nh.advertise<board::display_info>(display_topic, 1000);
+
+        std::string set_player_topic = "/board/set_player";
+        nh.getParam("set_player_name", set_player_topic);
+        set_player_pub = nh.advertise<board::set_ai_loc_msg>(set_player_topic, 1000);
+
+
+        std::string state_response_topic = "/board/state_response";
+        nh.getParam("state_response_name", state_response_topic);
+        state_response_pub = nh.advertise<board::game_state_msg>(state_response_topic, 1000);
+
+        std::string exit_call_topic = "/board/exit_call";
+        nh.getParam("exit_call_name", exit_call_topic);
+        ros::Publisher exit_call_pub = nh.advertise<std_msgs::Empty>(exit_call_topic, 1000);
+
+        std::string reset_AI_pub_topic = "/board/reset_ai";
+        nh.getParam("reset_ai_name", reset_AI_pub_topic);
+        ros::Publisher reset_AI_pub = nh.advertise<board::reset_ai_msg>(reset_AI_pub_topic, 1000);
+
+        std::string change_state_pub_topic = "/board/change_state";
+        nh.getParam("change_state_name", change_state_pub_topic);
+        ros::Publisher change_state_pub = nh.advertise<board::change_state_msg>(change_state_pub_topic, 1000);
 
         kb = "/rosplan_knowledge_base/"; // "knowledge_base";
         nh.getParam("knowledge_base", kb);
@@ -80,6 +107,17 @@ namespace Custom{
         }
         else{
         }
+
+        for(int i = 0; i < agent_names.size(); i++){
+            std::string set_ai_topic = "/board/set_ai/to_" + agent_names[i];
+            ros::Publisher set_AI_pub_temp = nh.advertise<board::display_info>(set_ai_topic, 1000);
+            set_AI_pub.push_back(set_AI_pub_temp);
+        }
+
+
+        std::string set_ai_topic = "/board/set_ai";
+        nh.getParam("set_ai_name", set_ai_topic);
+        ros::Publisher set_AI_pub = nh.advertise<board::set_ai_msg>(set_ai_topic, 1000);
 
         ss.str("");
         ss << kb << "state/propositions";
@@ -159,6 +197,7 @@ namespace Custom{
                 ax.row = stoi(temp_str.substr(5, temp_point - 5));
                 ax.col = stoi(temp_str.substr(temp_point + 1));
                 init_map[ax.row - 1][ax.col - 1] = "■";
+                block.push_back(ax);
             }
         }
 
@@ -180,6 +219,7 @@ namespace Custom{
                 int temp_point = temp_str.find("_");
                 ax.row = stoi(temp_str.substr(5, temp_point - 5));
                 ax.col = stoi(temp_str.substr(temp_point + 1));
+                scookies.push_back(ax);
                 init_map[ax.row - 1][ax.col - 1] = "·";
             }
         }
@@ -202,11 +242,14 @@ namespace Custom{
                 int temp_point = temp_str.find("_");
                 ax.row = stoi(temp_str.substr(5, temp_point - 5));
                 ax.col = stoi(temp_str.substr(temp_point + 1));
+                lcookies.push_back(ax);
                 init_map[ax.row - 1][ax.col - 1] = "●";
             }
         }
 
         map = init_map;
+        init_lcookies = lcookies;
+        init_scookies = scookies;
     }
 
     Board::~Board() 
@@ -240,10 +283,20 @@ namespace Custom{
             display_temp.agents_axis = agent_temp;
             display_temp.ghost = ghost_temp;
 
+            //display wall(block)
+            display_temp.block = block;
+            //display cookies
+            display_temp.scookies_loc = scookies;
+            display_temp.lcookies_loc = lcookies;
             //display score
             display_temp.score = score;
             //display life
-            display_temp.life = life;       
+            display_temp.life = life;
+            //display selecting_menu
+            display_temp.selecting_menu = selecting_menu;   
+            //display map_row_col
+            display_temp.map_row = map_row;
+            display_temp.map_col = map_col;    
         }
         else if(game_state == IN_MENU){
             //display map
@@ -258,9 +311,187 @@ namespace Custom{
         display_pub.publish(display_temp);
     }
 
+    //service callback 들 
     bool Board::ask_map_size_callback(board::ask_map_size::Request& req, board::ask_map_size::Response& res){
         res.row = map_row;
         res.col = map_col;
+    }
+
+    bool Board::ask_agent_srv_callback(board::ask_agent_srv::Request &req, board::ask_agent_srv::Response &res){
+        //return agent_names
+        res.agents_name = agent_names;
+        return true;
+    }
+    bool Board::move_check_srv_callback(board::move_check_srv::Request &req, board::move_check_srv::Response &res){
+        //move check
+        if((player[0].direction + req.want_direction) % 2 != 0){
+            if(in_grid == false){
+                res.direction = player[0].direction;
+                return true;
+            }
+            else if(in_grid == true){
+                int player_row = player[0].row;
+                int player_col = player[0].col;
+                cout<<player_row<<" "<<player_col<<endl;
+                if(req.want_direction == LEFT){ player_col--;}
+                else if(req.want_direction == RIGHT){ player_col++;}
+                else if(req.want_direction == UP){ player_row--;}
+                else if(req.want_direction == DOWN){ player_row++;}
+
+                if(map[player_row-1][player_col-1] == "■"){ }
+                else{
+                    res.direction = req.want_direction;
+                    return true;
+                }
+
+            }
+        }
+        else if(player[0].direction != req.want_direction){
+            res.direction = req.want_direction;
+            return true;
+        }
+        else if(in_grid == true){
+            int player_row = player[0].row;
+            int player_col = player[0].col;
+            if(player[0].direction == LEFT){ player_col--;}
+            else if(player[0].direction == RIGHT){ player_col++;}
+            else if(player[0].direction == UP){ player_row--;}
+            else if(player[0].direction == DOWN){ player_row++;}
+
+            if(map[player_row-1][player_col-1] == "■"){ }
+            else{
+                res.direction = req.want_direction;
+                return true;
+            }  
+        }
+        
+        int player_row = player[0].row;
+        int player_col = player[0].col;
+        int direction_now = player[0].direction;
+
+        if(direction_now == LEFT){ player_col--;}
+        else if(direction_now == RIGHT){ player_col++;}
+        else if(direction_now == UP){ player_row--;}
+        else if(direction_now == DOWN){ player_row++;}
+         
+        if(map[player_row-1][player_col-1] != "■"){
+            res.direction = direction_now;
+            return true;
+        }
+        
+        
+        player_row = player[0].row;
+        player_col = player[0].col;
+        int direction_left = player[0].direction - 1;
+        if(direction_left == 0) direction_left = 4;
+        int direction_right = player[0].direction + 1;
+        if(direction_right == 0) direction_right = 1;
+
+        if(direction_left == LEFT){ player_col--;}
+        else if(direction_left == RIGHT){ player_col++;}
+        else if(direction_left == UP){ player_row--;}
+        else if(direction_left == DOWN){ player_row++;}
+         
+        if(map[player_row-1][player_col-1] != "■"){
+            res.direction = direction_left;
+            return true;
+        }
+        
+        player_row = player[0].row;
+        player_col = player[0].col;
+        if(direction_right == LEFT){ player_col--;}
+        else if(direction_right == RIGHT){ player_col++;}
+        else if(direction_right == UP){ player_row--;}
+        else if(direction_right == DOWN){ player_row++;}
+      
+        if(map[player_row-1][player_col-1] != "■"){
+            res.direction = direction_right;
+            return true;
+        }
+        return false;
+    }
+
+    //sub callback
+    void Board::ask_state_callback(const ros::MessageEvent<std_msgs::Empty>& msg){
+        const std::string& publisher_name = msg.getPublisherName(); //get publisher name
+        board::game_state_msg temp;
+        temp.player_axis = player;
+        temp.lcookies_loc = lcookies;
+
+        vector<custom_msgs::map> map_temp2;
+        custom_msgs::map map_temp;
+        //make map -> custom_msgs/map
+        for (int i = 0; i < map.size(); i++){
+            map_temp.value = map[i];
+            map_temp2.push_back(map_temp);
+        }
+        temp.map = map_temp2;
+        //make agent
+        std::vector<custom_msgs::axis> agent_temp;
+        std::vector<int> ghost_temp;
+        for (int i = 0; i < agents.size(); i++){
+            agent_temp.push_back(agents[i].first);
+            ghost_temp.push_back(agents[i].second);
+        }
+        temp.agents_axis = agent_temp;
+
+        state_response_pub.publish(temp);
+
+        return;
+    }
+    void Board::select_menu_callback(const board::select_menu_msg& msg){
+        if(msg.action == "select"){
+            if(selecting_menu == MENU_START){
+                
+            }
+            else if(selecting_menu == MENU_END){
+                std_msgs::Empty e;
+                exit_call_pub.publish(e);
+                exit(0);
+            }
+        }
+        else if(msg.action == "move"){
+            selecting_menu++;
+            if(selecting_menu > MENU_END)
+                selecting_menu = MENU_START;
+        }
+        return;
+    }
+    void Board::player_action_callback(const board::player_act_msg& msg){
+        in_grid = false;
+        int temp = (int)(player[0].row) - (int)(msg.loc.row) + (int)(player[0].col) - (int)(msg.loc.col);
+        if(temp != 0){
+            in_grid = true;
+            player[0].row = max((int)(player[0].row), (int)(msg.loc.row));
+            player[0].col = max((int)(player[0].col), (int)(msg.loc.col));    
+
+            board::set_ai_loc_msg temp;
+            temp.loc.row = player[0].row;
+            temp.loc.col = player[0].col;
+            set_player_pub.publish(temp);
+            //need publish
+        }
+        else
+            player[0] = msg.loc;
+        
+        return;
+    }
+    void Board::set_ai_loc_callback(const ros::MessageEvent<board::set_ai_loc_msg>& msg){
+        const std::string& publisher_name = msg.getPublisherName(); //get publisher name
+        const board::set_ai_loc_msg::ConstPtr& data = msg.getMessage();
+        
+        int i = 0;
+        for(i = 0; i < agent_names.size(); i++){
+            if(agent_names[i] == publisher_name){
+                break;
+            }
+        }
+
+        if(i < agent_names.size()){
+            agents[i].first = data->loc;
+        }
+        
+        return;
     }
 }//close namespace
 
@@ -272,11 +503,14 @@ int main(int argc, char **argv)
     Custom::Board bi(nh);
 
     //service
-    ros::ServiceServer ask_map_size = nh.advertiseService("/board/ask_map_size", &Custom::Board::ask_map_size_callback,
-                                            dynamic_cast<Custom::Board *>(&bi));
+    ros::ServiceServer ask_map_size = nh.advertiseService("/board/ask_map_size", &Custom::Board::ask_map_size_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::ServiceServer move_check = nh.advertiseService("/board/move_check", &Custom::Board::move_check_srv_callback, dynamic_cast<Custom::Board *>(&bi));
+
     //subscriber
-    
-    
+    ros::Subscriber ask_state_sub = nh.subscribe("/board/ask_state", 1, &Custom::Board::ask_state_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::Subscriber select_menu_sub = nh.subscribe("/board/select_menu", 1, &Custom::Board::select_menu_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::Subscriber player_action_sub = nh.subscribe("/board/player_action", 1, &Custom::Board::player_action_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::Subscriber set_ai_loc_sub = nh.subscribe("/board/set_ai_loc", 1, &Custom::Board::set_ai_loc_callback, dynamic_cast<Custom::Board *>(&bi));
 
     std::cout<<"ready to run board"<<std::endl;
     // ROS_INFO("Custom: (%s) Ready to receive", ros::this_node::getName().c_str());

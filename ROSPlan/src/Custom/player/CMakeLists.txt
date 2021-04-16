@@ -1,38 +1,23 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(board)
+project(player)
 
+## Compile as C++11, supported in ROS Kinetic and newer
+# add_compile_options(-std=c++11)
+
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  actionlib
+  custom_msgs
+  genmsg
+  message_generation
   roscpp
+  rosplan_knowledge_msgs
   rospy
   std_msgs
-  genmsg
-  actionlib
-  message_generation
-  rosplan_knowledge_msgs
-  custom_msgs
-  
+  board
 )
-
-add_message_files(FILES 
-  display_info.msg
-  game_state_msg.msg
-  set_ai_loc_msg.msg
-  set_ai_msg.msg
-  select_menu_msg.msg
-  player_act_msg.msg
-  change_state_msg.msg
-  reset_ai_msg.msg
-)
-
-add_service_files(
-  FILES
-  ask_agent_srv.srv
-  ask_map_size.srv
-  move_check_srv.srv
-)
-
-generate_messages(DEPENDENCIES std_msgs custom_msgs)
-
 
 
 catkin_package(
@@ -42,10 +27,9 @@ catkin_package(
   DEPENDS
 )
 
-
-add_executable(board src/board.cpp)
-add_dependencies(board ${catkin_EXPORTED_TARGETS})
-target_link_libraries(board ${catkin_LIBRARIES})
+add_executable(player src/player.cpp)
+add_dependencies(player ${catkin_EXPORTED_TARGETS})
+target_link_libraries(player ${catkin_LIBRARIES})
 
 include_directories(
 # include
@@ -110,7 +94,7 @@ include_directories(include)
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   custom_msgs#   rosplan_knowledge_msgs#   std_msgs
 # )
 
 ################################################
@@ -144,8 +128,8 @@ include_directories(include)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES Board
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  LIBRARIES player
+#  CATKIN_DEPENDS actionlib custom_msgs genmsg message_generation roscpp rosplan_knowledge_msgs rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -162,7 +146,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/Board.cpp
+#   src/${PROJECT_NAME}/player.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -173,7 +157,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/Board_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/player_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -237,7 +221,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_Board.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_player.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
