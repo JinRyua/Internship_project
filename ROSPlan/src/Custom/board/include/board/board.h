@@ -5,9 +5,11 @@
 #include "board/ask_agent_srv.h"
 #include "board/move_check_srv.h"
 #include "board/set_ai_loc_msg.h"
-#include "board/player_act_msg.h"
+#include "board/player_act_srv.h"
 #include "board/select_menu_msg.h"
+#include "board/ask_player_stat_srv.h"
 #include "std_msgs/Empty.h"
+
 
 
 #include <utility>
@@ -98,11 +100,12 @@ namespace Custom
         bool ask_map_size_callback(board::ask_map_size::Request& req, board::ask_map_size::Response& res);
         bool ask_agent_srv_callback(board::ask_agent_srv::Request& req, board::ask_agent_srv::Response& res);
         bool move_check_srv_callback(board::move_check_srv::Request& req, board::move_check_srv::Response& res);
+        bool player_action_callback(board::player_act_srv::Request& req, board::player_act_srv::Response& res);
+        bool ask_player_stat_srv_callback(board::ask_player_stat_srv::Request& req, board::ask_player_stat_srv::Response& res);
 
         //sub callback
         void ask_state_callback(const ros::MessageEvent<std_msgs::Empty>& msg);
         void select_menu_callback(const board::select_menu_msg& msg);
-        void player_action_callback(const board::player_act_msg& msg);
         void set_ai_loc_callback(const ros::MessageEvent<board::set_ai_loc_msg>& msg);
         
         

@@ -66,19 +66,32 @@ display.subscribe(function(message) {
 });
 
 //image parsing
-var pacman = new Image();
-pacman.src = "Custom/image/pacman_small.png";
+var pacman = new Array(4);
+var t;
+for(t = 0; t < 4; t++){
+  pacman[t] = new Image();
+}
+pacman[0].src = "Custom/image/pacman_left.png";
+pacman[1].src = "Custom/image/pacman_up.png";
+pacman[2].src = "Custom/image/pacman_right.png";
+pacman[3].src = "Custom/image/pacman_down.png";
 
 var agent_imgs = new Array(4);
-var t;
-agent_imgs[0] = new Image();
-agent_imgs[0].src = "Custom/image/red_small.png";
-agent_imgs[1] = new Image();
-agent_imgs[1].src = "Custom/image/blue_small.png";
-agent_imgs[2] = new Image();
-agent_imgs[2].src= "Custom/image/pink_small.png";
-agent_imgs[3] = new Image();
-agent_imgs[3].src = "Custom/image/orange_small.png";
+
+
+var color = ["red","blue","pink","orange"];
+for(t = 0; t < 4; t++){
+  agent_imgs[t] = new Array(4);
+  var a;
+  for(a = 0; a < 4; a++){
+    agent_imgs[t][a] = new Image();
+  }
+  agent_imgs[t][0].src = "Custom/image/"+color[t]+"_left.png";
+  agent_imgs[t][1].src = "Custom/image/"+color[t]+"_up.png";
+  agent_imgs[t][2].src = "Custom/image/"+color[t]+"_right.png";
+  agent_imgs[t][3].src = "Custom/image/"+color[t]+"_down.png";
+}
+
 
 
 var ctx = document.getElementById('canvas').getContext('2d');
@@ -98,26 +111,7 @@ function step(timestamp) {
     ctx.fillStyle = "black";
     ctx.fillRect(0,0,pixel_size*map_col,pixel_size*map_row);
     var i;
-    //player display
-    if(typeof player !== 'undefined'){
-      for(i = 0 ; i < player.length; i++){
-      ctx.save();
-      ctx.translate((player[i].col)*pixel_size, (player[i].row)*pixel_size);
-      ctx.rotate((Math.PI/180) * ((player[i].direction * 90) + 90));
-      ctx.drawImage(pacman,0,0);
-      ctx.restore();
-      }
-    }
-    //agent display
-    if(typeof agents !== 'undefined'){
-      for(i = 0 ; i < agents.length; i++){
-      ctx.save();
-      ctx.translate((agents[i].col)*pixel_size, (agents[i].row)*pixel_size);
-      ctx.rotate((Math.PI/180) * ((agents[i].direction * 90) + 90));
-      ctx.drawImage(agent_imgs[i],0,0);
-      ctx.restore();
-      }
-    }
+    
     //block
     if(typeof block !== 'undefined'){
       for(i = 0 ; i < block.length; i++){
@@ -154,6 +148,27 @@ function step(timestamp) {
       ctx.arc(pixel_size/2, pixel_size/2, pixel_size*0.25, 0, Math.PI*2);
       ctx.fill();
       ctx.closePath();
+      ctx.restore();
+      }
+    }
+    
+    //player display
+    if(typeof player !== 'undefined'){
+      for(i = 0 ; i < player.length; i++){
+      ctx.save();
+      ctx.translate((player[i].col-1)*pixel_size, (player[i].row-1)*pixel_size);
+      //ctx.rotate((Math.PI/180) * ((player[i].direction * 90) + 90));
+      ctx.drawImage(pacman[player[i].direction-1],0,0);
+      ctx.restore();
+      }
+    }
+    //agent display
+    if(typeof agents !== 'undefined'){
+      for(i = 0 ; i < agents.length; i++){
+      ctx.save();
+      ctx.translate((agents[i].col-1)*pixel_size, (agents[i].row-1)*pixel_size);
+      //ctx.rotate((Math.PI/180) * ((agents[i].direction * 90) + 90));
+      ctx.drawImage(agent_imgs[i][agents[i].direction-1],0,0);
       ctx.restore();
       }
     }

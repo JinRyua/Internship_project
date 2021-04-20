@@ -57,6 +57,10 @@
         <param name="action_timeout_fraction" value="$(arg action_timeout_fraction)" />
 	</node>
 
+	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
+
+	</include>
+
 
 
 <!-- sim actions 

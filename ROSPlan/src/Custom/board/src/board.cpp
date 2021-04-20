@@ -12,6 +12,7 @@
 #include <string>
 #include <chrono>
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -33,7 +34,7 @@ namespace Custom{
         nh.getParam("display_name", display_topic);
         display_pub = nh.advertise<board::display_info>(display_topic, 1000);
 
-        std::string set_player_topic = "/board/set_player";
+        std::string set_player_topic = "/player/set_player";
         nh.getParam("set_player_name", set_player_topic);
         set_player_pub = nh.advertise<board::set_ai_loc_msg>(set_player_topic, 1000);
 
@@ -316,7 +317,6 @@ namespace Custom{
         res.row = map_row;
         res.col = map_col;
     }
-
     bool Board::ask_agent_srv_callback(board::ask_agent_srv::Request &req, board::ask_agent_srv::Response &res){
         //return agent_names
         res.agents_name = agent_names;
@@ -330,15 +330,57 @@ namespace Custom{
                 return true;
             }
             else if(in_grid == true){
-                int player_row = player[0].row;
-                int player_col = player[0].col;
-                cout<<player_row<<" "<<player_col<<endl;
+                int player_row = round(player[0].row);
+                int player_col = round(player[0].col);
                 if(req.want_direction == LEFT){ player_col--;}
                 else if(req.want_direction == RIGHT){ player_col++;}
                 else if(req.want_direction == UP){ player_row--;}
                 else if(req.want_direction == DOWN){ player_row++;}
 
-                if(map[player_row-1][player_col-1] == "■"){ }
+                if(map[player_row-1][player_col-1] == "■"){
+                    int player_row = round(player[0].row);
+                    int player_col = round(player[0].col);
+                    if(player[0].direction == LEFT){ player_col--;}
+                    else if(player[0].direction == RIGHT){ player_col++;}
+                    else if(player[0].direction == UP){ player_row--;}
+                    else if(player[0].direction == DOWN){ player_row++;}
+                    if(map[player_row-1][player_col-1] == "■"){
+                        int direction_left = player[0].direction - 1;
+                        if (direction_left == 0)
+                            direction_left = 4;
+                        int player_row = round(player[0].row);
+                        int player_col = round(player[0].col);
+                        if(direction_left == LEFT){ player_col--;}
+                        else if(direction_left == RIGHT){ player_col++;}
+                        else if(direction_left == UP){ player_row--;}
+                        else if(direction_left == DOWN){ player_row++;}
+                        if(map[player_row-1][player_col-1] == "■"){
+                            int direction_right = player[0].direction +1;
+                            if (direction_right == 5)
+                                direction_right = 1;
+                            int player_row = round(player[0].row);
+                            int player_col = round(player[0].col);
+                            if(direction_right == LEFT){ player_col--;}
+                            else if(direction_right == RIGHT){ player_col++;}
+                            else if(direction_right == UP){ player_row--;}
+                            else if(direction_right == DOWN){ player_row++;}
+                            if(map[player_row-1][player_col-1] == "■"){return false;}
+                            else{
+                                res.direction = direction_right;
+                                return true;
+                            }
+                        }
+                        else{
+                            res.direction = direction_left;
+                            return true;
+                        }
+                    }
+                    else{
+                        res.direction = player[0].direction;
+                        return true;
+                    }
+
+                }
                 else{
                     res.direction = req.want_direction;
                     return true;
@@ -351,64 +393,127 @@ namespace Custom{
             return true;
         }
         else if(in_grid == true){
-            int player_row = player[0].row;
-            int player_col = player[0].col;
+            int player_row = round(player[0].row);
+            int player_col = round(player[0].col);
             if(player[0].direction == LEFT){ player_col--;}
             else if(player[0].direction == RIGHT){ player_col++;}
             else if(player[0].direction == UP){ player_row--;}
             else if(player[0].direction == DOWN){ player_row++;}
 
-            if(map[player_row-1][player_col-1] == "■"){ }
+            if(map[player_row-1][player_col-1] == "■"){
+                player_row = round(player[0].row);
+                player_col = round(player[0].col);
+                int direction_left = player[0].direction - 1;
+                if (direction_left == 0)
+                    direction_left = 4;
+
+                if (direction_left == LEFT){
+                    player_col--;
+                }
+                else if (direction_left == RIGHT){
+                    player_col++;
+                }
+                else if (direction_left == UP){
+                    player_row--;
+                }
+                else if (direction_left == DOWN){
+                    player_row++;
+                }
+
+                if (map[player_row - 1][player_col - 1] != "■"){
+                    res.direction = direction_left;
+                    return true;
+                }
+                else{
+                    player_row = round(player[0].row);
+                    player_col = round(player[0].col);
+                    int direction_right = player[0].direction + 1;
+                    if (direction_right == 5)
+                        direction_right = 1;
+
+                    if (direction_right == LEFT){
+                        player_col--;
+                    }
+                    else if (direction_right == RIGHT){
+                        player_col++;
+                    }
+                    else if (direction_right == UP){
+                        player_row--;
+                    }
+                    else if (direction_right == DOWN){
+                        player_row++;
+                    }
+
+                    if (map[player_row - 1][player_col - 1] != "■"){
+                        res.direction = direction_right;
+                        return true;
+                    }
+                    else{
+                        return false;
+                    }
+                }
+            }
             else{
                 res.direction = req.want_direction;
                 return true;
             }  
         }
-        
-        int player_row = player[0].row;
-        int player_col = player[0].col;
-        int direction_now = player[0].direction;
-
-        if(direction_now == LEFT){ player_col--;}
-        else if(direction_now == RIGHT){ player_col++;}
-        else if(direction_now == UP){ player_row--;}
-        else if(direction_now == DOWN){ player_row++;}
-         
-        if(map[player_row-1][player_col-1] != "■"){
-            res.direction = direction_now;
+        else if(in_grid == false){
+            res.direction = player[0].direction;
             return true;
         }
         
-        
-        player_row = player[0].row;
-        player_col = player[0].col;
-        int direction_left = player[0].direction - 1;
-        if(direction_left == 0) direction_left = 4;
-        int direction_right = player[0].direction + 1;
-        if(direction_right == 0) direction_right = 1;
+        return false;
+    }
+    bool Board::player_action_callback(board::player_act_srv::Request& req, board::player_act_srv::Response& res){
 
-        if(direction_left == LEFT){ player_col--;}
-        else if(direction_left == RIGHT){ player_col++;}
-        else if(direction_left == UP){ player_row--;}
-        else if(direction_left == DOWN){ player_row++;}
-         
-        if(map[player_row-1][player_col-1] != "■"){
-            res.direction = direction_left;
+        custom_msgs::axis loc = req.loc;
+        int point_row = (int)(max(loc.row, player[0].row));
+        int point_col = (int)(max(loc.col, player[0].col));
+        
+        //cout<<in_grid<<endl;
+        // if((loc.row >= point_row && point_row > player[0].row) ||
+        //     (loc.row < point_row && point_row <= player[0].row) ||
+        //     (loc.col >= point_col && point_col > player[0].col) ||
+        //     (loc.col < point_col && point_col <= player[0].col) )
+        if(in_grid == false && (abs(ceil(loc.row) - ceil(player[0].row))!=0 ||
+            abs(ceil(loc.col) - ceil(player[0].col))!=0))
+            {
+                cout<<"grid "<<loc.row<<" "<<loc.col<<" "<<player[0].row<<" "<<player[0].col<<endl;
+            in_grid = true;
+
+            float point_row = loc.row;
+            float point_col = loc.col;
+            if(req.loc.direction == LEFT)
+                point_col = floor(player[0].col);
+            else if(req.loc.direction == UP)
+                point_row = floor(player[0].row);
+            else if(req.loc.direction == RIGHT)
+                point_col = ceil(player[0].col);
+            else if(req.loc.direction == DOWN)
+                point_row = ceil(player[0].row);
+                
+
+
+            res.result.row = point_row;
+            res.result.col = point_col;
+            res.result.direction = req.loc.direction;
+
+            player[0] = res.result;
             return true;
         }
-        
-        player_row = player[0].row;
-        player_col = player[0].col;
-        if(direction_right == LEFT){ player_col--;}
-        else if(direction_right == RIGHT){ player_col++;}
-        else if(direction_right == UP){ player_row--;}
-        else if(direction_right == DOWN){ player_row++;}
-      
-        if(map[player_row-1][player_col-1] != "■"){
-            res.direction = direction_right;
+        else{
+            in_grid = false;
+            res.result = req.loc;
+
+            player[0] = res.result;
             return true;
         }
         return false;
+    }
+    bool Board::ask_player_stat_srv_callback(board::ask_player_stat_srv::Request& req, board::ask_player_stat_srv::Response& res){
+        res.player = init_player;
+        return true;
     }
 
     //sub callback
@@ -457,25 +562,7 @@ namespace Custom{
         }
         return;
     }
-    void Board::player_action_callback(const board::player_act_msg& msg){
-        in_grid = false;
-        int temp = (int)(player[0].row) - (int)(msg.loc.row) + (int)(player[0].col) - (int)(msg.loc.col);
-        if(temp != 0){
-            in_grid = true;
-            player[0].row = max((int)(player[0].row), (int)(msg.loc.row));
-            player[0].col = max((int)(player[0].col), (int)(msg.loc.col));    
-
-            board::set_ai_loc_msg temp;
-            temp.loc.row = player[0].row;
-            temp.loc.col = player[0].col;
-            set_player_pub.publish(temp);
-            //need publish
-        }
-        else
-            player[0] = msg.loc;
-        
-        return;
-    }
+    
     void Board::set_ai_loc_callback(const ros::MessageEvent<board::set_ai_loc_msg>& msg){
         const std::string& publisher_name = msg.getPublisherName(); //get publisher name
         const board::set_ai_loc_msg::ConstPtr& data = msg.getMessage();
@@ -505,11 +592,14 @@ int main(int argc, char **argv)
     //service
     ros::ServiceServer ask_map_size = nh.advertiseService("/board/ask_map_size", &Custom::Board::ask_map_size_callback, dynamic_cast<Custom::Board *>(&bi));
     ros::ServiceServer move_check = nh.advertiseService("/board/move_check", &Custom::Board::move_check_srv_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::ServiceServer player_action_srv = nh.advertiseService("/board/player_action", &Custom::Board::player_action_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::ServiceServer aks_agent_srv = nh.advertiseService("/board/ask_agent", &Custom::Board::ask_agent_srv_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::ServiceServer aks_player_stat_srv = nh.advertiseService("/board/ask_player_stat", &Custom::Board::ask_player_stat_srv_callback, dynamic_cast<Custom::Board *>(&bi));
+    
 
     //subscriber
     ros::Subscriber ask_state_sub = nh.subscribe("/board/ask_state", 1, &Custom::Board::ask_state_callback, dynamic_cast<Custom::Board *>(&bi));
     ros::Subscriber select_menu_sub = nh.subscribe("/board/select_menu", 1, &Custom::Board::select_menu_callback, dynamic_cast<Custom::Board *>(&bi));
-    ros::Subscriber player_action_sub = nh.subscribe("/board/player_action", 1, &Custom::Board::player_action_callback, dynamic_cast<Custom::Board *>(&bi));
     ros::Subscriber set_ai_loc_sub = nh.subscribe("/board/set_ai_loc", 1, &Custom::Board::set_ai_loc_callback, dynamic_cast<Custom::Board *>(&bi));
 
     std::cout<<"ready to run board"<<std::endl;
@@ -531,6 +621,6 @@ int main(int argc, char **argv)
         }
     }
 
-    ros::spin();
+    //ros::spin();
     return 0;
 }

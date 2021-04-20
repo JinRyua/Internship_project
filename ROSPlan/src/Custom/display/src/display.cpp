@@ -15,7 +15,7 @@ namespace Custom{
 
         //service call
         std::stringstream ss;
-        ss << board_name << "/ask_map_size";
+        ss << board_name << "/ask_state";
         ros::service::waitForService(ss.str(), ros::Duration(20));
         ros::ServiceClient client = nh.serviceClient<board::ask_map_size>(ss.str());
         board::ask_map_size srv;

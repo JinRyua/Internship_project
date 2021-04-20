@@ -17,8 +17,15 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   board
+  message_runtime
 )
 
+add_service_files(
+  FILES
+  player_state_time_srv.srv
+)
+
+generate_messages(DEPENDENCIES std_msgs custom_msgs)
 
 catkin_package(
   INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}

@@ -19,7 +19,6 @@ add_message_files(FILES
   set_ai_loc_msg.msg
   set_ai_msg.msg
   select_menu_msg.msg
-  player_act_msg.msg
   change_state_msg.msg
   reset_ai_msg.msg
 )
@@ -29,6 +28,8 @@ add_service_files(
   ask_agent_srv.srv
   ask_map_size.srv
   move_check_srv.srv
+  player_act_srv.srv
+  ask_player_stat_srv.srv
 )
 
 generate_messages(DEPENDENCIES std_msgs custom_msgs)
