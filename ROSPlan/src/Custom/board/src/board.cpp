@@ -28,6 +28,8 @@ namespace Custom{
         life = 3;
         score = 0;
         in_grid = true;
+        ghost_time = 5;
+        ghost_timer = 0;
         
         //set publisher
         std::string display_topic = "/board/display";
@@ -257,15 +259,24 @@ namespace Custom{
     {
 
     }
-
+    
+    void Board::check_timer(){
+        double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        if(ghost_timer <= now_time ){    //run out ghost timer
+            for(int i = 0; i < agents.size(); i++){ //norm  every agent
+                agents[i].second = false;
+            }
+        }
+    }
     void Board::run_board(){
+
         board::display_info display_temp;
         vector<custom_msgs::map> map_temp2;
         custom_msgs::map map_temp;
         if(game_state == IN_GAME){
-            if(timer > 0){  //timer check
-
-            }
+            check_timer();  //timer check
+            check_eat_star();
+            check_collision();
             //display map
             for(int i = 0; i < map.size(); i++){
                 map_temp.value = map[i];
@@ -311,7 +322,69 @@ namespace Custom{
         //publish to display
         display_pub.publish(display_temp);
     }
+    void Board::check_eat_star(){
+        if(in_grid == true){
+            custom_msgs::axis temp;
+            temp.row = round(player[0].row);
+            temp.col = round(player[0].col);
 
+            auto s_it = find(scookies.begin(), scookies.end(), temp);
+            if(s_it != scookies.end()){ //eat small cookie
+                scookies.erase(s_it);   //erase small_cookie
+                map[(int)(temp.row - 1)][(int)(temp.col - 1)] = " ";
+
+                //update score
+                score ++;
+            }
+            else{
+                auto l_it = find(lcookies.begin(), lcookies.end(), temp);
+                if(l_it != lcookies.end()){ //eat large cookie
+                    lcookies.erase(l_it);   //erase large cookie
+                    map[(int)(temp.row - 1)][(int)(temp.col - 1)] = " ";
+                    //update score and ghost
+                    score = score + 5;
+                    for(int i = 0; i < agents.size(); i++){
+                        agents[i].second = true;    //set ghost all
+                    }
+                    //ghost timer
+                    ghost_timer = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                    ghost_timer += ghost_time * 1000000000; //일정 시간만큼
+
+                }
+                
+            }
+           
+        }
+    }
+    void Board::check_collision(){
+        float player_row = player[0].row;
+        float player_col = player[0].col;
+
+        for(int i = 0; i < agents.size(); i++){ //every agent
+            float agent_left = agents[i].first.col - 0.5;       //one grid from agent's loc
+            float agent_right = agents[i].first.col + 0.5;
+            float agent_top = agents[i].first.row - 0.5;
+            float agent_bottom = agents[i].first.row + 0.5;
+
+            if(player_row >= agent_top && player_row <= agent_bottom)       //collision
+                if(player_col >= agent_left && player_col <= agent_right){
+                    do_collision(agents[i]);
+                }
+        }
+    }
+
+    void Board::do_collision(pair<custom_msgs::axis, bool>& agent){
+        if(agent.second == true){   //eat ghost
+            score = score + 3;
+            //need init
+        }
+        else{   //eat player
+            life--;
+            
+            //need init
+        }
+    }
+    
     //service callback 들 
     bool Board::ask_map_size_callback(board::ask_map_size::Request& req, board::ask_map_size::Response& res){
         res.row = map_row;
@@ -580,6 +653,18 @@ namespace Custom{
         
         return;
     }
+
+    bool Board::ask_map_callback(board::ask_map_srv::Request& req, board::ask_map_srv::Response& res){
+        vector<custom_msgs::map> map_temp;
+        for(int i = 0; i < map.size(); i++){
+            custom_msgs::map temp;
+            temp.value = map[i];
+            map_temp.push_back(temp);
+        }
+        res.map = map_temp;
+        return true;
+    }
+
 }//close namespace
 
 int main(int argc, char **argv)
@@ -595,6 +680,7 @@ int main(int argc, char **argv)
     ros::ServiceServer player_action_srv = nh.advertiseService("/board/player_action", &Custom::Board::player_action_callback, dynamic_cast<Custom::Board *>(&bi));
     ros::ServiceServer aks_agent_srv = nh.advertiseService("/board/ask_agent", &Custom::Board::ask_agent_srv_callback, dynamic_cast<Custom::Board *>(&bi));
     ros::ServiceServer aks_player_stat_srv = nh.advertiseService("/board/ask_player_stat", &Custom::Board::ask_player_stat_srv_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::ServiceServer aks_map_srv = nh.advertiseService("/board/ask_map", &Custom::Board::ask_map_callback, dynamic_cast<Custom::Board *>(&bi));
     
 
     //subscriber
@@ -612,6 +698,7 @@ int main(int argc, char **argv)
         ros::spinOnce();
 
         bi.run_board();
+
 
         double finish_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         double rate = (double)(act_time * 1000000000 - (finish_time - start_time)) / 1000000000;

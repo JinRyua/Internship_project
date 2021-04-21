@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(custom_msgs)
+project(navi)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,28 +8,39 @@ project(custom_msgs)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  genmsg
-  message_generation
   roscpp
   rospy
   std_msgs
+  actionlib
+  custom_msgs
+  genmsg
+  board
+  message_runtime
 )
 
-add_message_files(
+add_message_files(FILES 
+)
+add_service_files(
   FILES
-  axis.msg
-  map.msg
-  matrix.msg
+  ask_dist_mat.srv
+  want_route.srv
 )
 
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-)
+generate_messages(DEPENDENCIES std_msgs custom_msgs)
 
 catkin_package(
-  CATKIN_DEPENDS message_generation message_runtime roscpp std_msgs genmsg
+  INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS roscpp rospy actionlib std_msgs message_generation message_runtime genmsg actionlib custom_msgs 
+  DEPENDS
 )
+
+
+
+add_executable(navi src/navi.cpp)
+add_dependencies(navi ${catkin_EXPORTED_TARGETS})
+target_link_libraries(navi ${catkin_LIBRARIES})
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -121,8 +132,8 @@ catkin_package(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES custom_msgs
-#  CATKIN_DEPENDS genmsg message_generation roscpp rospy std_msgs
+#  LIBRARIES navi
+#  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -137,9 +148,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+include_directories(include)
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/custom_msgs.cpp
+#   src/${PROJECT_NAME}/navi.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -150,7 +162,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/custom_msgs_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/navi_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -214,7 +226,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_custom_msgs.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_navi.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

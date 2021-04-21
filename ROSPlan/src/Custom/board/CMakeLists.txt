@@ -30,6 +30,7 @@ add_service_files(
   move_check_srv.srv
   player_act_srv.srv
   ask_player_stat_srv.srv
+  ask_map_srv.srv
 )
 
 generate_messages(DEPENDENCIES std_msgs custom_msgs)

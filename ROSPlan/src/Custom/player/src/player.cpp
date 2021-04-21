@@ -74,6 +74,10 @@ int _putch(int c) {
     return c;
 }
 
+
+//출처 https://eastskykang.wordpress.com/2015/01/28/c-c-kbhit-function-in-linux/
+
+
 namespace Custom{
     Player::Player(ros::NodeHandle &nh){
         node_handle = &nh;

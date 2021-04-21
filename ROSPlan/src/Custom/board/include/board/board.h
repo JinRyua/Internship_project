@@ -8,6 +8,7 @@
 #include "board/player_act_srv.h"
 #include "board/select_menu_msg.h"
 #include "board/ask_player_stat_srv.h"
+#include "board/ask_map_srv.h"
 #include "std_msgs/Empty.h"
 
 
@@ -48,7 +49,10 @@ namespace Custom
 
         int selecting_menu; //고르고 있는 메뉴
 
+        float ghost_time;   //ghost 유지 시간
+
         double timer;       //타이머
+        double ghost_timer;
 
         std::vector<std::string> agent_names;       //problem의 에이전트이름
 
@@ -85,6 +89,11 @@ namespace Custom
         ~Board();
         //run board
         void run_board();
+        //check function
+        void check_timer();
+        void check_eat_star();
+        void check_collision(); //충돌 체크
+        void do_collision(std::pair<custom_msgs::axis, bool>& agent);
 
         //publisher
         ros::Publisher display_pub;
@@ -98,6 +107,7 @@ namespace Custom
 
         //service
         bool ask_map_size_callback(board::ask_map_size::Request& req, board::ask_map_size::Response& res);
+        bool ask_map_callback(board::ask_map_srv::Request& req, board::ask_map_srv::Response& res);
         bool ask_agent_srv_callback(board::ask_agent_srv::Request& req, board::ask_agent_srv::Response& res);
         bool move_check_srv_callback(board::move_check_srv::Request& req, board::move_check_srv::Response& res);
         bool player_action_callback(board::player_act_srv::Request& req, board::player_act_srv::Response& res);

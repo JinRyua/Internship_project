@@ -78,6 +78,9 @@ pacman[3].src = "Custom/image/pacman_down.png";
 
 var agent_imgs = new Array(4);
 
+var ghost_imgs = new Image();
+ghost_imgs.src = "Custom/image/ghost_small.png";
+
 
 var color = ["red","blue","pink","orange"];
 for(t = 0; t < 4; t++){
@@ -168,7 +171,10 @@ function step(timestamp) {
       ctx.save();
       ctx.translate((agents[i].col-1)*pixel_size, (agents[i].row-1)*pixel_size);
       //ctx.rotate((Math.PI/180) * ((agents[i].direction * 90) + 90));
-      ctx.drawImage(agent_imgs[i][agents[i].direction-1],0,0);
+      if(ghost[i] == 0) //not ghost
+        ctx.drawImage(agent_imgs[i][agents[i].direction-1],0,0);
+      else if(ghost[i] == 1)  //ghost
+        ctx.drawImage(ghost_imgs,0,0);
       ctx.restore();
       }
     }
