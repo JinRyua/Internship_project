@@ -2,7 +2,8 @@
 #include "board/ask_map_srv.h"
 #include "custom_msgs/map.h"
 #include "custom_msgs/matrix.h"
-#include "navi/findpath.h"
+#include "navi/findpath.h"      //AStar
+#include "navi/give_route.h"
 
 #include <iostream>
 #include <chrono>
@@ -62,11 +63,18 @@ namespace Custom{
     Navi::Navi(ros::NodeHandle &nh){
         node_handle = &nh;
 
+
+        std::string give_topic = "/navi/give_route";
+        nh.getParam("give_name", give_topic);
+        give_route_pub = nh.advertise<navi::give_route>(give_topic, 1000);
+
         std::string map_topic = "/board/ask_map";
         nh.getParam("map_name", map_topic);
         ros::service::waitForService(map_topic, ros::Duration(20));
         ros::ServiceClient client = nh.serviceClient<board::ask_map_srv>(map_topic);
         board::ask_map_srv srv;
+
+        player_mat.clear();
 
         vector<custom_msgs::map> map_temp;
         if (client.call(srv)){
@@ -162,6 +170,7 @@ namespace Custom{
 
     void Navi::reset_Callback(const std_msgs::Empty& msg){
         use_world_map = world_map;
+        player_mat.clear();
         return;
     }
     void Navi::exit_Callback(const std_msgs::Empty& msg){
@@ -185,17 +194,12 @@ namespace Custom{
     }
 
 // navi::want_route::Request& req, navi::want_route::Response& res)
-    bool Navi::want_route_Callback(ros::ServiceEvent<navi::want_route::Request, navi::want_route::Response>& event){
-        string node_id = event.getCallerName();      
-        cout<<node_id<<endl;                        
-        navi::want_route::Request req = event.getRequest();
-        navi::want_route::Response res = event.getResponse();
-
-
+    void Navi::want_route_Callback(const navi::want_route& msg){
         double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         if(now_time >= timer){  //run out timer
             use_world_map = world_map;
             player_mat.clear();
+            timer = now_time + (30*1000000000);
         }
 
         //get player state  why need???
@@ -210,12 +214,37 @@ namespace Custom{
         // }
         // else{
         // }
+
+        //중복 처리
+        auto it = player_mat.find(msg.name);
+        if(it != player_mat.end()){  //이미 route가 있으면 제거
+            for(int i = 0; i < use_world_map.size(); i++){
+                for(int j = 0; j < use_world_map[i].size(); j++){
+                    use_world_map[i][j] = use_world_map[i][j] - it->second[i][j];   //mat 제거
+                }
+            }
+            player_mat.erase(it);   //제거
+        }
+        
         
         vector<custom_msgs::axis> plan;
-        run_star(req.from, req.to, use_world_map, plan);
+        run_star(msg.from, msg.to, use_world_map, plan);
+        
+        navi::give_route response;
+        response.name = msg.name;
+        response.plan = plan;
+        give_route_pub.publish(response);
 
-        res.plan = plan;
-        return true;
+        //make player_mat and update use_world_map
+        vector<int> temp(world_map[0].size(), 0);
+        vector<vector<int>> temp_mat(world_map.size(), temp);
+        for(int i = 0; i < plan.size(); i++){
+            temp_mat[plan[i].row - 1][plan[i].col - 1] = 5;
+            use_world_map[plan[i].row - 1][plan[i].col - 1] += 5;
+        }
+        player_mat.insert(pair<string, vector<vector<int>>>(msg.name, temp_mat));
+
+        return;
 
 
     }
@@ -239,9 +268,13 @@ int main(int argc, char **argv)
     nh.getParam("exit_name", exit_topic);
     ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Navi::exit_Callback,
                                             dynamic_cast<Custom::Navi *>(&ni));
+
+    std::string want_topic = "/navi/want_route";
+    nh.getParam("want_name", want_topic);
+    ros::Subscriber want_sub = nh.subscribe(want_topic, 1, &Custom::Navi::want_route_Callback, dynamic_cast<Custom::Navi *>(&ni));
+
     //service server
     ros::ServiceServer ask_dist_mat_srv = nh.advertiseService("/navi/ask_dist_mat", &Custom::Navi::ask_dist_mat_Callback, dynamic_cast<Custom::Navi *>(&ni));
-    ros::ServiceServer want_route_srv = nh.advertiseService("/navi/want_route", &Custom::Navi::want_route_Callback, dynamic_cast<Custom::Navi *>(&ni));
     
 
     ros::spin();

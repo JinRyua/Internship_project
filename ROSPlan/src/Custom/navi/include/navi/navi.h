@@ -3,6 +3,7 @@
 #include "std_msgs/Empty.h"
 #include "navi/ask_dist_mat.h"
 #include "navi/want_route.h"
+#include "navi/give_route.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -38,12 +39,8 @@ namespace Custom
         Navi(ros::NodeHandle &nh);
         ~Navi();
 
-        
-
-        
-
         //publisher
-
+        ros::Publisher give_route_pub;
 
         //service client
         ros::ServiceClient get_player_state_cli;
@@ -51,10 +48,10 @@ namespace Custom
         //callback
         void reset_Callback(const std_msgs::Empty& msg);
         void exit_Callback(const std_msgs::Empty& msg);
+        void want_route_Callback(const navi::want_route& msg);
 
         //service callback
         bool ask_dist_mat_Callback(navi::ask_dist_mat::Request& req, navi::ask_dist_mat::Response& res);
-        bool want_route_Callback(ros::ServiceEvent<navi::want_route::Request, navi::want_route::Response>& event);
     };
 }   //close namespace
 

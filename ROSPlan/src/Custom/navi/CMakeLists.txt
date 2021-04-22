@@ -19,11 +19,13 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 add_message_files(FILES 
+  want_route.msg
+  give_route.msg
 )
 add_service_files(
   FILES
   ask_dist_mat.srv
-  want_route.srv
+  
 )
 
 generate_messages(DEPENDENCIES std_msgs custom_msgs)

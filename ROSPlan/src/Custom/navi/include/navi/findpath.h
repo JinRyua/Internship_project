@@ -127,7 +127,7 @@ void MapSearchNode::PrintNodeInfo(std::vector<custom_msgs::axis>& plan)
 	plan.push_back(temp);
 	
 
-	cout << str;
+	//cout << str;
 }
 
 // Here's the heuristic function that estimates the distance from a Node
@@ -219,7 +219,7 @@ float MapSearchNode::GetCost( MapSearchNode &successor )
 
 // Main
 
-int run_star(custom_msgs::axis& from, custom_msgs::axis& to, std::vector<std::vector<int>>& matrix, std::vector<custom_msgs::axis>& plan)
+int run_star(const custom_msgs::axis& from, const custom_msgs::axis& to, std::vector<std::vector<int>>& matrix, std::vector<custom_msgs::axis>& plan)
 {
 
 	cout << "STL A* Search implementation\n(C)2001 Justin Heyes-Jones\n";
