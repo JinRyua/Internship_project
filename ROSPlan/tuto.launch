@@ -44,7 +44,7 @@
 		<arg name="domain_path"          value="$(arg domain_path)" />
 		<arg name="problem_path"         value="$(find rosplan_demos)/common/problem.pddl" />
 		<arg name="data_path"            value="$(find rosplan_demos)/common/" />
-		<arg name="planner_command"      value="timeout 20 $(find rosplan_planning_system)/common/bin/popf DOMAIN PROBLEM" />
+		<arg name="planner_command"      value="timeout 20 $(find rosplan_planning_system)/common/bin/csp PROBLEM" />
 	</include>
 <!-- plan dispatching -->
 	<node name="$(arg node_name)" pkg="rosplan_planning_system" type="pddl_esterel_plan_dispatcher" respawn="false" output="screen">

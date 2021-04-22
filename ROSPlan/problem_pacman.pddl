@@ -722,6 +722,7 @@
 (is-menu point15_19 )
 (is-start point22_5 )
 (is-end point22_17 )
+(is-ghost agent1 )
     ;todo: put the initial state's facts and numeric values here
 )
 

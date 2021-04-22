@@ -9,6 +9,8 @@
 	<node name="board" pkg="board" type="board" respawn="false" output="screen">
 		<param name="knowledge_base" value="$(arg knowledge_base)" />
 	</node>
+	<node name="navi" pkg="navi" type="navi" respawn="false" output="screen">
+	</node>
 	<!-- display 
 	<node name="display" pkg="display" type="display" respawn="false" output="screen">
 		<param name="display_name" value="$(arg display_name)" />
