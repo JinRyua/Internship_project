@@ -29,6 +29,7 @@
     point25_1 point25_2 point25_3 point25_4 point25_5 point25_6 point25_7 point25_8 point25_9 point25_10 point25_11 point25_12 point25_13 point25_14 point25_15 point25_16 point25_17 point25_18 point25_19 point25_20 point25_21 -point
     point26_1 point26_2 point26_3 point26_4 point26_5 point26_6 point26_7 point26_8 point26_9 point26_10 point26_11 point26_12 point26_13 point26_14 point26_15 point26_16 point26_17 point26_18 point26_19 point26_20 point26_21 -point
     point27_1 point27_2 point27_3 point27_4 point27_5 point27_6 point27_7 point27_8 point27_9 point27_10 point27_11 point27_12 point27_13 point27_14 point27_15 point27_16 point27_17 point27_18 point27_19 point27_20 point27_21 -point  
+    act_1 act_2 act_3 act_4 act_5 -action
 )
 
 (:init

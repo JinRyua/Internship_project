@@ -8,6 +8,7 @@
 (:types ;todo: enumerate types and their hierarchy here, e.g. car truck bus - vehicle
     player agent -character
     point
+    action
 )
 
 ; un-comment following line if constants are needed
@@ -33,8 +34,8 @@
     (direction ?c -character)
 )
 
-(:action extinguish
-    :parameters ()
+(:action do_action
+    :parameters (?action)
     :precondition (and 
     )
     :effect (and 

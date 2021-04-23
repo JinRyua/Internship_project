@@ -199,7 +199,7 @@ namespace Custom{
         if(now_time >= timer){  //run out timer
             use_world_map = world_map;
             player_mat.clear();
-            timer = now_time + (30*1000000000);
+            timer = now_time + ((double)(30)*1000000000);
         }
 
         //get player state  why need???
