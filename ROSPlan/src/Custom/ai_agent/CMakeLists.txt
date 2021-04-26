@@ -11,18 +11,26 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  board
+  custom_msgs
+  ai_manager
 )
 
 catkin_package(
   INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp rospy 
+  CATKIN_DEPENDS roscpp rospy board custom_msgs ai_manager
   DEPENDS
 )
 
 add_executable(ai_agent src/ai_agent.cpp)
 add_dependencies(ai_agent ${catkin_EXPORTED_TARGETS})
 target_link_libraries(ai_agent ${catkin_LIBRARIES})
+
+include_directories(
+# include
+  include
+)
 
 
 

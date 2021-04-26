@@ -6,6 +6,7 @@
 #include "custom_msgs/matrix.h"
 #include "ai_manager/ai_action.h"
 #include "ai_manager/ai_feedback.h"
+#include "custom_msgs/plan.h"
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -24,6 +25,9 @@ namespace Custom{
 
         std::string game_state_topic = "/board/ask_state";
         game_state_pub = nh.advertise<std_msgs::Empty>(game_state_topic, 1000);
+
+        std::string get_stop_state_topic = "/ai_manager/get_state_stop_agent";
+        get_state_stop_agent_pub = nh.advertise<std_msgs::Empty>(get_stop_state_topic, 1000);
 
 
         std::string get_agent_topic = "/board/ask_agent";
@@ -52,6 +56,11 @@ namespace Custom{
         plans.resize(agent_names.size());       //resize vector plans, agent_route_flag ... for agent
         agent_route_flag.resize(agent_names.size(), 0);
         agent_dispatched.resize(agent_names.size());
+        agent_state_time.resize(agent_names.size());   //state and time after stop
+        agent_stop_flag.resize(agent_names.size(), false);  //stop flag
+        agents_axis.resize(agent_names.size());
+
+
 
         std::string dist_mat_topic = "/navi/ask_dist_mat";      //get dist_mat from srv
         nh.getParam("dist_name", dist_mat_topic);
@@ -99,6 +108,7 @@ namespace Custom{
     void Ai_Manager::act_dispatched_Callback(const rosplan_dispatch_msgs::ActionDispatch& msg){
         big_plan = msg;
         dispatched = true;
+        timer = 0;
     }
 
     void Ai_Manager::ai_feedback_Callback(const ros::MessageEvent<ai_manager::ai_feedback const >& event){
@@ -158,6 +168,7 @@ namespace Custom{
         dispatched = false;
         for (int i = 0; i < agent_dispatched.size(); i++) {  //init dispatched
             agent_dispatched[i] = NOT_DISPATCHED;
+            agent_stop_flag[i] = false;
         }
     }
 
@@ -169,13 +180,17 @@ namespace Custom{
     }
 
     void Ai_Manager::give_route_Callback(const navi::give_route& msg){
-        std::string name = msg.name;
-        int i = 0;
-        for(i = 0; i < agent_names.size(); i++){
-            if(agent_names[i] == name)
-                break;
+        vector<custom_msgs::plan> temp = msg.plans;
+        for (int k = 0; k < temp.size(); k++) {
+            std::string name = temp[k].name;
+            int i = 0;
+            for (i = 0; i < agent_names.size(); i++) {
+                if (agent_names[i] == temp[k].name)
+                    break;
+            }
+            plans[k] = temp[k].plan;
         }
-
+        cout<<"good"<<endl;
         get_route = true;
         
     }
@@ -192,52 +207,185 @@ namespace Custom{
             }
             
             if (get_state == true){     //subscribe game_state
-                //TODO: get state and stop agent
-                
+                std::cout<<"get_state"<<std::endl;
+                //get state and stop agent
+                std_msgs::Empty msg;
                 //publish
-
+                get_state_stop_agent_pub.publish(msg);
                 get_state = false;
             }
             else if(get_agent_state == true){
-                //TODO: calc dest
-
+                //calc dest
+                std::cout<<"get_agent_state"<<std::endl;
+                calc_dest();
                 //get route from Navi
-                for(int i = 0; i < agents_axis.size(); i++){
+                //for(int i = 0; i < agents_axis.size(); i++){
                     navi::want_route msg;
-                    msg.name = agent_names[i];
-                    msg.from = agents_axis[i];
-                    msg.to = destination[i];
-                    want_route_pub.publish(msg);
-                }
+                    msg.name = agent_names;
+                    msg.from = agents_axis;
+                    msg.to = destination;
+                    //if(ghost[i]!=1) //TODO:
+                        want_route_pub.publish(msg);
+                //}
                 get_agent_state = false;
             }
             else if (get_route == true){    //check subscribed route and publish
-                for(int i = 0 ;i < agent_route_flag.size(); i++){
-                    if( agent_route_flag[i] == 1){   //get_route but dont publish
-                        //???? TODO: who think?
-                        ai_manager::ai_action msg;
-                        msg.plan = plans[i];
+                std::cout<<"get_route"<<std::endl;
+                for(int i = 0 ;i < agent_names.size(); i++){
+                    //if( agent_route_flag[i] == 1){   //get_route but dont publish
+                    //???? TODO: who think?
+                    ai_manager::ai_action msg;
+                    msg.plan = plans[i];
+                    if (ghost[i] != 1)
                         agent_pub[i].publish(msg);
-                        agent_route_flag[i] = 2;
-                    }
+                    //agent_route_flag[i] = 2;
+                    //}
                 }
-                
+                double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                timer = time + ((double)(3) * 1000000000);    //set timer
+                get_route = false;
                 //check all get_route
-                int count = 0;
-                for(int i = 0; i < agent_route_flag.size(); i++){
-                    if( agent_route_flag[i] == 2)
-                        count++;
+                // int count = 0;
+                // for(int i = 0; i < agent_route_flag.size(); i++){
+                //     if( agent_route_flag[i] == 2)
+                //         count++;
+                // }
+                // if( count == agent_route_flag.size()){
+                //     get_route = false;
+                //     double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                //     timer = time + ((double)(3) * 1000000000);    //set timer
+                //     for(int i = 0; i < agent_route_flag.size(); i++){
+                //         agent_route_flag[i] = 0;    //init route_flag
+                //     }
+                // }
+            }
+
+        }
+    }
+
+    void Ai_Manager::calc_dest(){
+        int p_num;
+        custom_msgs::axis p_temp;
+        p_temp.row = player_axis[0].row;
+        p_temp.col = player_axis[0].col;
+        int direct = player_axis[0].direction;
+        std::vector<int> a_num;
+        a_num.resize(4);
+        for(int i = 0; i < point_name.size(); i++){
+            if(point_name[i] == p_temp){
+                p_num = i;
+            }
+            for (int j = 0; j < agents_axis.size(); j++) {
+                if (point_name[i].row == agents_axis[j].row &&
+                    point_name[i].col == agents_axis[j].col)
+                    a_num[j] = i;
+            }
+        }
+        std::vector<int> dest_temp; // player, front, left, right
+        dest_temp.resize(4, -1);    //agent_num
+        dest_temp[0] = p_num;
+        for(int i = 0; i < dist_mat[p_num].size(); i++){    //find dist==2  //TODO:
+            if(dist_mat[p_num][i] == 2){
+                if(direct == 1){    //direct == left
+                    if(p_temp.col > point_name[i].col) //front
+                        dest_temp[1] = i;
+                    if(p_temp.row < point_name[i].row)  //left
+                        dest_temp[2] = i;
+                    if(p_temp.row > point_name[i].row)  //right
+                        dest_temp[3] = i;
+                } else if(direct == 2){   //direct == up
+                    if(p_temp.row < point_name[i].row) //front
+                        dest_temp[1] = i;
+                    if(p_temp.col > point_name[i].col)  //left
+                        dest_temp[2] = i;
+                    if(p_temp.col < point_name[i].col)  //right
+                        dest_temp[3] = i;
+                } else if(direct == 3){   //direct == right
+                    if(p_temp.col < point_name[i].col) //front
+                        dest_temp[1] = i;
+                    if(p_temp.row > point_name[i].row)  //left
+                        dest_temp[2] = i;
+                    if(p_temp.row < point_name[i].row)  //right
+                        dest_temp[3] = i;
+                } else if(direct == 4){   //direct == down
+                    if(p_temp.row > point_name[i].row) //front
+                        dest_temp[1] = i;
+                    if(p_temp.col < point_name[i].col)  //left
+                        dest_temp[2] = i;
+                    if(p_temp.col > point_name[i].col)  //right
+                        dest_temp[3] = i;
                 }
-                if( count == agent_route_flag.size()){
-                    get_route = false;
-                    double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                    timer = time + ((double)(3) * 1000000000);    //set timer
-                    for(int i = 0; i < agent_route_flag.size(); i++){
-                        agent_route_flag[i] = 0;    //init route_flag
+            }
+            // int j;
+            // for(j = 0; j < dest_temp.size(); j++){
+            //     if(dest_temp[j] == -1)
+            //         break;
+            // }
+            // if(j == dest_temp.size())
+            //     break;
+        }
+        for(int j = 1; j < dest_temp.size(); j++){      //보정(없을 경우)
+            if(dest_temp[j] == -1){
+                for( int k = 1; k < dest_temp.size(); k++){
+                    if( dest_temp[k] != -1)
+                        dest_temp[j] = dest_temp[k];
+                }
+            }
+        }
+        
+        //가까운 순서대로
+        std::vector<diagnostic_msgs::KeyValue> param = big_plan.parameters;
+        destination.resize(4);
+        int flag[4] = {0,};
+        std::string act = param[0].value;
+        int plan = stoi(act.substr(4));  //plan number
+        cout<<"hi"<<plan<<endl;
+        for(int i = 0; i < 5 - plan; i++){  //전략에 따라
+            int min;
+            int d_temp = 10000;
+            for (int j = 0; j < ghost.size(); j++) {
+                cout<<"ghost : "<<ghost[j]<<", "<<flag[j]<<endl;
+                if (ghost[j] != 1 && flag[j] != 1) {    //가장 가까운 agent가 배정
+                    cout<<"ha"<<endl;
+                    cout<<i<<" "<<j<<" "<<dist_mat[dest_temp[i]][a_num[j]]<<"" << d_temp<<endl;
+                    if (dist_mat[dest_temp[i]][a_num[j]] < d_temp){
+                        min = j;
+                        d_temp = dist_mat[dest_temp[i]][a_num[j]];
                     }
                 }
             }
+            destination[min] = point_name[dest_temp[i]];
+            flag[min] = 1;
+        }
 
+        //TODO: make ghost
+        
+    }
+
+    void Ai_Manager::get_agent_state_Callback(const ros::MessageEvent<ai_manager::get_agent_state const >& event){
+        std::string publisher_name = event.getPublisherName();
+        ai_manager::get_agent_state::ConstPtr data = event.getConstMessage();
+        int point = publisher_name.find("/");
+
+        publisher_name = publisher_name.substr(point+1);
+        int i;
+        for (i = 0; i < agent_names.size(); i++) {  //find agent number
+            if (agent_names[i] == publisher_name)
+                break;
+        }
+        agent_stop_flag[i] = true;
+        agents_axis[i] = data->agent;
+        int count = 0;
+
+        for (i = 0; i < agent_stop_flag.size(); i++) {  //Check all agent stop
+            if (agent_stop_flag[i] == true)
+                count++;
+        }
+        if(count == agent_stop_flag.size()){
+            for (i = 0; i < agent_stop_flag.size(); i++) {  //Check all agent stop
+                agent_stop_flag[i] = false;
+            }
+            get_agent_state = true;
         }
     }
 
@@ -269,6 +417,20 @@ int main(int argc, char **argv)
     nh.getParam("stop_name", stop_topic);
     ros::Subscriber stop_sub = nh.subscribe(stop_topic, 1000, &Custom::Ai_Manager::stop_Callback,
                                                dynamic_cast<Custom::Ai_Manager *>(&mi));
+
+    std::string state_topic = "/board/state_response";
+    ros::Subscriber state_sub = nh.subscribe(state_topic, 1000, &Custom::Ai_Manager::game_state_Callback,
+                                               dynamic_cast<Custom::Ai_Manager *>(&mi));                                           
+
+    std::string get_agent_state_topic = "/ai_manager/get_agent_state";
+    nh.getParam("get_agent_state", get_agent_state_topic);
+    ros::Subscriber get_agent_state_sub = nh.subscribe(get_agent_state_topic, 1000, &Custom::Ai_Manager::get_agent_state_Callback,
+                                               dynamic_cast<Custom::Ai_Manager *>(&mi));
+
+    std::string give_route_topic = "/navi/give_route";
+    ros::Subscriber give_route_sub = nh.subscribe(give_route_topic, 1000, &Custom::Ai_Manager::give_route_Callback,
+                                               dynamic_cast<Custom::Ai_Manager *>(&mi));
+
 
     while(1){
         sleep(0);

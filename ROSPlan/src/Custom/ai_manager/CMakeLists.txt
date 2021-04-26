@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(FILES 
   ai_action.msg
   ai_feedback.msg
+  get_agent_state.msg
 )
 add_service_files(
   FILES

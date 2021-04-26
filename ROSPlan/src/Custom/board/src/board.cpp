@@ -17,19 +17,19 @@
 using namespace std;
 
 namespace Custom{
-    Board::Board(ros::NodeHandle &nh)
+    Board::Board(ros::NodeHandle &nh)   //생성자
     {
-        node_handle = &nh;
+        node_handle = &nh;  //get node handle
 
-        game_state = IN_GAME; //select menu
+        game_state = IN_GAME; //init_state = select menu
 
-        selecting_menu = MENU_START; //start button
+        selecting_menu = MENU_START; //init_button = start button
 
-        life = 3;
-        score = 0;
-        in_grid = true;
-        ghost_time = 5;
-        ghost_timer = 0;
+        life = 3;           //game life
+        score = 0;          //game score
+        in_grid = true;     //start is in_grid
+        ghost_time = 5;     //ghost_time
+        ghost_timer = (double)(1000000000)*(double)(100000000);    //ghost_timer
         
         //set publisher
         std::string display_topic = "/board/display";
@@ -57,25 +57,25 @@ namespace Custom{
         nh.getParam("change_state_name", change_state_pub_topic);
         ros::Publisher change_state_pub = nh.advertise<board::change_state_msg>(change_state_pub_topic, 1000);
 
-        kb = "/rosplan_knowledge_base/"; // "knowledge_base";
+        kb = "/rosplan_knowledge_base/"; // "knowledge_base name";
         nh.getParam("knowledge_base", kb);
 
 
-        //map_row, col get
+        //map_row, col get from kb
         std::stringstream ss;
         ss << kb << "state/functions";
         ros::service::waitForService(ss.str(), ros::Duration(20));
         ros::ServiceClient row_client = nh.serviceClient<rosplan_knowledge_msgs::GetAttributeService>(ss.str());
         rosplan_knowledge_msgs::GetAttributeService row_srv;
         row_srv.request.predicate_name = "row";
-        vector<rosplan_knowledge_msgs::KnowledgeItem> row_temp;
+        vector<rosplan_knowledge_msgs::KnowledgeItem> row_temp;     //get row
         if (row_client.call(row_srv)){
             row_temp = row_srv.response.attributes;
             map_row = row_temp[0].function_value;
         }
         else{
         }
-        row_srv.request.predicate_name = "col";
+        row_srv.request.predicate_name = "col";         //get col
         if (row_client.call(row_srv)){
             row_temp = row_srv.response.attributes;
             map_col = row_temp[0].function_value;
@@ -83,12 +83,13 @@ namespace Custom{
         else{
         }
 
+
         //make map space
         init_map.resize(map_row);
         menu.resize(map_row);
     
-        for (int i = 0; i < map_row; i++)
-        {   for (int j = 0; j < map_col + 1; j++)
+        for (int i = 0; i < map_row; i++)           
+        {   for (int j = 0; j < map_col + 1; j++)   //add \n in tail for making string after 
             {
                 init_map[i].push_back(" ");
                 menu[i].push_back(" ");
@@ -96,9 +97,9 @@ namespace Custom{
             init_map[i][map_col] = "\n";
             menu[i][map_col] = "\n";
         }
-        map = init_map;
+        map = init_map; //set map to init_map
 
-        //agents count get
+        //agents name and count get
         ss.str("");
         ss << kb << "state/instances";
         ros::service::waitForService(ss.str(), ros::Duration(20));
@@ -111,18 +112,17 @@ namespace Custom{
         else{
         }
 
-        for(int i = 0; i < agent_names.size(); i++){
+        for(int i = 0; i < agent_names.size(); i++){        //set agents' pub (set_ai)
             std::string set_ai_topic = "/board/set_ai/to_" + agent_names[i];
             ros::Publisher set_AI_pub_temp = nh.advertise<board::display_info>(set_ai_topic, 1000);
             set_AI_pub.push_back(set_AI_pub_temp);
         }
 
+        // std::string set_ai_topic = "/board/set_ai";
+        // nh.getParam("set_ai_name", set_ai_topic);
+        // ros::Publisher set_AI_pub = nh.advertise<board::set_ai_msg>(set_ai_topic, 1000);
 
-        std::string set_ai_topic = "/board/set_ai";
-        nh.getParam("set_ai_name", set_ai_topic);
-        ros::Publisher set_AI_pub = nh.advertise<board::set_ai_msg>(set_ai_topic, 1000);
-
-        ss.str("");
+        ss.str("");     //get player and agent 's init_loc
         ss << kb << "state/propositions";
         ros::service::waitForService(ss.str(), ros::Duration(20));
         row_client = nh.serviceClient<rosplan_knowledge_msgs::GetAttributeService>(ss.str());
@@ -134,14 +134,14 @@ namespace Custom{
         else{
         }
 
-        for(int i = 0; i < play_agent_temp.size(); i++){
+        for(int i = 0; i < play_agent_temp.size(); i++){    //init player and agent 's loc
             string name;
             custom_msgs::axis ax;
             for(int j = 0; j < play_agent_temp[i].values.size(); j++){
-                if(play_agent_temp[i].values[j].key == "c"){
+                if(play_agent_temp[i].values[j].key == "c"){        //get 
                     name = play_agent_temp[i].values[j].value;
                 }
-                else if(play_agent_temp[i].values[j].key == "p"){
+                else if(play_agent_temp[i].values[j].key == "p"){       //get name
                     string temp_str = play_agent_temp[i].values[j].value;
                     int temp_point = temp_str.find("_");
                     ax.row = stoi(temp_str.substr(5, temp_point - 5));
@@ -149,16 +149,16 @@ namespace Custom{
                     ax.direction = 1;
                 }
             }
-            if(name == "player"){
+            if(name == "player"){       //if player
                 init_player.push_back(ax);
                 player = init_player;
-            }else{
+            }else{      //if agent
                 init_agents.push_back(pair<custom_msgs::axis, bool>(ax, false));
                 agents = init_agents;
             }
         }
 
-        ros::service::waitForService(ss.str(), ros::Duration(20));
+        ros::service::waitForService(ss.str(), ros::Duration(20));      //get menu's screen (start, end)
         row_srv.request.predicate_name = "is-menu";
         vector<rosplan_knowledge_msgs::KnowledgeItem> menu_temp;
         if (row_client.call(row_srv)){
@@ -168,7 +168,7 @@ namespace Custom{
             cout<<"error"<<endl;
         }
 
-        for(int i = 0; i < menu_temp.size(); i++){
+        for(int i = 0; i < menu_temp.size(); i++){      //set menu's screen with block
             string name;
             custom_msgs::axis ax;
             if (menu_temp[i].values[0].key == "p"){
@@ -180,7 +180,7 @@ namespace Custom{
             }
         }
 
-        ros::service::waitForService(ss.str(), ros::Duration(20));
+        ros::service::waitForService(ss.str(), ros::Duration(20));      //get init game map's block
         row_srv.request.predicate_name = "is-wall";
         vector<rosplan_knowledge_msgs::KnowledgeItem> map_temp;
         map_temp.clear();
@@ -191,7 +191,7 @@ namespace Custom{
             cout<<"error"<<endl;
         }
 
-        for(int i = 0; i < map_temp.size(); i++){
+        for(int i = 0; i < map_temp.size(); i++){           //set init game map's block
             string name;
             custom_msgs::axis ax;
             if (map_temp[i].values[0].key == "p"){
@@ -204,7 +204,31 @@ namespace Custom{
             }
         }
 
-        ros::service::waitForService(ss.str(), ros::Duration(20));
+        ros::service::waitForService(ss.str(), ros::Duration(20));  //get init game's ghost
+        row_srv.request.predicate_name = "is-ghost";
+        map_temp.clear();
+        if (row_client.call(row_srv)){
+            map_temp = row_srv.response.attributes;
+        }
+        else{
+            cout<<"error"<<endl;
+        }
+
+        for(int i = 0; i < map_temp.size(); i++){       //set init game's ghost
+            string name;
+            if (map_temp[i].values[0].key == "a"){
+                string temp_str = map_temp[i].values[0].value;
+                int j;
+                for (j = 0; j < agent_names.size(); j++) {
+                    if (temp_str == agent_names[j])
+                        break;
+                }
+                if (j < agent_names.size())
+                    agents[j].second = true;  //ghost
+            }
+        }
+
+        ros::service::waitForService(ss.str(), ros::Duration(20));  //get init game map's small cookie
         row_srv.request.predicate_name = "is-scookie";
         map_temp.clear();
         if (row_client.call(row_srv)){
@@ -214,7 +238,7 @@ namespace Custom{
             cout<<"error"<<endl;
         }
 
-        for(int i = 0; i < map_temp.size(); i++){
+        for(int i = 0; i < map_temp.size(); i++){       //set init game map's small cookie
             string name;
             custom_msgs::axis ax;
             if (map_temp[i].values[0].key == "p"){
@@ -227,7 +251,7 @@ namespace Custom{
             }
         }
 
-        ros::service::waitForService(ss.str(), ros::Duration(20));
+        ros::service::waitForService(ss.str(), ros::Duration(20));      //get init game map's large cookie
         row_srv.request.predicate_name = "is-lcookie";
         map_temp.clear();
         if (row_client.call(row_srv)){
@@ -237,7 +261,7 @@ namespace Custom{
             cout<<"error"<<endl;
         }
 
-        for(int i = 0; i < map_temp.size(); i++){
+        for(int i = 0; i < map_temp.size(); i++){       //set init game map's large cookie
             string name;
             custom_msgs::axis ax;
             if (map_temp[i].values[0].key == "p"){
@@ -250,7 +274,7 @@ namespace Custom{
             }
         }
 
-        map = init_map;
+        map = init_map;         //init maps
         init_lcookies = lcookies;
         init_scookies = scookies;
     }
@@ -263,22 +287,21 @@ namespace Custom{
     void Board::check_timer(){
         double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         if(ghost_timer <= now_time ){    //run out ghost timer
-            for(int i = 0; i < agents.size(); i++){ //norm  every agent
-                agents[i].second = false;
-            }
+            // for(int i = 0; i < agents.size(); i++){ //norm  every agent
+            //     agents[i].second = false;
+            // }
         }
     }
-    void Board::run_board(){
-
+    void Board::run_board() {
         board::display_info display_temp;
         vector<custom_msgs::map> map_temp2;
         custom_msgs::map map_temp;
-        if(game_state == IN_GAME){
+        if (game_state == IN_GAME) {
             check_timer();  //timer check
             check_eat_star();
             check_collision();
             //display map
-            for(int i = 0; i < map.size(); i++){
+            for (int i = 0; i < map.size(); i++) {
                 map_temp.value = map[i];
                 map_temp2.push_back(map_temp);
             }
@@ -288,7 +311,7 @@ namespace Custom{
             //display agent
             std::vector<custom_msgs::axis> agent_temp;
             std::vector<int> ghost_temp;
-            for(int i = 0; i < agents.size(); i++){
+            for (int i = 0; i < agents.size(); i++) {
                 agent_temp.push_back(agents[i].first);
                 ghost_temp.push_back(agents[i].second);
             }
@@ -305,14 +328,13 @@ namespace Custom{
             //display life
             display_temp.life = life;
             //display selecting_menu
-            display_temp.selecting_menu = selecting_menu;   
+            display_temp.selecting_menu = selecting_menu;
             //display map_row_col
             display_temp.map_row = map_row;
-            display_temp.map_col = map_col;    
-        }
-        else if(game_state == IN_MENU){
+            display_temp.map_col = map_col;
+        } else if (game_state == IN_MENU) {
             //display map
-            for(int i = 0; i < map.size(); i++){
+            for (int i = 0; i < map.size(); i++) {
                 map_temp.value = menu[i];
                 map_temp2.push_back(map_temp);
             }
@@ -321,6 +343,7 @@ namespace Custom{
         }
         //publish to display
         display_pub.publish(display_temp);
+        ros::spinOnce();
     }
     void Board::check_eat_star(){
         if(in_grid == true){
@@ -612,6 +635,10 @@ namespace Custom{
             ghost_temp.push_back(agents[i].second);
         }
         temp.agents_axis = agent_temp;
+        temp.ghost = ghost_temp;
+        for(int i =0 ;i<ghost_temp.size();i++){
+            cout<<ghost_temp[i]<<" "<<agents[i].second<<endl;
+        }
 
         state_response_pub.publish(temp);
 
@@ -637,9 +664,10 @@ namespace Custom{
     }
     
     void Board::set_ai_loc_callback(const ros::MessageEvent<board::set_ai_loc_msg>& msg){
-        const std::string& publisher_name = msg.getPublisherName(); //get publisher name
+        std::string publisher_name = msg.getPublisherName(); //get publisher name
         const board::set_ai_loc_msg::ConstPtr& data = msg.getMessage();
-        
+        int point = publisher_name.find("/");
+        publisher_name = publisher_name.substr(point+1);
         int i = 0;
         for(i = 0; i < agent_names.size(); i++){
             if(agent_names[i] == publisher_name){
@@ -651,6 +679,11 @@ namespace Custom{
             agents[i].first = data->loc;
         }
         
+        for(int i =0;i<agent_names.size();i++){
+
+            cout<<publisher_name<<" "<< agents[i].first.row<<", "<<agents[i].first.col<<endl;
+        
+        }
         return;
     }
 
@@ -685,8 +718,8 @@ int main(int argc, char **argv)
 
     //subscriber
     ros::Subscriber ask_state_sub = nh.subscribe("/board/ask_state", 1, &Custom::Board::ask_state_callback, dynamic_cast<Custom::Board *>(&bi));
-    ros::Subscriber select_menu_sub = nh.subscribe("/board/select_menu", 1, &Custom::Board::select_menu_callback, dynamic_cast<Custom::Board *>(&bi));
-    ros::Subscriber set_ai_loc_sub = nh.subscribe("/board/set_ai_loc", 1, &Custom::Board::set_ai_loc_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::Subscriber select_menu_sub = nh.subscribe("/board/select_menu", 100, &Custom::Board::select_menu_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::Subscriber set_ai_loc_sub = nh.subscribe("/board/set_ai_loc", 10000, &Custom::Board::set_ai_loc_callback, dynamic_cast<Custom::Board *>(&bi));
 
     std::cout<<"ready to run board"<<std::endl;
     // ROS_INFO("Custom: (%s) Ready to receive", ros::this_node::getName().c_str());
@@ -695,9 +728,9 @@ int main(int argc, char **argv)
     {
         sleep(0);
         double start_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        ros::spinOnce();
+        ros::spinOnce();    //check sub and pub and srv
 
-        bi.run_board();
+        bi.run_board(); //run_board and display
 
 
         double finish_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();

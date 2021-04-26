@@ -4,6 +4,7 @@
 #include "custom_msgs/matrix.h"
 #include "navi/findpath.h"      //AStar
 #include "navi/give_route.h"
+#include "custom_msgs/plan.h"
 
 #include <iostream>
 #include <chrono>
@@ -195,58 +196,62 @@ namespace Custom{
 
 // navi::want_route::Request& req, navi::want_route::Response& res)
     void Navi::want_route_Callback(const navi::want_route& msg){
-        double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        if(now_time >= timer){  //run out timer
-            use_world_map = world_map;
-            player_mat.clear();
-            timer = now_time + ((double)(30)*1000000000);
-        }
-
-        //get player state  why need???
-        // std::string topic = "/player/player_state_time";
-        // ros::service::waitForService(topic, ros::Duration(20));
-        // ros::ServiceClient client = nh.serviceClient<player::player_state_time_srv>(topic);
-        // player::player_state_time_srv srv;
-
-        // vector<custom_msgs::axis> player;
-        // if (client.call(srv)){
-        //     player = srv.response.player;
-        // }
-        // else{
-        // }
-
-        //중복 처리
-        auto it = player_mat.find(msg.name);
-        if(it != player_mat.end()){  //이미 route가 있으면 제거
-            for(int i = 0; i < use_world_map.size(); i++){
-                for(int j = 0; j < use_world_map[i].size(); j++){
-                    use_world_map[i][j] = use_world_map[i][j] - it->second[i][j];   //mat 제거
-                }
+        vector<string> a = msg.name;
+        vector<custom_msgs::plan> plans;
+        for (int k = 0; k < a.size(); k++) {
+            double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            if (now_time >= timer) {  //run out timer
+                use_world_map = world_map;
+                player_mat.clear();
+                timer = now_time + ((double)(30) * 1000000000);
             }
-            player_mat.erase(it);   //제거
-        }
-        
-        
-        vector<custom_msgs::axis> plan;
-        run_star(msg.from, msg.to, use_world_map, plan);
-        
-        navi::give_route response;
-        response.name = msg.name;
-        response.plan = plan;
-        give_route_pub.publish(response);
 
-        //make player_mat and update use_world_map
-        vector<int> temp(world_map[0].size(), 0);
-        vector<vector<int>> temp_mat(world_map.size(), temp);
-        for(int i = 0; i < plan.size(); i++){
-            temp_mat[plan[i].row - 1][plan[i].col - 1] = 5;
-            use_world_map[plan[i].row - 1][plan[i].col - 1] += 5;
-        }
-        player_mat.insert(pair<string, vector<vector<int>>>(msg.name, temp_mat));
+            //get player state  why need???
+            // std::string topic = "/player/player_state_time";
+            // ros::service::waitForService(topic, ros::Duration(20));
+            // ros::ServiceClient client = nh.serviceClient<player::player_state_time_srv>(topic);
+            // player::player_state_time_srv srv;
 
+            // vector<custom_msgs::axis> player;
+            // if (client.call(srv)){
+            //     player = srv.response.player;
+            // }
+            // else{
+            // }
+
+            //중복 처리
+            cout << "hi" << endl;
+            auto it = player_mat.find(msg.name[k]);
+            if (it != player_mat.end()) {  //이미 route가 있으면 제거
+                for (int i = 0; i < use_world_map.size(); i++) {
+                    for (int j = 0; j < use_world_map[i].size(); j++) {
+                        use_world_map[i][j] = use_world_map[i][j] - it->second[i][j];  //mat 제거
+                    }
+                }
+                player_mat.erase(it);  //제거
+            }
+
+            vector<custom_msgs::axis> plan;
+            run_star(msg.from[k], msg.to[k], use_world_map, plan);
+
+            custom_msgs::plan response;
+            response.name = msg.name[k];
+            response.plan = plan;
+            plans.push_back(response);
+
+            //make player_mat and update use_world_map
+            vector<int> temp(world_map[0].size(), 0);
+            vector<vector<int>> temp_mat(world_map.size(), temp);
+            for (int i = 0; i < plan.size(); i++) {
+                temp_mat[plan[i].row - 1][plan[i].col - 1] = 5;
+                use_world_map[plan[i].row - 1][plan[i].col - 1] += 5;
+            }
+            player_mat.insert(pair<string, vector<vector<int>>>(msg.name[k], temp_mat));
+        }
+        navi::give_route res;
+        res.plans = plans;
+        give_route_pub.publish(res);
         return;
-
-
     }
 }
 
@@ -277,6 +282,9 @@ int main(int argc, char **argv)
     ros::ServiceServer ask_dist_mat_srv = nh.advertiseService("/navi/ask_dist_mat", &Custom::Navi::ask_dist_mat_Callback, dynamic_cast<Custom::Navi *>(&ni));
     
 
-    ros::spin();
+    ros::Rate loopRate(1);
+    ros::AsyncSpinner spinner(4);		//다중 스레드 사용
+    spinner.start();
+    ros::waitForShutdown();
     return 0;    
 }

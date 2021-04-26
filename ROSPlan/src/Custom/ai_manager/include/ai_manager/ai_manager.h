@@ -5,6 +5,7 @@
 #include "board/game_state_msg.h"
 #include "navi/give_route.h"
 #include "ai_manager/ai_feedback.h"
+#include "ai_manager/get_agent_state.h"
 #include <vector>
 #include <string>
 #ifndef AI_MANAGER
@@ -46,13 +47,18 @@ namespace Custom
 
         std::vector<std::vector<custom_msgs::axis>> plans;  //route
         std::vector<custom_msgs::axis> destination; //agents' destination
+
+        std::vector< std::pair<custom_msgs::axis, float> > agent_state_time;    //state and time after stop
+
+        std::vector<int> agent_route_flag;  //agent_route_flag
+        std::vector<bool> agent_stop_flag;  //stop flag
         // std::map<std::string, std::vector<std::vector<int>>> player_mat;
 
         /* params */
         bool dispatched = false;
         bool get_state = false;
         bool get_route = false;
-        std::vector<int> agent_route_flag;
+       
         bool get_agent_state = false;
         double timer;   //init timer
 
@@ -63,12 +69,15 @@ namespace Custom
 
         void write_launch(std::vector<std::string>& f, const std::string path);     //write launch for agent
         void run_AI_Manager();
+        void calc_dest();
 
         //publisher
         ros::Publisher action_feedback_pub;
         ros::Publisher want_route_pub;
         ros::Publisher game_state_pub;
         std::vector<ros::Publisher> agent_pub;      //agent dispatch pub
+        ros::Publisher get_state_stop_agent_pub;    //get state and stop agent to all agent
+        
         //service client
         //ros::ServiceClient get_player_state_cli;
 
@@ -80,6 +89,8 @@ namespace Custom
         void give_route_Callback(const navi::give_route& msg);
         void ai_feedback_Callback(const ros::MessageEvent<ai_manager::ai_feedback const >& event);
         void game_state_Callback(const board::game_state_msg& msg);
+        void get_and_stop_Callback(const std_msgs::Empty& msg);
+        void get_agent_state_Callback(const ros::MessageEvent<ai_manager::get_agent_state const >& msg);
        // void reset_Callback(const std_msgs::Empty& msg);
         //void exit_Callback(const std_msgs::Empty& msg);
         //void want_route_Callback(const navi::want_route& msg);

@@ -11,6 +11,9 @@
 	</node>
 	<node name="navi" pkg="navi" type="navi" respawn="false" output="screen">
 	</node>
+
+	<node name="ai_manager" pkg="ai_manager" type="ai_manager" respawn="false" output="screen">
+	</node>
 	<!-- display 
 	<node name="display" pkg="display" type="display" respawn="false" output="screen">
 		<param name="display_name" value="$(arg display_name)" />

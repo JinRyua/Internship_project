@@ -1,3 +1,2 @@
 # want_route callback
-string name
-custom_msgs/axis[] plan
+custom_msgs/plan[] plans

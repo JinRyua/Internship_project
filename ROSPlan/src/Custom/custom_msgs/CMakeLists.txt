@@ -20,6 +20,7 @@ add_message_files(
   axis.msg
   map.msg
   matrix.msg
+  plan.msg
 )
 
 generate_messages(
