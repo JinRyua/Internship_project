@@ -6,6 +6,7 @@
 #include "custom_msgs/matrix.h"
 #include "ai_manager/ai_action.h"
 #include "ai_manager/ai_feedback.h"
+#include "player/player_state_time_srv.h"
 #include "custom_msgs/plan.h"
 #include <iostream>
 #include <fstream>
@@ -112,8 +113,10 @@ namespace Custom{
     }
 
     void Ai_Manager::ai_feedback_Callback(const ros::MessageEvent<ai_manager::ai_feedback const >& event){
-        const std::string publisher_name = event.getPublisherName();
+        std::string publisher_name = event.getPublisherName();
         ai_manager::ai_feedback::ConstPtr data = event.getConstMessage();
+        int point = publisher_name.find("/", 0);      //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
+        publisher_name = publisher_name.substr(point + 1);  //노드 이름 저장
         if(data -> status == "enable"){
             int i;
             for (i = 0; i < agent_names.size(); i++) {  //find agent number
@@ -173,7 +176,7 @@ namespace Custom{
     }
 
     void Ai_Manager::game_state_Callback(const board::game_state_msg& msg){
-        player_axis = msg.player_axis;
+        //player_axis = msg.player_axis;
         lcookies_loc = msg.lcookies_loc;
         ghost = msg.ghost;
         get_state = true;
@@ -199,13 +202,22 @@ namespace Custom{
         if(dispatched == true){ //run if dispatched
             double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             if (now_time >= timer) {  //run out timer
+                std::string srv_topic = "/player/player_state_time";  //get dist_mat from srv
+                ros::service::waitForService(srv_topic, ros::Duration(20));
+                ros::ServiceClient client = node_handle->serviceClient<player::player_state_time_srv>(srv_topic);
+                player::player_state_time_srv srv;
+
+                if (client.call(srv)) {  //make dist_mat and point name
+                    player_axis = srv.response.player;
+                }
+
                 std_msgs::Empty temp;
                 game_state_pub.publish(temp);   //publish ask game_state
                 for(int i = 0; i < agent_route_flag.size(); i++)        //init route_flag
                     agent_route_flag[i] = 0;
                 timer = now_time + ((double)(100) * 1000000000);    //set timer(INF)
             }
-            
+
             if (get_state == true){     //subscribe game_state
                 std::cout<<"get_state"<<std::endl;
                 //get state and stop agent
@@ -242,7 +254,7 @@ namespace Custom{
                     //}
                 }
                 double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                timer = time + ((double)(3) * 1000000000);    //set timer
+                timer = time + ((double)(1.5) * 1000000000);    //set timer
                 get_route = false;
                 //check all get_route
                 // int count = 0;
@@ -357,7 +369,7 @@ namespace Custom{
             destination[min] = point_name[dest_temp[i]];
             flag[min] = 1;
         }
-
+        cout<<"calc end"<<endl;
         //TODO: make ghost
         
     }

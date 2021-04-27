@@ -2,6 +2,9 @@
 #include "ai_agent/ai_agent.h"
 #include "board/set_ai_loc_msg.h"
 #include "ai_manager/get_agent_state.h"
+#include "ai_agent/stop_response.h"
+#include "ai_manager/ai_feedback.h"
+#include "ai_agent/agent_state_time.h"
 
 #include <chrono>
 #include <iostream>
@@ -19,14 +22,26 @@ namespace Custom{
         std::string set_ai_loc_topic = "/board/set_ai_loc";
         set_ai_loc_pub = nh.advertise<board::set_ai_loc_msg>(set_ai_loc_topic, 1000);
 
-        speed = 3;
-        plan_number = -1;
+        std::string agent_state_time_topic = "/ai_agent/agent_state_time/to_replanner";
+        state_time_pub = nh.advertise<ai_agent::agent_state_time>(agent_state_time_topic, 1000);
+
         std::string get_agent_state_topic = "/ai_manager/get_agent_state";
         agent_state_pub = nh.advertise<ai_manager::get_agent_state>(get_agent_state_topic, 1000);
 
-        agent.col = 11;
+        std::string stop_response_topic = "/ai_agent/stop_response/";
+        stop_response_pub = nh.advertise<ai_agent::stop_response>(stop_response_topic, 1000);
+
+        std::string ai_feedback_topic = "/ai_manager/ai_feedback/";
+        feedback_pub = nh.advertise<ai_manager::ai_feedback>(ai_feedback_topic, 1000);
+
+
+        speed = 3;
+        plan_number = -1;
+
+        agent.col = 11; //TODO:
         agent.row = 11;
         agent.direction = 1;
+        stop_flag = false;
 
     }
 
@@ -62,25 +77,48 @@ namespace Custom{
             if (direction == LEFT && dest.col >= agent.col){     //보정 In_Grid
                 agent.col = dest.col;
                 plan_number++;
+                if(stop_flag == true){
+                    state = IDLE;
+                    stop_flag = false;
+                }
             }
             else if (direction == RIGHT && dest.col <= agent.col){
                 agent.col = dest.col;
                 plan_number++;
+                if(stop_flag == true){
+                    state = IDLE;
+                    stop_flag = false;
+                }
             }
             else if (direction == UP && dest.row >= agent.row){
                 agent.row = dest.row;
                 plan_number++;
+                if(stop_flag == true){
+                    state = IDLE;
+                    stop_flag = false;
+                }
             }
             else if (direction == DOWN && dest.row <= agent.row){
                 agent.row = dest.row;
                 plan_number++;
+                if(stop_flag == true){
+                    state = IDLE;
+                    stop_flag = false;
+                }
             }
 
             //cout<<node_name<<" : "<<agent.row<<", "<<agent.col<<", "<<agent.direction<<endl;
-
+            agent.direction = direction;
             board::set_ai_loc_msg temp;
             temp.loc = agent;
             set_ai_loc_pub.publish(temp);
+
+            if(plan_number >= plan.size() ){ //finish
+                state = IDLE;
+                ai_manager::ai_feedback feed;
+                feed.status = "achieved";
+                feedback_pub.publish(feed);
+            }
 
             //cout<<
         }
@@ -90,18 +128,54 @@ namespace Custom{
         plan = msg.plan;
         plan_number = 0;
         state = RUN;
+        stop_flag = false;
+        ai_manager::ai_feedback temp;
+        temp.status = "enabled";
+        feedback_pub.publish(temp);
+    }
+
+    void Ai_Agent::state_Callback(const std_msgs::Empty& msg){
+        ai_manager::get_agent_state temp;
+           //TODO:
+        if(state != IDLE)
+            temp.agent = plan[plan_number];
+        else
+            temp.agent = agent;
+        state_time_pub.publish(temp);
     }
 
     void Ai_Agent::state_and_stop_Callback(const std_msgs::Empty& msg){
         ai_manager::get_agent_state temp;
-        state = IDLE;   //TODO:
-        if(plan_number != -1)
+           //TODO:
+        if(state != IDLE)
             temp.agent = plan[plan_number];
         else
             temp.agent = agent;
-
+        stop_flag = true;
         agent_state_pub.publish(temp);
     }
+
+    void Ai_Agent::stop_Callback(const std_msgs::Empty& msg){
+        state = IDLE;
+        ai_agent::stop_response temp;
+        temp.axis = agent;
+        stop_response_pub.publish(temp);
+        
+    }
+    
+    void Ai_Agent::exit_Callback(const std_msgs::Empty& msg){
+        exit(0);
+    }
+
+    void Ai_Agent::set_ai_Callback(const std_msgs::Empty& msg){
+        //TODO: set ai  speed, state....
+        
+    }
+
+    void Ai_Agent::reset_ai_Callback(const std_msgs::Empty& msg){
+        //TODO: reset ai -> ai?
+    }
+
 }
 
 int main(int argc, char **argv)
@@ -120,9 +194,27 @@ int main(int argc, char **argv)
     ros::Subscriber dispatched_sub = nh.subscribe(dispatched_topic, 1000, &Custom::Ai_Agent::dispatched_Callback,
                                                dynamic_cast<Custom::Ai_Agent *>(&ai));
 
+    std::string state_topic = "/ai_agent/get_state_agent/to_"+node_name;
+    ros::Subscriber state__sub = nh.subscribe(state_topic, 1000, &Custom::Ai_Agent::state_Callback,
+                                                      dynamic_cast<Custom::Ai_Agent *>(&ai));
+
     std::string state_stop_topic = "/ai_manager/get_state_stop_agent";
     ros::Subscriber state_and_stop_sub = nh.subscribe(state_stop_topic, 1000, &Custom::Ai_Agent::state_and_stop_Callback,
-                                               dynamic_cast<Custom::Ai_Agent *>(&ai));                                           
+                                               dynamic_cast<Custom::Ai_Agent *>(&ai));
+
+    std::string stop_topic = "/ai_agent/stop_agent/to_" + node_name;
+    ros::Subscriber stop_sub = nh.subscribe(stop_topic, 1000, &Custom::Ai_Agent::stop_Callback,
+                                                      dynamic_cast<Custom::Ai_Agent *>(&ai));
+
+    std::string exit_topic = "/board/exit_call";
+    ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Ai_Agent::exit_Callback,
+                                            dynamic_cast<Custom::Ai_Agent *>(&ai));
+    std::string set_ai_topic = "/ai_agent/set_ai/to_" + node_name;
+    ros::Subscriber set_ai_sub = nh.subscribe(set_ai_topic, 1000, &Custom::Ai_Agent::set_ai_Callback,
+                                            dynamic_cast<Custom::Ai_Agent *>(&ai));
+    std::string reset_topic = "/ai_agent/reset_ai/to_" + node_name;
+    ros::Subscriber reset_sub = nh.subscribe(reset_topic, 1000, &Custom::Ai_Agent::reset_ai_Callback,
+                                            dynamic_cast<Custom::Ai_Agent *>(&ai));
     // std::string exit_topic = "/board/exit_call";
     // nh.getParam("exit_name", exit_topic);
     // ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Player::exitCallback,

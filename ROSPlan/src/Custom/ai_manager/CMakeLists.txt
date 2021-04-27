@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_runtime
   navi
   rosplan_dispatch_msgs
+  player
 )
 
 add_message_files(FILES 
@@ -35,7 +36,7 @@ generate_messages(DEPENDENCIES std_msgs custom_msgs)
 catkin_package(
   INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp rospy actionlib std_msgs message_generation message_runtime genmsg actionlib custom_msgs navi rosplan_dispatch_msgs
+  CATKIN_DEPENDS roscpp rospy actionlib std_msgs message_generation message_runtime genmsg actionlib custom_msgs navi rosplan_dispatch_msgs player
   DEPENDS
 )
 

@@ -14,12 +14,22 @@ find_package(catkin REQUIRED COMPONENTS
   board
   custom_msgs
   ai_manager
+  actionlib
+  genmsg
+  message_runtime
 )
+
+add_message_files(FILES 
+  stop_response.msg
+  agent_state_time.msg
+)
+
+generate_messages(DEPENDENCIES std_msgs custom_msgs)
 
 catkin_package(
   INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp rospy board custom_msgs ai_manager
+  CATKIN_DEPENDS roscpp rospy board custom_msgs ai_manager actionlib genmsg message_runtime
   DEPENDS
 )
 

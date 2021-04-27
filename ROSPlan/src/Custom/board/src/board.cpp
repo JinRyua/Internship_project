@@ -29,7 +29,7 @@ namespace Custom{
         score = 0;          //game score
         in_grid = true;     //start is in_grid
         ghost_time = 5;     //ghost_time
-        ghost_timer = (double)(1000000000)*(double)(100000000);    //ghost_timer
+        ghost_timer = (double)(10000)*(double)(1000000000);    //ghost_timer
         
         //set publisher
         std::string display_topic = "/board/display";
@@ -287,9 +287,15 @@ namespace Custom{
     void Board::check_timer(){
         double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         if(ghost_timer <= now_time ){    //run out ghost timer
-            // for(int i = 0; i < agents.size(); i++){ //norm  every agent
-            //     agents[i].second = false;
-            // }
+            for(int i = 0; i < agents.size(); i++){ //norm  every agent
+                agents[i].second = false;
+            }
+            //publish
+            //const ros::MessageEvent<std_msgs::Empty> temp_call;
+
+            cout<< "call_Replan timer"<<endl;
+            //ask_state_callback(temp_call);
+            ghost_timer = now_time + ((double)(1000)*(1000000000));
         }
     }
     void Board::run_board() {
@@ -373,6 +379,10 @@ namespace Custom{
                     ghost_timer = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                     ghost_timer += ghost_time * 1000000000; //일정 시간만큼
 
+                    //publish
+                    //const ros::MessageEvent<std_msgs::Empty> temp_call;
+                    //ask_state_callback(temp_call);
+                    cout<< "call_Replan"<<endl;
                 }
                 
             }
@@ -575,7 +585,7 @@ namespace Custom{
         if(in_grid == false && (abs(ceil(loc.row) - ceil(player[0].row))!=0 ||
             abs(ceil(loc.col) - ceil(player[0].col))!=0))
             {
-                cout<<"grid "<<loc.row<<" "<<loc.col<<" "<<player[0].row<<" "<<player[0].col<<endl;
+                //cout<<"grid "<<loc.row<<" "<<loc.col<<" "<<player[0].row<<" "<<player[0].col<<endl;
             in_grid = true;
 
             float point_row = loc.row;
@@ -614,7 +624,7 @@ namespace Custom{
 
     //sub callback
     void Board::ask_state_callback(const ros::MessageEvent<std_msgs::Empty>& msg){
-        const std::string& publisher_name = msg.getPublisherName(); //get publisher name
+        //const std::string& publisher_name = msg.getPublisherName(); //get publisher name
         board::game_state_msg temp;
         temp.player_axis = player;
         temp.lcookies_loc = lcookies;
@@ -637,7 +647,7 @@ namespace Custom{
         temp.agents_axis = agent_temp;
         temp.ghost = ghost_temp;
         for(int i =0 ;i<ghost_temp.size();i++){
-            cout<<ghost_temp[i]<<" "<<agents[i].second<<endl;
+            //cout<<ghost_temp[i]<<" "<<agents[i].second<<endl;
         }
 
         state_response_pub.publish(temp);
@@ -678,12 +688,10 @@ namespace Custom{
         if(i < agent_names.size()){
             agents[i].first = data->loc;
         }
-        
-        for(int i =0;i<agent_names.size();i++){
 
-            cout<<publisher_name<<" "<< agents[i].first.row<<", "<<agents[i].first.col<<endl;
-        
-        }
+        //for (int i = 0; i < agent_names.size(); i++) {
+            //cout<<publisher_name<<" "<< agents[i].first.row<<", "<<agents[i].first.col<<endl;
+        //}
         return;
     }
 
