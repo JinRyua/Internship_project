@@ -47,15 +47,17 @@ namespace Custom{
 
         std::string exit_call_topic = "/board/exit_call";
         nh.getParam("exit_call_name", exit_call_topic);
-        ros::Publisher exit_call_pub = nh.advertise<std_msgs::Empty>(exit_call_topic, 1000);
+        exit_call_pub = nh.advertise<std_msgs::Empty>(exit_call_topic, 1000);
 
         std::string reset_AI_pub_topic = "/board/reset_ai";
         nh.getParam("reset_ai_name", reset_AI_pub_topic);
-        ros::Publisher reset_AI_pub = nh.advertise<board::reset_ai_msg>(reset_AI_pub_topic, 1000);
+        reset_AI_pub = nh.advertise<board::reset_ai_msg>(reset_AI_pub_topic, 1000);
+
+        
 
         std::string change_state_pub_topic = "/board/change_state";
         nh.getParam("change_state_name", change_state_pub_topic);
-        ros::Publisher change_state_pub = nh.advertise<board::change_state_msg>(change_state_pub_topic, 1000);
+        change_state_pub = nh.advertise<board::change_state_msg>(change_state_pub_topic, 1000);
 
         kb = "/rosplan_knowledge_base/"; // "knowledge_base name";
         nh.getParam("knowledge_base", kb);
@@ -114,7 +116,7 @@ namespace Custom{
 
         for(int i = 0; i < agent_names.size(); i++){        //set agents' pub (set_ai)
             std::string set_ai_topic = "/board/set_ai/to_" + agent_names[i];
-            ros::Publisher set_AI_pub_temp = nh.advertise<board::display_info>(set_ai_topic, 1000);
+            ros::Publisher set_AI_pub_temp = nh.advertise<board::set_ai_msg>(set_ai_topic, 1000);
             set_AI_pub.push_back(set_AI_pub_temp);
         }
 
@@ -289,12 +291,17 @@ namespace Custom{
         if(ghost_timer <= now_time ){    //run out ghost timer
             for(int i = 0; i < agents.size(); i++){ //norm  every agent
                 agents[i].second = false;
+                board::set_ai_msg temp;
+                temp.loc = agents[i].first;
+                temp.speed = 3;
+
+                set_AI_pub[i].publish(temp);
             }
             //publish
-            //const ros::MessageEvent<std_msgs::Empty> temp_call;
+            ros::MessageEvent<std_msgs::Empty> temp_call;
 
             cout<< "call_Replan timer"<<endl;
-            //ask_state_callback(temp_call);
+            ask_state_callback(temp_call);
             ghost_timer = now_time + ((double)(1000)*(1000000000));
         }
     }
@@ -374,15 +381,23 @@ namespace Custom{
                     score = score + 5;
                     for(int i = 0; i < agents.size(); i++){
                         agents[i].second = true;    //set ghost all
+                        board::set_ai_msg temp;
+                        temp.loc = agents[i].first;
+                        temp.speed = 1.5;
+                        set_AI_pub[i].publish(temp);
                     }
+                    //publish
+                    ros::MessageEvent<std_msgs::Empty> temp_call;
+                    ask_state_callback(temp_call);
+                    cout<< "call_Replan"<<endl;
+
                     //ghost timer
                     ghost_timer = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                     ghost_timer += ghost_time * 1000000000; //일정 시간만큼
 
-                    //publish
-                    //const ros::MessageEvent<std_msgs::Empty> temp_call;
-                    //ask_state_callback(temp_call);
-                    cout<< "call_Replan"<<endl;
+                    
+                    
+                    
                 }
                 
             }
@@ -401,19 +416,53 @@ namespace Custom{
 
             if(player_row >= agent_top && player_row <= agent_bottom)       //collision
                 if(player_col >= agent_left && player_col <= agent_right){
-                    do_collision(agents[i]);
+                    do_collision(agents[i], i);
                 }
         }
     }
 
-    void Board::do_collision(pair<custom_msgs::axis, bool>& agent){
+    void Board::do_collision(pair<custom_msgs::axis, bool>& agent, int i){
         if(agent.second == true){   //eat ghost
             score = score + 3;
             //need init
+            
+            agents[i].second = false; //not ghost
+            board::set_ai_msg temp;
+            agents[i] = init_agents[i];
+            temp.loc = init_agents[i].first;
+            temp.speed = 3;
+            set_AI_pub[i].publish(temp);
+            ros::MessageEvent<std_msgs::Empty> temp_call;
+            ask_state_callback(temp_call);
+            
         }
         else{   //eat player
+            board::reset_ai_msg temp;
+            agents = init_agents;
+            temp.loc = init_agents[0].first;
+            reset_AI_pub.publish(temp);
+
+            board::set_ai_loc_msg temp2;
+            player = init_player;
+            temp2.loc = init_player[0];
+            cout<<init_player[0].direction<<endl;
+            set_player_pub.publish(temp2);
+
+            // board::change_state_msg tm;
+            // tm.state = "wait";
+            // change_state_pub.publish(tm);
+
+            ros::MessageEvent<std_msgs::Empty> temp_call;
+            ask_state_callback(temp_call);
+
             life--;
-            
+            cout<<life<<endl;
+            if(life == 0){
+                cout<<"game end => score : "<<score <<endl;
+                std_msgs::Empty exit_temp;
+                exit_call_pub.publish(exit_temp);
+                exit(0);
+            }
             //need init
         }
     }

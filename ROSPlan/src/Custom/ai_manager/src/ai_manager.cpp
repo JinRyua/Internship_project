@@ -8,14 +8,19 @@
 #include "ai_manager/ai_feedback.h"
 #include "player/player_state_time_srv.h"
 #include "custom_msgs/plan.h"
+#include "board/change_state_msg.h"
 #include <iostream>
 #include <fstream>
 #include <chrono>
 using namespace std;
 
+
+void print_log(string node_name, string func,string str);
+
 namespace Custom{
-    Ai_Manager::Ai_Manager(ros::NodeHandle &nh){
+    Ai_Manager::Ai_Manager(ros::NodeHandle &nh, string node_n){
         node_handle = &nh;
+        node_name = node_n;
 
         //set publihser
         std::string act_feedback_topic = "/rosplan_plan_dispatcher/action_feedback";
@@ -29,6 +34,9 @@ namespace Custom{
 
         std::string get_stop_state_topic = "/ai_manager/get_state_stop_agent";
         get_state_stop_agent_pub = nh.advertise<std_msgs::Empty>(get_stop_state_topic, 1000);
+
+        std::string change_topic = "/board/change_state";
+        change_pub = nh.advertise<board::change_state_msg>(change_topic, 1000);
 
 
         std::string get_agent_topic = "/board/ask_agent";
@@ -106,10 +114,16 @@ namespace Custom{
 
     }
 
-    void Ai_Manager::act_dispatched_Callback(const rosplan_dispatch_msgs::ActionDispatch& msg){
-        big_plan = msg;
-        dispatched = true;
-        timer = 0;
+    void Ai_Manager::act_dispatched_Callback(const rosplan_dispatch_msgs::ActionDispatch &msg) {
+        if (msg.name != "cancel_action") {
+            print_log(node_name, __func__, "dispatched from new plan");
+            big_plan = msg;
+            dispatched = true;
+            timer = 0;
+            board::change_state_msg tm;
+            tm.state = "playing game";
+            change_pub.publish(tm);
+        }
     }
 
     void Ai_Manager::ai_feedback_Callback(const ros::MessageEvent<ai_manager::ai_feedback const >& event){
@@ -168,7 +182,11 @@ namespace Custom{
     }
 
     void Ai_Manager::stop_Callback(const std_msgs::Empty& msg){
+        print_log(node_name, __func__, "received stop from replanner");
         dispatched = false;
+        get_state = false;
+        get_route = false;
+        get_agent_state = false;
         for (int i = 0; i < agent_dispatched.size(); i++) {  //init dispatched
             agent_dispatched[i] = NOT_DISPATCHED;
             agent_stop_flag[i] = false;
@@ -183,6 +201,7 @@ namespace Custom{
     }
 
     void Ai_Manager::give_route_Callback(const navi::give_route& msg){
+        print_log(node_name, __func__, "received route from navi");
         vector<custom_msgs::plan> temp = msg.plans;
         for (int k = 0; k < temp.size(); k++) {
             std::string name = temp[k].name;
@@ -193,7 +212,7 @@ namespace Custom{
             }
             plans[k] = temp[k].plan;
         }
-        cout<<"good"<<endl;
+        //cout<<"good"<<endl;
         get_route = true;
         
     }
@@ -202,6 +221,8 @@ namespace Custom{
         if(dispatched == true){ //run if dispatched
             double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             if (now_time >= timer) {  //run out timer
+
+                print_log(node_name, __func__, "run out timer and check player and game state");
                 std::string srv_topic = "/player/player_state_time";  //get dist_mat from srv
                 ros::service::waitForService(srv_topic, ros::Duration(20));
                 ros::ServiceClient client = node_handle->serviceClient<player::player_state_time_srv>(srv_topic);
@@ -219,7 +240,7 @@ namespace Custom{
             }
 
             if (get_state == true){     //subscribe game_state
-                std::cout<<"get_state"<<std::endl;
+                print_log(node_name, __func__, "pub stop agent and get state");
                 //get state and stop agent
                 std_msgs::Empty msg;
                 //publish
@@ -228,7 +249,7 @@ namespace Custom{
             }
             else if(get_agent_state == true){
                 //calc dest
-                std::cout<<"get_agent_state"<<std::endl;
+                print_log(node_name, __func__, "calc_dest");
                 calc_dest();
                 //get route from Navi
                 //for(int i = 0; i < agents_axis.size(); i++){
@@ -237,18 +258,19 @@ namespace Custom{
                     msg.from = agents_axis;
                     msg.to = destination;
                     //if(ghost[i]!=1) //TODO:
+                    print_log(node_name, __func__, "ask route to navi");
                         want_route_pub.publish(msg);
                 //}
                 get_agent_state = false;
             }
             else if (get_route == true){    //check subscribed route and publish
-                std::cout<<"get_route"<<std::endl;
+                print_log(node_name, __func__, "pub plan to agent");
                 for(int i = 0 ;i < agent_names.size(); i++){
                     //if( agent_route_flag[i] == 1){   //get_route but dont publish
                     //???? TODO: who think?
                     ai_manager::ai_action msg;
                     msg.plan = plans[i];
-                    if (ghost[i] != 1)
+                    //if (ghost[i] != 1)
                         agent_pub[i].publish(msg);
                     //agent_route_flag[i] = 2;
                     //}
@@ -344,22 +366,25 @@ namespace Custom{
                 }
             }
         }
-        
         //가까운 순서대로
+        
+
         std::vector<diagnostic_msgs::KeyValue> param = big_plan.parameters;
         destination.resize(4);
         int flag[4] = {0,};
         std::string act = param[0].value;
         int plan = stoi(act.substr(4));  //plan number
-        cout<<"hi"<<plan<<endl;
+        cout<<plan<<endl;
+        cout<<"hello"<<endl;
+        //cout<<"hi"<<plan<<endl;
         for(int i = 0; i < 5 - plan; i++){  //전략에 따라
             int min;
             int d_temp = 10000;
             for (int j = 0; j < ghost.size(); j++) {
-                cout<<"ghost : "<<ghost[j]<<", "<<flag[j]<<endl;
+                //cout<<"ghost : "<<ghost[j]<<", "<<flag[j]<<endl;
                 if (ghost[j] != 1 && flag[j] != 1) {    //가장 가까운 agent가 배정
-                    cout<<"ha"<<endl;
-                    cout<<i<<" "<<j<<" "<<dist_mat[dest_temp[i]][a_num[j]]<<"" << d_temp<<endl;
+                    // cout<<"ha"<<endl;
+                    // cout<<i<<" "<<j<<" "<<dist_mat[dest_temp[i]][a_num[j]]<<"" << d_temp<<endl;
                     if (dist_mat[dest_temp[i]][a_num[j]] < d_temp){
                         min = j;
                         d_temp = dist_mat[dest_temp[i]][a_num[j]];
@@ -369,7 +394,15 @@ namespace Custom{
             destination[min] = point_name[dest_temp[i]];
             flag[min] = 1;
         }
-        cout<<"calc end"<<endl;
+        for(int i = 0; i < 4; i++){
+            if(ghost[i]==1){
+            destination[i].row = 2;
+            destination[i].col = 2;
+            flag[i] = 1;
+            }
+        }
+        
+        print_log(node_name, __func__, "calc end");
         //TODO: make ghost
         
     }
@@ -408,8 +441,10 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "ai_manager");
     ros::NodeHandle nh("~");
-
-    Custom::Ai_Manager mi(nh);
+    std::string node_name = ros::this_node::getName();  //자신의 노드 이름 확인
+    int point = node_name.find("/", 0);                 //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
+    node_name = node_name.substr(point + 1);            //노드 이름 저장
+    Custom::Ai_Manager mi(nh, node_name);
 
     //  //subscriber
     std::string act_dispatch_topic = "/rosplan_plan_dispatcher";
@@ -462,4 +497,14 @@ int main(int argc, char **argv)
     // ros::ServiceServer ask_dist_mat_srv = nh.advertiseService("/navi/ask_dist_mat", &Custom::Navi::ask_dist_mat_Callback, dynamic_cast<Custom::Navi *>(&ni));
     
     return 0;    
+}
+
+void print_log(string node_name, string func,string str){
+	cout<< "[";
+	cout.width(9);cout.fill(' ');cout<<fixed;cout.precision(3);
+	cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()<<"][";
+	cout.width(13);cout.fill(' ');
+	cout<<node_name<<"][";
+	cout.width(17);cout.fill(' ');
+	cout<<func<<"] ( "<<str<<" )"<<endl;
 }

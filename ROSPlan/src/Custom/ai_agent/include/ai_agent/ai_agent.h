@@ -2,6 +2,8 @@
 #include "custom_msgs/axis.h"
 #include "ai_manager/ai_action.h"
 #include "std_msgs/Empty.h"
+#include "board/reset_ai_msg.h"
+#include "board/set_ai_msg.h"
 #include <vector>
 #include <string>
 #ifndef AI_AGENT
@@ -75,8 +77,8 @@ namespace Custom
         void state_and_stop_Callback(const std_msgs::Empty& msg);
         void stop_Callback(const std_msgs::Empty& msg);
         void exit_Callback(const std_msgs::Empty& msg);
-        void set_ai_Callback(const std_msgs::Empty& msg);
-        void reset_ai_Callback(const std_msgs::Empty& msg);
+        void set_ai_Callback(const board::set_ai_msg& msg);
+        void reset_ai_Callback(const board::reset_ai_msg& msg);
         //TODO: reset ai -> ai?
 
         //void act_dispatched_Callback(const rosplan_dispatch_msgs::ActionDispatch& msg);

@@ -220,7 +220,7 @@ namespace Custom{
             // }
 
             //중복 처리
-            cout << "hi" << endl;
+            //cout << "hi" << endl;
             auto it = player_mat.find(msg.name[k]);
             if (it != player_mat.end()) {  //이미 route가 있으면 제거
                 for (int i = 0; i < use_world_map.size(); i++) {

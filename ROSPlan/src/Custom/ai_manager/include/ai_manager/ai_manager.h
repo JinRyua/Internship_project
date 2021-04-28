@@ -23,6 +23,8 @@ namespace Custom
     {
     private:
         ros::NodeHandle *node_handle;
+
+        std::string node_name;
         
         // std::vector<std::vector<std::string>> map;
         // std::vector<std::vector<int>> world_map;    //for A*
@@ -64,7 +66,7 @@ namespace Custom
 
 
     public:
-        Ai_Manager(ros::NodeHandle &nh);
+        Ai_Manager(ros::NodeHandle &nh, std::string node_n);
         ~Ai_Manager();
 
         void write_launch(std::vector<std::string>& f, const std::string path);     //write launch for agent
@@ -75,6 +77,7 @@ namespace Custom
         ros::Publisher action_feedback_pub;
         ros::Publisher want_route_pub;
         ros::Publisher game_state_pub;
+        ros::Publisher change_pub;
         std::vector<ros::Publisher> agent_pub;      //agent dispatch pub
         ros::Publisher get_state_stop_agent_pub;    //get state and stop agent to all agent
         

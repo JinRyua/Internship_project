@@ -28,6 +28,12 @@ generate_messages(
   std_msgs
 )
 
+include_directories(
+# include
+  ${catkin_INCLUDE_DIRS}
+)
+include_directories(include)
+
 catkin_package(
   CATKIN_DEPENDS message_generation message_runtime roscpp std_msgs genmsg
 )

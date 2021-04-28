@@ -3,6 +3,7 @@
 #include "board/change_state_msg.h"
 #include "std_msgs/Empty.h"
 #include "player/player_state_time_srv.h"
+#include "board/set_ai_loc_msg.h"
 #include <vector>
 #ifndef PLAYER
 #define PLAYER
@@ -53,6 +54,7 @@ namespace Custom
         //callback
         void change_state_Callback(const board::change_state_msg& msg);
         void exitCallback(const std_msgs::Empty& msg);
+        void setCallback(const board::set_ai_loc_msg& msg);
 
         //service callback
         bool player_state_time_Callback(player::player_state_time_srv::Request& req, player::player_state_time_srv::Response& res);

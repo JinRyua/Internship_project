@@ -5,6 +5,8 @@
 #include "ai_agent/stop_response.h"
 #include "ai_manager/ai_feedback.h"
 #include "ai_agent/agent_state_time.h"
+#include "board/set_ai_msg.h"
+#include "board/reset_ai_msg.h"
 
 #include <chrono>
 #include <iostream>
@@ -135,12 +137,12 @@ namespace Custom{
     }
 
     void Ai_Agent::state_Callback(const std_msgs::Empty& msg){
-        ai_manager::get_agent_state temp;
+        ai_agent::agent_state_time temp;
            //TODO:
         if(state != IDLE)
-            temp.agent = plan[plan_number];
+            temp.axis = plan[plan_number];
         else
-            temp.agent = agent;
+            temp.axis = agent;
         state_time_pub.publish(temp);
     }
 
@@ -167,13 +169,19 @@ namespace Custom{
         exit(0);
     }
 
-    void Ai_Agent::set_ai_Callback(const std_msgs::Empty& msg){
+    void Ai_Agent::set_ai_Callback(const board::set_ai_msg& msg){
         //TODO: set ai  speed, state....
+        state = IDLE;
+        agent = msg.loc;
+        speed = msg.speed;
         
     }
 
-    void Ai_Agent::reset_ai_Callback(const std_msgs::Empty& msg){
+    void Ai_Agent::reset_ai_Callback(const board::reset_ai_msg& msg){
         //TODO: reset ai -> ai?
+        state = IDLE;
+        agent = msg.loc;
+
     }
 
 }
@@ -209,10 +217,10 @@ int main(int argc, char **argv)
     std::string exit_topic = "/board/exit_call";
     ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Ai_Agent::exit_Callback,
                                             dynamic_cast<Custom::Ai_Agent *>(&ai));
-    std::string set_ai_topic = "/ai_agent/set_ai/to_" + node_name;
+    std::string set_ai_topic = "/board/set_ai/to_" + node_name;
     ros::Subscriber set_ai_sub = nh.subscribe(set_ai_topic, 1000, &Custom::Ai_Agent::set_ai_Callback,
                                             dynamic_cast<Custom::Ai_Agent *>(&ai));
-    std::string reset_topic = "/ai_agent/reset_ai/to_" + node_name;
+    std::string reset_topic = "/board/reset_ai";
     ros::Subscriber reset_sub = nh.subscribe(reset_topic, 1000, &Custom::Ai_Agent::reset_ai_Callback,
                                             dynamic_cast<Custom::Ai_Agent *>(&ai));
     // std::string exit_topic = "/board/exit_call";

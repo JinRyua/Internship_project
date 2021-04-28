@@ -67,7 +67,7 @@ namespace Custom
 
 
     public:
-        Replanner(ros::NodeHandle &nh);
+        Replanner(ros::NodeHandle &nh, std::string node_n);
         ~Replanner();
         
         void run_replanner();
@@ -79,6 +79,7 @@ namespace Custom
         std::vector<ros::Publisher> agent_state_pub;
         ros::Publisher ask_state_pub;       //ask game state to board
         ros::Publisher stop_manager_pub;    //stop manager
+        ros::Publisher change_pub;
         //ros::Publisher want_route_pub;
         //service client
         ros::ServiceClient cancel_dispatch_client;
@@ -89,6 +90,7 @@ namespace Custom
         void exit_Callback(const std_msgs::Empty& msg);
         void state_Callback(const board::game_state_msg& msg );
         void agent_state_Callback(const ros::MessageEvent<ai_agent::agent_state_time>& msg);
+        void exitCallback(const std_msgs::Empty& msg);
 
         //void act_dispatched_Callback(const rosplan_dispatch_msgs::ActionDispatch& msg);
        // void reset_Callback(const std_msgs::Empty& msg);

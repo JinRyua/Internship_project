@@ -5,6 +5,7 @@
 #include "board/select_menu_msg.h"
 #include "board/move_check_srv.h"
 #include "board/player_act_srv.h"
+#include "board/set_ai_loc_msg.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -208,6 +209,10 @@ namespace Custom{
         exit(0);
     }
 
+    void Player::setCallback(const board::set_ai_loc_msg& msg){
+        player[0] = msg.loc;
+    }
+
     bool Player::player_state_time_Callback(player::player_state_time_srv::Request& req, player::player_state_time_srv::Response& res){
         int point_row = player[0].row;
         int point_col = player[0].col;
@@ -258,6 +263,11 @@ int main(int argc, char **argv)
     std::string exit_topic = "/board/exit_call";
     nh.getParam("exit_name", exit_topic);
     ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Player::exitCallback,
+                                            dynamic_cast<Custom::Player *>(&pi));
+
+                                            
+    std::string set_topic = "/player/set_player";
+    ros::Subscriber set_sub = nh.subscribe(set_topic, 1, &Custom::Player::setCallback,
                                             dynamic_cast<Custom::Player *>(&pi));
 
 

@@ -93,7 +93,7 @@ namespace Custom
         void check_timer();     //timer들 체크
         void check_eat_star();  //star(cookie) 먹었는지 체크
         void check_collision(); //충돌 체크(agent와)
-        void do_collision(std::pair<custom_msgs::axis, bool>& agent);   //충돌시 작동 함수
+        void do_collision(std::pair<custom_msgs::axis, bool>& agent, int i);   //충돌시 작동 함수
 
         //publisher
         ros::Publisher display_pub;                 //display 정보를 주는 display/display

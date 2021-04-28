@@ -160,7 +160,7 @@ public: // methods
 		
 		m_Start->m_UserState = Start;
 		m_Goal->m_UserState = Goal;
-		cout<<m_Goal->m_UserState.x<< " aa "<<m_Goal->m_UserState.y<<endl;
+		//cout<<m_Goal->m_UserState.x<< " aa "<<m_Goal->m_UserState.y<<endl;
 
 		m_State = SEARCH_STATE_SEARCHING;
 		

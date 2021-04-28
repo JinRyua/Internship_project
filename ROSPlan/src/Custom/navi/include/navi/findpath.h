@@ -222,7 +222,7 @@ float MapSearchNode::GetCost( MapSearchNode &successor )
 int run_star(const custom_msgs::axis& from, const custom_msgs::axis& to, std::vector<std::vector<int>>& matrix, std::vector<custom_msgs::axis>& plan)
 {
 
-	cout << "STL A* Search implementation\n(C)2001 Justin Heyes-Jones\n";
+	//cout << "STL A* Search implementation\n(C)2001 Justin Heyes-Jones\n";
 
 	// Our sample problem defines the world as a 2d array representing a terrain
 	// Each element contains an integer from 0 to 5 which indicates the cost 
@@ -306,7 +306,7 @@ int run_star(const custom_msgs::axis& from, const custom_msgs::axis& to, std::ve
 
 		if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SUCCEEDED )
 		{
-			cout << "Search found goal state\n";
+			//cout << "Search found goal state\n";
 
 				MapSearchNode *node = astarsearch.GetSolutionStart();
 
@@ -330,7 +330,7 @@ int run_star(const custom_msgs::axis& from, const custom_msgs::axis& to, std::ve
 				
 				};
 
-				cout << "Solution steps " << steps << endl;
+				//cout << "Solution steps " << steps << endl;
 
 				// Once you're done with the solution you can free the nodes up
 				astarsearch.FreeSolutionNodes();
@@ -344,7 +344,7 @@ int run_star(const custom_msgs::axis& from, const custom_msgs::axis& to, std::ve
 		}
 
 		// Display the number of loops the search went through
-		cout << "SearchSteps : " << SearchSteps << "\n";
+		//cout << "SearchSteps : " << SearchSteps << "\n";
 
 		SearchCount ++;
 

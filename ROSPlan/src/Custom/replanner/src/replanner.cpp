@@ -5,17 +5,20 @@
 #include "rosplan_knowledge_msgs/KnowledgeUpdateServiceArray.h"
 #include "rosplan_knowledge_msgs/KnowledgeItem.h"
 #include "board/ask_agent_srv.h"
+#include "board/change_state_msg.h"
 #include <chrono>
 #include <iostream>
 
 #include "ros/ros.h"
 using namespace std;
 
+void print_log(string node_name, string func,string str);
+
 namespace Custom{
-    Replanner::Replanner(ros::NodeHandle &nh) {
+    Replanner::Replanner(ros::NodeHandle &nh, string node_n) {
         node_handle = &nh;
 
-        timer = 0;
+        node_name = node_n;
         state = IDLE;
 
         std::string get_agent_topic = "/board/ask_agent";       //get agent_names
@@ -46,6 +49,9 @@ namespace Custom{
 
         std::string stop_manager_topic = "/ai_manager/stop_manager";
         stop_manager_pub = nh.advertise<std_msgs::Empty>(stop_manager_topic, 1000);
+
+        std::string change_topic = "/board/change_state";
+        change_pub = nh.advertise<board::change_state_msg>(change_topic, 1000);
         
         //service
         std::string s = "/rosplan_plan_dispatcher/cancel_dispatch";
@@ -56,21 +62,24 @@ namespace Custom{
         ros::service::waitForService(s, ros::Duration(20));
         player_state_client = nh.serviceClient<player::player_state_time_srv>(s);
         
+        double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        timer = now_time + ((double)(30) * 1000000000);
     }
 
     Replanner::~Replanner() {
     }
 
     void Replanner::state_Callback(const board::game_state_msg& msg ){
+        print_log(node_name, __func__, "received game state");
         post_player = player;
         post_agents = agents;
         post_lcookies = lcookies;
         post_ghost = ghost;
         
         player = msg.player_axis;
-        agents = agents;
+        agents = msg.agents_axis;
         lcookies = msg.lcookies_loc;
-        ghost = ghost;
+        ghost = msg.ghost;
 
         if(!post_ghost.empty())
             state = CHECK;
@@ -171,22 +180,30 @@ namespace Custom{
             if(now_time >= timer){
                 std_msgs::Empty msg;
                 ask_state_pub.publish(msg);
+                print_log(node_name, "run_replanner", "ask_state_to board from replanner");
                 state = WAIT;
             }
         }
         else if(state == CHECK){
-            cout<<"check"<<endl;
+            print_log(node_name, __func__, "run state check");
+            //cout<<"check"<<endl;
             check_replan();
         }
         else if(state == CANCEL){
             //cancel dispatcher
-            cout<<"cancel"<<endl;
-            std_srvs::Empty srv;
-            cancel_dispatch_client.call(srv);
+            print_log(node_name, __func__, "cancel dispatcher and manager and player");
+            //cout<<"cancel"<<endl;
 
             //stop manager
             std_msgs::Empty msg;
             stop_manager_pub.publish(msg);
+
+            std_srvs::Empty srv;
+            cancel_dispatch_client.call(srv);
+
+            board::change_state_msg tm;
+            tm.state = "wait";
+            change_pub.publish(tm);
 
             //get agent, player state   //TODO: time need
             for(int i =0;i<agent_state_pub.size();i++){
@@ -202,13 +219,16 @@ namespace Custom{
             state = WAIT;
         } else if (state == JUDGE) {
             //all non-stop TODO:
-            cout<<"judge"<<endl;
+            print_log(node_name, __func__, "judge state");
+            //cout<<"judge"<<endl;
             state = UPDATE;
         } else if (state == UPDATE) {
-            cout<<"update"<<endl;
+            //cout<<"update"<<endl;
+            print_log(node_name, __func__, "update KB");
             update_ghost();
         } else if (state == GO_PLAN) {
-            cout<<"go_plan"<<endl;
+            //cout<<"go_plan"<<endl;
+            print_log(node_name, __func__, "rerun rosplan");
             std::string call_str = "/rosplan_problem_interface/problem_generation_server";  //service KB update array
             ros::service::waitForService(call_str.c_str(), ros::Duration(20));
             ros::ServiceClient call_client = node_handle->serviceClient<std_srvs::Empty>(call_str.c_str());
@@ -220,6 +240,9 @@ namespace Custom{
             timer = now_time + ((double)(3)*1000000000);
         }
     }
+    void Replanner::exitCallback(const std_msgs::Empty& msg){
+        exit(0);
+    }
 
 }  // namespace Custom
 int main(int argc, char **argv) {
@@ -229,19 +252,25 @@ int main(int argc, char **argv) {
     int point = node_name.find("/", 0);      //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
     node_name = node_name.substr(point + 1);  //노드 이름 저장
 
-    Custom::Replanner ri(nh);
+    Custom::Replanner ri(nh, node_name);
 
     //subscriber
     std::string state_topic = "/board/state_response";
-    ros::Subscriber state_sub = nh.subscribe(state_topic, 1, &Custom::Replanner::state_Callback,
+    ros::Subscriber state_sub = nh.subscribe(state_topic, 10, &Custom::Replanner::state_Callback,
                                              dynamic_cast<Custom::Replanner *>(&ri));
 
     std::string agent_state_topic = "/ai_agent/agent_state_time/to_replanner";
     ros::Subscriber agent_state_sub = nh.subscribe(agent_state_topic, 1000, &Custom::Replanner::agent_state_Callback,
                                              dynamic_cast<Custom::Replanner *>(&ri));
 
+    std::string exit_topic = "/board/exit_call";
+    nh.getParam("exit_name", exit_topic);
+    ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Replanner::exitCallback,
+                                            dynamic_cast<Custom::Replanner *>(&ri));
+
     while(1){
         sleep(0);
+        ros::spinOnce();
         ri.run_replanner();
     }
     // std::string exit_topic = "/board/exit_call";
@@ -252,4 +281,13 @@ int main(int argc, char **argv) {
 
     ros::spin();
     return 0;
+}
+void print_log(string node_name, string func,string str){
+	cout<< "[";
+	cout.width(9);cout.fill(' ');cout<<fixed;cout.precision(3);
+	cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()<<"][";
+	cout.width(13);cout.fill(' ');
+	cout<<node_name<<"][";
+	cout.width(17);cout.fill(' ');
+	cout<<func<<"] ( "<<str<<" )"<<endl;
 }
