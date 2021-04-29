@@ -73,7 +73,7 @@ namespace Custom{
 
         std::string dist_mat_topic = "/navi/ask_dist_mat";      //get dist_mat from srv
         nh.getParam("dist_name", dist_mat_topic);
-        ros::service::waitForService(dist_mat_topic, ros::Duration(20));
+        ros::service::waitForService(dist_mat_topic, ros::Duration(20)); 
         ros::ServiceClient dist_mat_client = nh.serviceClient<navi::ask_dist_mat>(dist_mat_topic);
         navi::ask_dist_mat dist_mat_srv;
 
@@ -87,7 +87,7 @@ namespace Custom{
                 dist_mat.push_back(temp);
             }
         }
-
+        
 
     }
     

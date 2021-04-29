@@ -34,12 +34,30 @@
     (direction ?c -character)
 )
 
-(:action do_action
-    :parameters (?action)
-    :precondition (and 
+; (:action do_action
+;     :parameters (?agent ?from ?to)
+;     :precondition (and 
+;     )
+;     :effect (and 
+
+;     )
+; )
+(:durative-action move
+    :parameters (?a -agent ?from ?to -point)
+    :duration (= ?duration 1)
+    :condition (and 
+        (at start (and 
+            (in-block ?a ?from)
+        ))
     )
     :effect (and 
-
+        (at start (and 
+            (not(in-block ?a ?from))
+        ))
+        (at end (and 
+            (in-block ?a ?to)
+        ))
     )
 )
+
 )
