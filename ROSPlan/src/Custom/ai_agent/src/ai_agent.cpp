@@ -37,7 +37,7 @@ namespace Custom{
         feedback_pub = nh.advertise<ai_manager::ai_feedback>(ai_feedback_topic, 1000);
 
 
-        speed = 3;
+        speed = 2;
         plan_number = -1;
 
         agent.col = 11; //TODO:

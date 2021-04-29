@@ -9,6 +9,14 @@
 #include "player/player_state_time_srv.h"
 #include "custom_msgs/plan.h"
 #include "board/change_state_msg.h"
+
+#include "rosplan_knowledge_msgs/GetDomainOperatorDetailsService.h"
+#include "rosplan_knowledge_msgs/GetDomainOperatorService.h"
+#include "rosplan_knowledge_msgs/GetDomainPredicateDetailsService.h"
+#include "rosplan_knowledge_msgs/KnowledgeItem.h"
+#include "rosplan_knowledge_msgs/KnowledgeUpdateService.h"
+#include "rosplan_knowledge_msgs/KnowledgeUpdateServiceArray.h"
+
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -17,7 +25,9 @@ using namespace std;
 
 void print_log(string node_name, string func,string str);
 
-namespace Custom{
+namespace Custom {
+
+
     Ai_Manager::Ai_Manager(ros::NodeHandle &nh, string node_n){
         node_handle = &nh;
         node_name = node_n;
@@ -68,6 +78,7 @@ namespace Custom{
         agent_state_time.resize(agent_names.size());   //state and time after stop
         agent_stop_flag.resize(agent_names.size(), false);  //stop flag
         agents_axis.resize(agent_names.size());
+        big_plan.resize(agent_names.size());
 
 
 
@@ -88,6 +99,7 @@ namespace Custom{
             }
         }
         
+        init_oper();
 
     }
     
@@ -117,12 +129,40 @@ namespace Custom{
     void Ai_Manager::act_dispatched_Callback(const rosplan_dispatch_msgs::ActionDispatch &msg) {
         if (msg.name != "cancel_action") {
             print_log(node_name, __func__, "dispatched from new plan");
-            big_plan = msg;
-            dispatched = true;
-            timer = 0;
-            board::change_state_msg tm;
-            tm.state = "playing game";
-            change_pub.publish(tm);
+            vector<diagnostic_msgs::KeyValue> params = msg.parameters;
+            string name, from, to;
+            for (int i = 0; i < params.size(); i++) {
+                if (params[i].key == "a") {
+                    name = params[i].value;
+                } else if (params[i].key == "from") {
+                    from = params[i].value;
+                } else if (params[i].key == "to") {
+                    to = params[i].value;
+                }
+            }
+            
+            int number = stoi(name.substr(5)) - 1;  //번호만
+            big_plan[number] = msg; //plan 저장
+            
+            int row, col;
+            int point = to.find("_");
+            row = stoi(to.substr(5, point - 5));
+            col = stoi(to.substr(point + 1));
+            
+            vector<custom_msgs::axis> send_msg;
+            custom_msgs::axis temp;
+            temp.row = row;
+            temp.col = col;
+            send_msg.push_back(temp);
+            ai_manager::ai_action msg_temp;
+            msg_temp.plan = send_msg;
+            agent_pub[number].publish(msg_temp);
+            // big_plan = msg;
+            // dispatched = true;
+            // timer = 0;
+            // board::change_state_msg tm;
+            // tm.state = "playing game";
+            // change_pub.publish(tm);
         }
     }
 
@@ -131,49 +171,57 @@ namespace Custom{
         ai_manager::ai_feedback::ConstPtr data = event.getConstMessage();
         int point = publisher_name.find("/", 0);      //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
         publisher_name = publisher_name.substr(point + 1);  //노드 이름 저장
-        if(data -> status == "enable"){
+        if(data -> status == "enabled"){
+            print_log(node_name, __func__, "recieved enabled");
             int i;
             for (i = 0; i < agent_names.size(); i++) {  //find agent number
                 if (agent_names[i] == publisher_name)
                     break;
             }
             agent_dispatched[i] = ENABLE;
-
-            //check all enable
-            int count = 0;
-            for (i = 0; i < agent_dispatched.size(); i++) {  //find agent number
-                if (agent_dispatched[i] == ENABLE)
-                    count++;
-            }
-            if (count == agent_dispatched.size()) {   //publish
-                rosplan_dispatch_msgs::ActionFeedback msg;
-                msg.action_id = big_plan.action_id;
-                msg.status = "enable";
-                action_feedback_pub.publish(msg);
-            }
+            rosplan_dispatch_msgs::ActionFeedback msg;
+            msg.action_id = big_plan[i].action_id;
+            msg.status = "action enabled";
+            update_start(i);
+            action_feedback_pub.publish(msg);
+            print_log(node_name, __func__, "publish enabled to dispatcher");
+            // //check all enable
+            // int count = 0;
+            // for (i = 0; i < agent_dispatched.size(); i++) {  //find agent number
+            //     if (agent_dispatched[i] == ENABLE)
+            //         count++;
+            // }
+            // if (count == agent_dispatched.size()) {  //publish
+            // }
         } else if (data -> status == "achieved"){
             int i;
+            print_log(node_name, __func__, "recieved achieved");
             for (i = 0; i < agent_names.size(); i++) {  //find agent number
                 if (agent_names[i] == publisher_name)
                     break;
             }
             agent_dispatched[i] = ACHIEVED;
-
-            //check all achieved
-            int count = 0;
-            for (i = 0; i < agent_dispatched.size(); i++) {  //find agent number
-                if (agent_dispatched[i] == ACHIEVED)
-                    count++;
-            }
-            if (count == agent_dispatched.size()) {       //publish
-                rosplan_dispatch_msgs::ActionFeedback msg;
-                msg.action_id = big_plan.action_id;
-                msg.status = "achieved";
-                action_feedback_pub.publish(msg);
-                for (i = 0; i < agent_dispatched.size(); i++) {  //init dispatched
-                    agent_dispatched[i] = NOT_DISPATCHED;
-                }
-            }
+            rosplan_dispatch_msgs::ActionFeedback msg;
+            msg.action_id = big_plan[i].action_id;
+            msg.status = "action achieved";
+            update_end(i);
+            action_feedback_pub.publish(msg);
+            print_log(node_name, __func__, "publish achieved to dispatcher");
+            // //check all achieved
+            // int count = 0;
+            // for (i = 0; i < agent_dispatched.size(); i++) {  //find agent number
+            //     if (agent_dispatched[i] == ACHIEVED)
+            //         count++;
+            // }
+            // if (count == agent_dispatched.size()) {       //publish
+            //     rosplan_dispatch_msgs::ActionFeedback msg;
+            //     msg.action_id = big_plan.action_id;
+            //     msg.status = "achieved";
+            //     action_feedback_pub.publish(msg);
+            //     for (i = 0; i < agent_dispatched.size(); i++) {  //init dispatched
+            //         agent_dispatched[i] = NOT_DISPATCHED;
+            //     }
+            // }
         }
     }
 
@@ -369,7 +417,7 @@ namespace Custom{
         //가까운 순서대로
         
 
-        std::vector<diagnostic_msgs::KeyValue> param = big_plan.parameters;
+        std::vector<diagnostic_msgs::KeyValue> param = big_plan[0].parameters;
         destination.resize(4);
         int flag[4] = {0,};
         std::string act = param[0].value;
@@ -434,8 +482,275 @@ namespace Custom{
         }
     }
 
-}
+    void Ai_Manager::init_oper() {
+        std::string kb = "/rosplan_knowledge_base";
+        node_handle->getParam("knowledge_base", kb);
 
+        // fetch action params
+        std::stringstream ss;
+
+        ss << "/" << kb << "/domain/operators";
+        ros::service::waitForService(ss.str(), ros::Duration(20));
+        ros::ServiceClient oper_client = node_handle -> serviceClient<rosplan_knowledge_msgs::GetDomainOperatorService>(ss.str());
+        rosplan_knowledge_msgs::GetDomainOperatorService srv_temp;
+        std::vector<rosplan_knowledge_msgs::DomainFormula> opNames;
+        if (oper_client.call(srv_temp)) {
+            opNames = srv_temp.response.operators;
+        } else {
+            ROS_ERROR("KCL: (ActionInterface) could not call Knowledge Base for operators");
+            return;
+        }
+
+        for (int i = 0; i < opNames.size(); i++) {
+            ss.str("");
+            ss << "/" << kb << "/domain/operator_details";
+            ros::service::waitForService(ss.str(), ros::Duration(20));
+            ros::ServiceClient client = node_handle->serviceClient<rosplan_knowledge_msgs::GetDomainOperatorDetailsService>(ss.str());
+            rosplan_knowledge_msgs::GetDomainOperatorDetailsService srv;
+            rosplan_knowledge_msgs::DomainFormula params;
+            rosplan_knowledge_msgs::DomainOperator op;
+            srv.request.name = opNames[i].name;
+            if (client.call(srv)) {
+                params = srv.response.op.formula;
+                op = srv.response.op;
+            } else {
+                ROS_ERROR("KCL: (ActionInterface) could not call Knowledge Base for operator details, %s", opNames[i].name);
+                return;
+            }
+
+            // collect predicates from operator description
+            std::vector<std::string> predicateNames;
+
+            // effects
+            std::vector<rosplan_knowledge_msgs::DomainFormula>::iterator pit = op.at_start_add_effects.begin();
+            for (; pit != op.at_start_add_effects.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            pit = op.at_start_del_effects.begin();
+            for (; pit != op.at_start_del_effects.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            pit = op.at_end_add_effects.begin();
+            for (; pit != op.at_end_add_effects.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            pit = op.at_end_del_effects.begin();
+            for (; pit != op.at_end_del_effects.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            // simple conditions
+            pit = op.at_start_simple_condition.begin();
+            for (; pit != op.at_start_simple_condition.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            pit = op.over_all_simple_condition.begin();
+            for (; pit != op.over_all_simple_condition.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            pit = op.at_end_simple_condition.begin();
+            for (; pit != op.at_end_simple_condition.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            // negative conditions
+            pit = op.at_start_neg_condition.begin();
+            for (; pit != op.at_start_neg_condition.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            pit = op.over_all_neg_condition.begin();
+            for (; pit != op.over_all_neg_condition.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            pit = op.at_end_neg_condition.begin();
+            for (; pit != op.at_end_neg_condition.end(); pit++)
+                predicateNames.push_back(pit->name);
+
+            // fetch and store predicate details
+            ss.str("");
+            ss << "/" << kb << "/domain/predicate_details";
+            ros::service::waitForService(ss.str(), ros::Duration(20));
+            ros::ServiceClient predClient = node_handle -> serviceClient<rosplan_knowledge_msgs::GetDomainPredicateDetailsService>(ss.str());
+            std::map<std::string, rosplan_knowledge_msgs::DomainFormula> predicates;
+            std::map<std::string, rosplan_knowledge_msgs::DomainFormula> sensed_predicates;
+            std::vector<std::string>::iterator nit = predicateNames.begin();
+            for (; nit != predicateNames.end(); nit++) {
+                if (predicates.find(*nit) != predicates.end()) continue;
+                if (*nit == "=" || *nit == ">" || *nit == "<" || *nit == ">=" || *nit == "<=") continue;
+                rosplan_knowledge_msgs::GetDomainPredicateDetailsService predSrv;
+                predSrv.request.name = *nit;
+                if (predClient.call(predSrv)) {
+                    if (predSrv.response.is_sensed) {
+                        sensed_predicates.insert(std::pair<std::string, rosplan_knowledge_msgs::DomainFormula>(*nit, predSrv.response.predicate));
+                    } else {
+                        predicates.insert(std::pair<std::string, rosplan_knowledge_msgs::DomainFormula>(*nit, predSrv.response.predicate));
+                    }
+                } else {
+                    ROS_ERROR("KCL: (ActionInterface) could not call Knowledge Base for predicate details, %s", params.name.c_str());
+                    return;
+                }
+            }
+
+            ss.str("");
+            ss << "/" << kb << "/update_array";
+            update_knowledge_client = node_handle -> serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());
+
+            struct oper_info temp;
+            temp.predicates = predicates;
+            temp.sensed_predicates = sensed_predicates;
+            temp.params = params;
+            temp.op = op;
+            operator_info.insert(std::pair<std::string, struct oper_info>(opNames[i].name, temp));
+            predicates.clear();
+            sensed_predicates.clear();
+        }
+    }
+
+    void Ai_Manager::update_start(int id) {
+        std::string name = big_plan[id].name;
+        std::map<std::string, rosplan_knowledge_msgs::DomainFormula> predicates = operator_info[name].predicates;
+        std::map<std::string, rosplan_knowledge_msgs::DomainFormula> sensed_predicates = operator_info[name].sensed_predicates;
+
+        rosplan_knowledge_msgs::DomainFormula params = operator_info[name].params;
+        rosplan_knowledge_msgs::DomainOperator op = operator_info[name].op;
+
+        std::vector<diagnostic_msgs::KeyValue> parameters = big_plan[id].parameters;
+
+        std::vector<bool> found(params.typed_parameters.size(), false);
+        std::map<std::string, std::string> boundParameters;
+        for (size_t j = 0; j < params.typed_parameters.size(); j++) {
+            for (size_t i = 0; i < parameters.size(); i++) {
+                if (params.typed_parameters[j].key == parameters[i].key) {
+                    boundParameters[parameters[i].key] = parameters[i].value;
+                    found[j] = true;
+                    break;
+                }
+            }
+            if (!found[j]) {
+                ROS_INFO("KCL: (%s) aborting action dispatch; malformed parameters, missing %s", params.name.c_str(), params.typed_parameters[j].key.c_str());
+                return;
+            }
+        }
+
+        rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updatePredSrv;
+
+        // simple START del effects
+        for (int i = 0; i < op.at_start_del_effects.size(); i++) {
+            std::map<std::string, rosplan_knowledge_msgs::DomainFormula>::iterator it = sensed_predicates.find(op.at_start_del_effects[i].name);
+            if (it != sensed_predicates.end()) continue;  // sensed predicate
+
+            rosplan_knowledge_msgs::KnowledgeItem item;
+            item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
+            item.attribute_name = op.at_start_del_effects[i].name;
+            item.values.clear();
+            diagnostic_msgs::KeyValue pair;
+            for (size_t j = 0; j < op.at_start_del_effects[i].typed_parameters.size(); j++) {
+                pair.key = predicates[op.at_start_del_effects[i].name].typed_parameters[j].key;
+                pair.value = boundParameters[op.at_start_del_effects[i].typed_parameters[j].key];
+                item.values.push_back(pair);
+            }
+            updatePredSrv.request.knowledge.push_back(item);
+            updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_KNOWLEDGE);
+        }
+
+        // simple START add effects
+        for (int i = 0; i < op.at_start_add_effects.size(); i++) {
+            std::map<std::string, rosplan_knowledge_msgs::DomainFormula>::iterator it = sensed_predicates.find(op.at_start_add_effects[i].name);
+            if (it != sensed_predicates.end()) continue;  // sensed predicate
+
+            rosplan_knowledge_msgs::KnowledgeItem item;
+            item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
+            item.attribute_name = op.at_start_add_effects[i].name;
+            item.values.clear();
+            diagnostic_msgs::KeyValue pair;
+            for (size_t j = 0; j < op.at_start_add_effects[i].typed_parameters.size(); j++) {
+                pair.key = predicates[op.at_start_add_effects[i].name].typed_parameters[j].key;
+                pair.value = boundParameters[op.at_start_add_effects[i].typed_parameters[j].key];
+                item.values.push_back(pair);
+            }
+            updatePredSrv.request.knowledge.push_back(item);
+            updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
+        }
+
+        if (updatePredSrv.request.knowledge.size() > 0 && !update_knowledge_client.call(updatePredSrv))
+            ROS_INFO("KCL: (%s) failed to update PDDL model in knowledge base", params.name.c_str());
+
+        std::string parameter_temp = big_plan[id].name + " " + to_string(big_plan[id].action_id);
+        print_log(node_name, __func__, "update at start by agent" + to_string(id) + " [ " + parameter_temp + " ]");
+    }
+
+    void Ai_Manager::update_end(int id) {
+        std::string name = big_plan[id].name;
+        std::map<std::string, rosplan_knowledge_msgs::DomainFormula> predicates = operator_info[name].predicates;
+        std::map<std::string, rosplan_knowledge_msgs::DomainFormula> sensed_predicates = operator_info[name].sensed_predicates;
+
+        rosplan_knowledge_msgs::DomainFormula params = operator_info[name].params;
+        rosplan_knowledge_msgs::DomainOperator op = operator_info[name].op;
+
+        std::vector<diagnostic_msgs::KeyValue> parameters = big_plan[id].parameters;
+
+        std::vector<bool> found(params.typed_parameters.size(), false);
+        std::map<std::string, std::string> boundParameters;
+        for (size_t j = 0; j < params.typed_parameters.size(); j++) {
+            for (size_t i = 0; i < parameters.size(); i++) {
+                if (params.typed_parameters[j].key == parameters[i].key) {
+                    boundParameters[parameters[i].key] = parameters[i].value;
+                    found[j] = true;
+                    break;
+                }
+            }
+            if (!found[j]) {
+                ROS_INFO("KCL: (%s) aborting action dispatch; malformed parameters, missing %s", params.name.c_str(), params.typed_parameters[j].key.c_str());
+                return;
+            }
+        }
+
+        // update knowledge base
+        rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updatePredSrv;
+
+        // simple END del effects
+        for (int i = 0; i < op.at_end_del_effects.size(); i++) {
+            std::map<std::string, rosplan_knowledge_msgs::DomainFormula>::iterator it = sensed_predicates.find(op.at_end_del_effects[i].name);
+            if (it != sensed_predicates.end()) continue;  // sensed predicate
+
+            rosplan_knowledge_msgs::KnowledgeItem item;
+            item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
+            item.attribute_name = op.at_end_del_effects[i].name;
+            item.values.clear();
+            diagnostic_msgs::KeyValue pair;
+            for (size_t j = 0; j < op.at_end_del_effects[i].typed_parameters.size(); j++) {
+                pair.key = predicates[op.at_end_del_effects[i].name].typed_parameters[j].key;
+                pair.value = boundParameters[op.at_end_del_effects[i].typed_parameters[j].key];
+                item.values.push_back(pair);
+            }
+            updatePredSrv.request.knowledge.push_back(item);
+            updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_KNOWLEDGE);
+        }
+
+        // simple END add effects
+        for (int i = 0; i < op.at_end_add_effects.size(); i++) {
+            std::map<std::string, rosplan_knowledge_msgs::DomainFormula>::iterator it = sensed_predicates.find(op.at_end_add_effects[i].name);
+            if (it != sensed_predicates.end()) continue;  // sensed predicate
+
+            rosplan_knowledge_msgs::KnowledgeItem item;
+            item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
+            item.attribute_name = op.at_end_add_effects[i].name;
+            item.values.clear();
+            diagnostic_msgs::KeyValue pair;
+            for (size_t j = 0; j < op.at_end_add_effects[i].typed_parameters.size(); j++) {
+                pair.key = predicates[op.at_end_add_effects[i].name].typed_parameters[j].key;
+                pair.value = boundParameters[op.at_end_add_effects[i].typed_parameters[j].key];
+                item.values.push_back(pair);
+            }
+            updatePredSrv.request.knowledge.push_back(item);
+            updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
+        }
+
+        if (updatePredSrv.request.knowledge.size() > 0 && !update_knowledge_client.call(updatePredSrv))
+            ROS_INFO("KCL: (%s) failed to update PDDL model in knowledge base", params.name.c_str());
+
+        std::string parameter_temp = big_plan[id].name + " " + to_string(big_plan[id].action_id);
+        print_log(node_name, __func__, "update at end by agent" + to_string(id) + " [ " + parameter_temp + " ]");
+    }
+}  // namespace Custom
 
 int main(int argc, char **argv)
 {
@@ -479,11 +794,10 @@ int main(int argc, char **argv)
                                                dynamic_cast<Custom::Ai_Manager *>(&mi));
 
 
-    while(1){
-        sleep(0);
-        ros::spinOnce();
-        mi.run_AI_Manager();
-    }
+    ros::Rate loopRate(1);
+  ros::AsyncSpinner spinner(4);		//다중 스레드 사용
+  spinner.start();
+  ros::waitForShutdown();
     // std::string exit_topic = "/board/exit_call";
     // nh.getParam("exit_name", exit_topic);
     // ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Navi::exit_Callback,
@@ -502,7 +816,7 @@ int main(int argc, char **argv)
 void print_log(string node_name, string func,string str){
 	cout<< "[";
 	cout.width(9);cout.fill(' ');cout<<fixed;cout.precision(3);
-	cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()<<"][";
+	cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()/1000.0<<"][";
 	cout.width(13);cout.fill(' ');
 	cout<<node_name<<"][";
 	cout.width(17);cout.fill(' ');
