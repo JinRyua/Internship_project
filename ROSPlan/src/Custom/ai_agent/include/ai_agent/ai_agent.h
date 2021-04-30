@@ -4,6 +4,7 @@
 #include "std_msgs/Empty.h"
 #include "board/reset_ai_msg.h"
 #include "board/set_ai_msg.h"
+#include "rosplan_knowledge_msgs/KnowledgeItem.h"
 #include <vector>
 #include <string>
 #ifndef AI_AGENT
@@ -29,12 +30,17 @@ namespace Custom
         int speed;
 
         custom_msgs::axis agent;    //axis
+        custom_msgs::axis post_agent;  //
+
+        rosplan_knowledge_msgs::KnowledgeItem init_knowledge;
+        rosplan_knowledge_msgs::KnowledgeItem knowledge;
 
         std::string node_name;
 
         int state;
         int plan_number;
         bool stop_flag;
+        bool in_grid;
         std::vector<custom_msgs::axis> plan;
         // std::vector<std::vector<std::string>> map;
         // std::vector<std::vector<int>> world_map;    //for A*
@@ -58,6 +64,7 @@ namespace Custom
         ~Ai_Agent();
 
         void run_AI_Agent(double duration);
+        void update_grid();
 
         //void write_launch(std::vector<std::string>& f, const std::string path);     //write launch for agent
 
@@ -69,7 +76,7 @@ namespace Custom
         ros::Publisher state_time_pub;
         //ros::Publisher want_route_pub;
         //service client
-        //ros::ServiceClient get_player_state_cli;
+        ros::ServiceClient update_knowledge_client;
 
         //callback
         void dispatched_Callback(const ai_manager::ai_action& msg);

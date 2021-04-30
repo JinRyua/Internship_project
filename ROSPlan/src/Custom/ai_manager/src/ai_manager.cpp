@@ -149,14 +149,22 @@ namespace Custom {
             row = stoi(to.substr(5, point - 5));
             col = stoi(to.substr(point + 1));
             
-            vector<custom_msgs::axis> send_msg;
-            custom_msgs::axis temp;
-            temp.row = row;
-            temp.col = col;
-            send_msg.push_back(temp);
-            ai_manager::ai_action msg_temp;
-            msg_temp.plan = send_msg;
-            agent_pub[number].publish(msg_temp);
+            navi::want_route msg;
+            msg.name = agent_names[number];
+            msg.from = agents_axis[number];
+            msg.to.row = row;
+            msg.to.col = col;
+            print_log(node_name, __func__, "ask route to navi");
+            want_route_pub.publish(msg);
+
+            // vector<custom_msgs::axis> send_msg;
+            // custom_msgs::axis temp;
+            // temp.row = row;
+            // temp.col = col;
+            // send_msg.push_back(temp);
+            // ai_manager::ai_action msg_temp;
+            // msg_temp.plan = send_msg;
+            // //agent_pub[number].publish(msg_temp);
             // big_plan = msg;
             // dispatched = true;
             // timer = 0;
@@ -182,7 +190,7 @@ namespace Custom {
             rosplan_dispatch_msgs::ActionFeedback msg;
             msg.action_id = big_plan[i].action_id;
             msg.status = "action enabled";
-            update_start(i);
+            //update_start(i);
             action_feedback_pub.publish(msg);
             print_log(node_name, __func__, "publish enabled to dispatcher");
             // //check all enable
@@ -204,7 +212,7 @@ namespace Custom {
             rosplan_dispatch_msgs::ActionFeedback msg;
             msg.action_id = big_plan[i].action_id;
             msg.status = "action achieved";
-            update_end(i);
+            //update_end(i);
             action_feedback_pub.publish(msg);
             print_log(node_name, __func__, "publish achieved to dispatcher");
             // //check all achieved
@@ -250,16 +258,18 @@ namespace Custom {
 
     void Ai_Manager::give_route_Callback(const navi::give_route& msg){
         print_log(node_name, __func__, "received route from navi");
-        vector<custom_msgs::plan> temp = msg.plans;
-        for (int k = 0; k < temp.size(); k++) {
-            std::string name = temp[k].name;
-            int i = 0;
-            for (i = 0; i < agent_names.size(); i++) {
-                if (agent_names[i] == temp[k].name)
-                    break;
-            }
-            plans[k] = temp[k].plan;
+        std::string name = msg.plan.name;
+        int i;
+        for (i = 0; i < agent_names.size(); i++) {
+            if (agent_names[i] == name)
+                break;
         }
+        vector<custom_msgs::axis> temp = msg.plan.plan;
+        plans[i] = temp;
+        ai_manager::ai_action msg_temp;
+        msg_temp.plan = plans[i];
+        //if (ghost[i] != 1)
+        agent_pub[i].publish(msg_temp);
         //cout<<"good"<<endl;
         get_route = true;
         
@@ -301,13 +311,13 @@ namespace Custom {
                 calc_dest();
                 //get route from Navi
                 //for(int i = 0; i < agents_axis.size(); i++){
-                    navi::want_route msg;
-                    msg.name = agent_names;
-                    msg.from = agents_axis;
-                    msg.to = destination;
+                    // navi::want_route msg;
+                    // msg.name = agent_names;
+                    // msg.from = agents_axis;
+                    // msg.to = destination;
                     //if(ghost[i]!=1) //TODO:
-                    print_log(node_name, __func__, "ask route to navi");
-                        want_route_pub.publish(msg);
+                    // print_log(node_name, __func__, "ask route to navi");
+                    //     want_route_pub.publish(msg);
                 //}
                 get_agent_state = false;
             }
@@ -319,7 +329,7 @@ namespace Custom {
                     ai_manager::ai_action msg;
                     msg.plan = plans[i];
                     //if (ghost[i] != 1)
-                        agent_pub[i].publish(msg);
+                        //agent_pub[i].publish(msg);
                     //agent_route_flag[i] = 2;
                     //}
                 }

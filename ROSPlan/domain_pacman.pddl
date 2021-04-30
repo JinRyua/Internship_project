@@ -43,20 +43,20 @@
 ;     )
 ; )
 (:durative-action move
-    :parameters (?a -agent ?from ?to -point)
+    :parameters (?a -agent ?to -point)
     :duration (= ?duration 1)
     :condition (and 
-        (at start (and 
-            (in-block ?a ?from)
-        ))
+        ;(at start (and 
+            ;(in-block ?a ?from)
+        ;))
     )
     :effect (and 
-        (at start (and 
-            (not(in-block ?a ?from))
-        ))
-        (at end (and 
-            (in-block ?a ?to)
-        ))
+        ;(at start (and 
+            ;(not(in-block ?a ?from))
+        ;))
+        ;(at end (and 
+            ;(in-block ?a ?to)
+        ;))
     )
 )
 

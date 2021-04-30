@@ -105,6 +105,7 @@ namespace Custom
         void stop_Callback(const std_msgs::Empty& msg);
         void get_state_Callback(const board::game_state_msg msg);
         void give_route_Callback(const navi::give_route& msg);
+     
         void ai_feedback_Callback(const ros::MessageEvent<ai_manager::ai_feedback const >& event);
         void game_state_Callback(const board::game_state_msg& msg);
         void get_and_stop_Callback(const std_msgs::Empty& msg);

@@ -39,6 +39,8 @@ namespace Custom
         std::vector<custom_msgs::map> map;
         std::vector<int> ghost;
 
+        //need plan
+
         std::vector<custom_msgs::axis> post_player;     //post value for check  maybe...
         std::vector<custom_msgs::axis> post_agents;
         std::vector<custom_msgs::axis> post_lcookies;

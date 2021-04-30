@@ -196,9 +196,9 @@ namespace Custom{
 
 // navi::want_route::Request& req, navi::want_route::Response& res)
     void Navi::want_route_Callback(const navi::want_route& msg){
-        vector<string> a = msg.name;
-        vector<custom_msgs::plan> plans;
-        for (int k = 0; k < a.size(); k++) {
+        string a = msg.name;
+        custom_msgs::plan plans;
+        //for (int k = 0; k < a.size(); k++) {
             double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             if (now_time >= timer) {  //run out timer
                 use_world_map = world_map;
@@ -221,7 +221,7 @@ namespace Custom{
 
             //중복 처리
             //cout << "hi" << endl;
-            auto it = player_mat.find(msg.name[k]);
+            auto it = player_mat.find(msg.name);
             if (it != player_mat.end()) {  //이미 route가 있으면 제거
                 for (int i = 0; i < use_world_map.size(); i++) {
                     for (int j = 0; j < use_world_map[i].size(); j++) {
@@ -232,12 +232,12 @@ namespace Custom{
             }
 
             vector<custom_msgs::axis> plan;
-            run_star(msg.from[k], msg.to[k], use_world_map, plan);
+            run_star(msg.from, msg.to, use_world_map, plan);
 
-            custom_msgs::plan response;
-            response.name = msg.name[k];
-            response.plan = plan;
-            plans.push_back(response);
+            // custom_msgs::plan response;
+            // response.name = msg.name;
+            // response.plan = plan;
+            //plans.push_back(response);
 
             //make player_mat and update use_world_map
             vector<int> temp(world_map[0].size(), 0);
@@ -246,10 +246,11 @@ namespace Custom{
                 temp_mat[plan[i].row - 1][plan[i].col - 1] = 5;
                 use_world_map[plan[i].row - 1][plan[i].col - 1] += 5;
             }
-            player_mat.insert(pair<string, vector<vector<int>>>(msg.name[k], temp_mat));
-        }
+            player_mat.insert(pair<string, vector<vector<int>>>(msg.name, temp_mat));
+        //}
         navi::give_route res;
-        res.plans = plans;
+        res.plan.plan = plan;
+        res.plan.name = msg.name;
         give_route_pub.publish(res);
         return;
     }
@@ -276,7 +277,7 @@ int main(int argc, char **argv)
 
     std::string want_topic = "/navi/want_route";
     nh.getParam("want_name", want_topic);
-    ros::Subscriber want_sub = nh.subscribe(want_topic, 1, &Custom::Navi::want_route_Callback, dynamic_cast<Custom::Navi *>(&ni));
+    ros::Subscriber want_sub = nh.subscribe(want_topic, 1000, &Custom::Navi::want_route_Callback, dynamic_cast<Custom::Navi *>(&ni));
 
     //service server
     ros::ServiceServer ask_dist_mat_srv = nh.advertiseService("/navi/ask_dist_mat", &Custom::Navi::ask_dist_mat_Callback, dynamic_cast<Custom::Navi *>(&ni));

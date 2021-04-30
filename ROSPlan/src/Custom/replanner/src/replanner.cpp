@@ -63,7 +63,7 @@ namespace Custom{
         player_state_client = nh.serviceClient<player::player_state_time_srv>(s);
         
         double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        timer = now_time + ((double)(30) * 1000000000);
+        timer = now_time + ((double)(5) * 1000000000);
     }
 
     Replanner::~Replanner() {
@@ -83,6 +83,7 @@ namespace Custom{
 
         if(!post_ghost.empty())
             state = CHECK;
+        state = CHECK;
     }
 
     void Replanner::agent_state_Callback(const ros::MessageEvent<ai_agent::agent_state_time>& event){
@@ -117,9 +118,9 @@ namespace Custom{
     void Replanner::check_replan(){
         //TODO: check replan
         //simple ghost check
-        if(post_ghost.empty())
-            return;
-        for(int i = 0; i < ghost.size(); i++){
+        // if(post_ghost.empty())
+        //     return;
+        for(int i = 0; i < post_ghost.size(); i++){
             if(ghost[i] != post_ghost[i]){
                 state = CANCEL;
                 return;
@@ -127,8 +128,9 @@ namespace Custom{
         }
 
         state = IDLE;
+        state = CANCEL;
         double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        timer = now_time + ((double)(3)*1000000000);
+        timer = now_time + ((double)(5)*1000000000);
     }
 
     void Replanner::update_ghost(){
@@ -201,9 +203,9 @@ namespace Custom{
             std_srvs::Empty srv;
             cancel_dispatch_client.call(srv);
 
-            board::change_state_msg tm;
-            tm.state = "wait";
-            change_pub.publish(tm);
+            // board::change_state_msg tm;
+            // tm.state = "wait";
+            // change_pub.publish(tm);
 
             //get agent, player state   //TODO: time need
             for(int i =0;i<agent_state_pub.size();i++){
@@ -234,10 +236,11 @@ namespace Custom{
             ros::ServiceClient call_client = node_handle->serviceClient<std_srvs::Empty>(call_str.c_str());
             std_srvs::Empty call_srv;
             call_client.call(call_srv);
-            state = IDLE;
+            
 
             double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             timer = now_time + ((double)(3)*1000000000);
+            state = IDLE;
         }
     }
     void Replanner::exitCallback(const std_msgs::Empty& msg){

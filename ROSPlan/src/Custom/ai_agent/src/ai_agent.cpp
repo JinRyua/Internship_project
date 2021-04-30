@@ -5,6 +5,8 @@
 #include "ai_agent/stop_response.h"
 #include "ai_manager/ai_feedback.h"
 #include "ai_agent/agent_state_time.h"
+#include "rosplan_knowledge_msgs/KnowledgeUpdateServiceArray.h"
+#include "diagnostic_msgs/KeyValue.h"
 #include "board/set_ai_msg.h"
 #include "board/reset_ai_msg.h"
 
@@ -16,6 +18,7 @@ namespace Custom{
     Ai_Agent::Ai_Agent(ros::NodeHandle &nh){
         node_handle = &nh;
         state = IDLE;
+        in_grid = true;     //grid에 있음 
         node_name = ros::this_node::getName();    //자신의 노드 이름 확인
         int point = node_name.find("/", 0);      //패키지명 등을 제외하고 노드 이름의 필요한 부분만 찾아 뽑아냄
         node_name = node_name.substr(point + 1);  //노드 이름 저장
@@ -36,6 +39,11 @@ namespace Custom{
         std::string ai_feedback_topic = "/ai_manager/ai_feedback/";
         feedback_pub = nh.advertise<ai_manager::ai_feedback>(ai_feedback_topic, 1000);
 
+        //set client srv
+        std::stringstream ss;
+        ss.str("");
+        ss << "/rosplan_knowledge_base/update_array";
+        update_knowledge_client = node_handle->serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());
 
         speed = 2;
         plan_number = -1;
@@ -44,6 +52,20 @@ namespace Custom{
         agent.row = 11;
         agent.direction = 1;
         stop_flag = false;
+        init_knowledge.knowledge_type = 1;   //FACT
+        init_knowledge.attribute_name = "in-block";
+
+        vector<diagnostic_msgs::KeyValue> temp;
+        diagnostic_msgs::KeyValue value;
+        value.key = "c";
+        value.value = node_name;
+        temp.push_back(value);
+        value.key = "p";
+        value.value = "point" + to_string((int)(agent.row)) + "_" + to_string((int)(agent.col));
+        temp.push_back(value);
+
+        init_knowledge.values = temp;
+        knowledge = init_knowledge;
 
     }
 
@@ -75,10 +97,16 @@ namespace Custom{
                 agent.row -= move_distance;
             else if (direction == DOWN)
                 agent.row += move_distance;
-            
+            if(in_grid == true){
+                //update and remove KB
+                update_grid();
+            }
+            in_grid = false;
+
             if (direction == LEFT && dest.col >= agent.col){     //보정 In_Grid
                 agent.col = dest.col;
                 plan_number++;
+                in_grid = true;
                 if(stop_flag == true){
                     state = IDLE;
                     stop_flag = false;
@@ -87,6 +115,7 @@ namespace Custom{
             else if (direction == RIGHT && dest.col <= agent.col){
                 agent.col = dest.col;
                 plan_number++;
+                in_grid = true;
                 if(stop_flag == true){
                     state = IDLE;
                     stop_flag = false;
@@ -95,6 +124,7 @@ namespace Custom{
             else if (direction == UP && dest.row >= agent.row){
                 agent.row = dest.row;
                 plan_number++;
+                in_grid = true;
                 if(stop_flag == true){
                     state = IDLE;
                     stop_flag = false;
@@ -103,6 +133,7 @@ namespace Custom{
             else if (direction == DOWN && dest.row <= agent.row){
                 agent.row = dest.row;
                 plan_number++;
+                in_grid = true;
                 if(stop_flag == true){
                     state = IDLE;
                     stop_flag = false;
@@ -124,6 +155,28 @@ namespace Custom{
 
             //cout<<
         }
+    }
+
+    void Ai_Agent::update_grid(){
+        vector<unsigned char> type;
+        vector<rosplan_knowledge_msgs::KnowledgeItem> know;
+
+        type.push_back(2);  //remove present
+        know.push_back(knowledge);
+        rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
+
+        type.push_back(0);  //ADD present(next GRID)
+        for (int i = 0; i < knowledge.values.size(); i++) {  //make knowledge
+            if (knowledge.values[i].key == "p") {
+                knowledge.values[i].value = "point" + to_string((int)(plan[plan_number].row)) + "_" + to_string((int)(plan[plan_number].col));
+                break;
+            }
+        }
+        know.push_back(knowledge);
+        srv.request.update_type = type;
+        srv.request.knowledge = know;
+
+        update_knowledge_client.call(srv);  //call update array
     }
 
     void Ai_Agent::dispatched_Callback(const ai_manager::ai_action& msg){

@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   genmsg
   message_runtime
+  rosplan_knowledge_msgs
 )
 
 add_message_files(FILES 
@@ -29,7 +30,7 @@ generate_messages(DEPENDENCIES std_msgs custom_msgs)
 catkin_package(
   INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp rospy board custom_msgs ai_manager actionlib genmsg message_runtime
+  CATKIN_DEPENDS roscpp rospy board custom_msgs ai_manager actionlib genmsg message_runtime rosplan_knowledge_msgs
   DEPENDS
 )
 
