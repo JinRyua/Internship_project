@@ -94,7 +94,7 @@ namespace Custom
         ros::Publisher game_state_pub;
         ros::Publisher change_pub;
         std::vector<ros::Publisher> agent_pub;      //agent dispatch pub
-        ros::Publisher get_state_stop_agent_pub;    //get state and stop agent to all agent
+        std::vector<ros::Publisher> get_state_stop_agent_pub;    //get state and stop agent to agent
         
         //service client
         ros::ServiceClient update_knowledge_client; //for update kb

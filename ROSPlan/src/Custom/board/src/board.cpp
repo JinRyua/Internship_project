@@ -1,11 +1,13 @@
 #include "board/board.h"
 #include "rosplan_knowledge_msgs/GetInstanceService.h"
 #include "rosplan_knowledge_msgs/GetAttributeService.h"
+#include "rosplan_knowledge_msgs/KnowledgeUpdateServiceArray.h"
 #include "board/display_info.h"
 #include "board/game_state_msg.h"
 #include "board/set_ai_msg.h"
 #include "board/change_state_msg.h"
 #include "board/reset_ai_msg.h"
+#include "diagnostic_msgs/KeyValue.h"
 
 
 #include <iostream>
@@ -30,6 +32,12 @@ namespace Custom{
         in_grid = true;     //start is in_grid
         ghost_time = 5;     //ghost_time
         ghost_timer = (double)(10000)*(double)(1000000000);    //ghost_timer
+
+        //set client srv
+        std::stringstream ss;
+        ss.str("");
+        ss << "/rosplan_knowledge_base/update_array";
+        update_knowledge_client = node_handle->serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());
         
         //set publisher
         std::string display_topic = "/board/display";
@@ -64,7 +72,7 @@ namespace Custom{
 
 
         //map_row, col get from kb
-        std::stringstream ss;
+        ss.str("");
         ss << kb << "state/functions";
         ros::service::waitForService(ss.str(), ros::Duration(20));
         ros::ServiceClient row_client = nh.serviceClient<rosplan_knowledge_msgs::GetAttributeService>(ss.str());
@@ -279,6 +287,22 @@ namespace Custom{
         map = init_map;         //init maps
         init_lcookies = lcookies;
         init_scookies = scookies;
+
+
+        post_knowledge.knowledge_type = 1;   //FACT     //make knowledge player's
+        post_knowledge.attribute_name = "in-block";
+
+        vector<diagnostic_msgs::KeyValue> temp;
+        diagnostic_msgs::KeyValue value;
+        value.key = "c";
+        value.value = "player";
+        temp.push_back(value);
+        value.key = "p";
+        value.value = "point" + to_string((int)(player[0].row)) + "_" + to_string((int)(player[0].col));
+        temp.push_back(value);
+
+        post_knowledge.values = temp;
+        knowledge = post_knowledge;
     }
 
     Board::~Board() 
@@ -293,10 +317,38 @@ namespace Custom{
                 agents[i].second = false;
                 board::set_ai_msg temp;
                 temp.loc = agents[i].first;
-                temp.speed = 3;
+                temp.speed = 2;
 
                 set_AI_pub[i].publish(temp);
             }
+
+            //update KB
+            rosplan_knowledge_msgs::KnowledgeItem know;
+            vector<diagnostic_msgs::KeyValue> temp_val;
+            diagnostic_msgs::KeyValue value;
+            vector<unsigned char> type;
+            vector<rosplan_knowledge_msgs::KnowledgeItem> knows;  //array
+
+            for (int i = 0; i < agents.size(); i++) {
+                //make knowledge    //ghost
+                know.knowledge_type = 1;           //FACT
+                know.attribute_name = "is-ghost";  //ghost operator
+
+                value.key = "a";
+                value.value = agent_names[i];
+                temp_val.push_back(value);
+                know.values = temp_val;
+                temp_val.clear();
+                knows.push_back(know);
+                type.push_back(2);  //REMOVE_KNOWLEDGE
+            }
+
+            rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
+            srv.request.update_type = type;
+            srv.request.knowledge = knows;
+
+            update_knowledge_client.call(srv);  //call update array
+
             //publish
             ros::MessageEvent<std_msgs::Empty> temp_call;
 
@@ -368,9 +420,32 @@ namespace Custom{
             if(s_it != scookies.end()){ //eat small cookie
                 scookies.erase(s_it);   //erase small_cookie
                 map[(int)(temp.row - 1)][(int)(temp.col - 1)] = " ";
-
+                
                 //update score
                 score ++;
+
+                //update KB
+                rosplan_knowledge_msgs::KnowledgeItem know;
+                know.knowledge_type = 1;  //FACT     //make knowledge player's
+                know.attribute_name = "is-scookie";
+
+                vector<diagnostic_msgs::KeyValue> temp_val;
+                diagnostic_msgs::KeyValue value;
+                value.key = "p";
+                value.value = "point" + to_string((int)(temp.row)) + "_" + to_string((int)(temp.col));
+                temp_val.push_back(value);
+                know.values = temp_val;
+                vector<unsigned char> type;  //update KB
+                vector<rosplan_knowledge_msgs::KnowledgeItem> knows;
+
+                type.push_back(2);  //remove present
+                knows.push_back(know);
+                rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
+                srv.request.update_type = type;
+                srv.request.knowledge = knows;
+
+                update_knowledge_client.call(srv);                   //call update array
+
             }
             else{
                 auto l_it = find(lcookies.begin(), lcookies.end(), temp);
@@ -386,6 +461,51 @@ namespace Custom{
                         temp.speed = 1.5;
                         set_AI_pub[i].publish(temp);
                     }
+
+                    //update KB
+                    rosplan_knowledge_msgs::KnowledgeItem know;     
+                    know.knowledge_type = 1;  //FACT     //make knowledge lcookie's
+                    know.attribute_name = "is-lcookie";
+
+                    vector<diagnostic_msgs::KeyValue> temp_val;
+                    diagnostic_msgs::KeyValue value;
+                    value.key = "p";
+                    value.value = "point" + to_string((int)(temp.row)) + "_" + to_string((int)(temp.col));
+                    temp_val.push_back(value);
+                    know.values = temp_val;
+
+                    vector<unsigned char> type;  
+                    vector<rosplan_knowledge_msgs::KnowledgeItem> knows;       //array
+
+                    type.push_back(2);  //remove present
+                    knows.push_back(know);
+                    temp_val.clear();
+
+                    for (int i = 0; i < agents.size(); i++) {
+                        //make knowledge    //ghost
+                        know.knowledge_type = 1;           //FACT
+                        know.attribute_name = "is-ghost";  //ghost operator
+
+                        value.key = "a";
+                        value.value = agent_names[i];
+                        temp_val.push_back(value);
+                        know.values = temp_val;
+                        temp_val.clear();
+                        knows.push_back(know);
+
+                        if (agents[i].second == true) {  //set type
+                            type.push_back(0);   //ADD_KNOWLEDGE
+                        } else {
+                            type.push_back(2);  //REMOVE_KNOWLEDGE
+                        }
+                    }
+
+                    rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
+                    srv.request.update_type = type;
+                    srv.request.knowledge = knows;
+
+                    update_knowledge_client.call(srv);  //call update array
+
                     //publish
                     ros::MessageEvent<std_msgs::Empty> temp_call;
                     ask_state_callback(temp_call);
@@ -395,9 +515,6 @@ namespace Custom{
                     ghost_timer = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                     ghost_timer += ghost_time * 1000000000; //일정 시간만큼
 
-                    
-                    
-                    
                 }
                 
             }
@@ -432,9 +549,39 @@ namespace Custom{
             temp.loc = init_agents[i].first;
             temp.speed = 3;
             set_AI_pub[i].publish(temp);
+
+
+            //update KB
+            vector<unsigned char> type;
+            vector<rosplan_knowledge_msgs::KnowledgeItem> knows;  //array
+            rosplan_knowledge_msgs::KnowledgeItem know;
+            vector<diagnostic_msgs::KeyValue> temp_val;
+            diagnostic_msgs::KeyValue value;
+
+            type.push_back(2);  //remove present
+            knows.push_back(know);
+            temp_val.clear();
+
+            //make knowledge    //ghost
+            know.knowledge_type = 1;           //FACT
+            know.attribute_name = "is-ghost";  //ghost operator
+
+            value.key = "a";
+            value.value = agent_names[i];
+            temp_val.push_back(value);
+            know.values = temp_val;
+            knows.push_back(know);
+
+            type.push_back(2);  //REMOVE_KNOWLEDGE
+
+            rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
+            srv.request.update_type = type;
+            srv.request.knowledge = knows;
+
+            update_knowledge_client.call(srv);  //call update array
+
             ros::MessageEvent<std_msgs::Empty> temp_call;
-            ask_state_callback(temp_call);
-            
+            ask_state_callback(temp_call);  //call replan
         }
         else{   //eat player
             board::reset_ai_msg temp;
@@ -448,12 +595,33 @@ namespace Custom{
             cout<<init_player[0].direction<<endl;
             set_player_pub.publish(temp2);
 
+            vector<unsigned char> type;         //update KB
+            vector<rosplan_knowledge_msgs::KnowledgeItem> know;
+
+            type.push_back(2);  //remove present
+            know.push_back(post_knowledge);
+            rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
+
+            type.push_back(0);                                   //ADD present(next GRID)
+            for (int i = 0; i < knowledge.values.size(); i++) {  //make knowledge
+                if (knowledge.values[i].key == "p") {
+                    knowledge.values[i].value = "point" + to_string((int)(player[0].row)) + "_" + to_string((int)(player[0].col));
+                    break;
+                }
+            }
+            know.push_back(knowledge);
+            srv.request.update_type = type;
+            srv.request.knowledge = know;
+
+            post_knowledge = knowledge;
+
+            update_knowledge_client.call(srv);  //call update array
             // board::change_state_msg tm;
             // tm.state = "wait";
             // change_state_pub.publish(tm);
 
             ros::MessageEvent<std_msgs::Empty> temp_call;
-            ask_state_callback(temp_call);
+            ask_state_callback(temp_call);  //call replan
 
             life--;
             cout<<life<<endl;
@@ -655,11 +823,41 @@ namespace Custom{
             res.result.direction = req.loc.direction;
 
             player[0] = res.result;
+
+            vector<unsigned char> type;         //update KB
+            vector<rosplan_knowledge_msgs::KnowledgeItem> know;
+
+            type.push_back(2);  //remove present
+            know.push_back(post_knowledge);
+            rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
+
+            type.push_back(0);                                   //ADD present
+            for (int i = 0; i < knowledge.values.size(); i++) {  //make knowledge
+                if (knowledge.values[i].key == "p") {
+                    knowledge.values[i].value = "point" + to_string((int)(player[0].row)) + "_" + to_string((int)(player[0].col));
+                    break;
+                }
+            }
+            know.push_back(knowledge);
+            srv.request.update_type = type;
+            srv.request.knowledge = know;
+
+            post_knowledge = knowledge;
+
+            update_knowledge_client.call(srv);  //call update array
+
             return true;
         }
         else{
             in_grid = false;
-            res.result = req.loc;
+            //TODO:
+
+            res.result = req.loc;       //across map
+            if(req.loc.col <= 0.5){
+                res.result.col = map_col + 0.5 - req.loc.col;
+            }
+            else if(req.loc.col > map_col + 0.5 )
+                res.result.col = req.loc.col - map_col - 0.5;
 
             player[0] = res.result;
             return true;
@@ -754,6 +952,7 @@ namespace Custom{
         res.map = map_temp;
         return true;
     }
+
 
 }//close namespace
 

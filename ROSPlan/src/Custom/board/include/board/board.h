@@ -10,6 +10,7 @@
 #include "board/ask_player_stat_srv.h"
 #include "board/ask_map_srv.h"
 #include "std_msgs/Empty.h"
+#include "rosplan_knowledge_msgs/KnowledgeItem.h"
 
 
 
@@ -81,6 +82,9 @@ namespace Custom
 
         std::vector<custom_msgs::axis> menu_axis; //start, end 좌표
 
+        rosplan_knowledge_msgs::KnowledgeItem post_knowledge;   //player's post knowledge
+        rosplan_knowledge_msgs::KnowledgeItem knowledge;
+
 
 
 
@@ -94,6 +98,9 @@ namespace Custom
         void check_eat_star();  //star(cookie) 먹었는지 체크
         void check_collision(); //충돌 체크(agent와)
         void do_collision(std::pair<custom_msgs::axis, bool>& agent, int i);   //충돌시 작동 함수
+
+        //service client
+        ros::ServiceClient update_knowledge_client;
 
         //publisher
         ros::Publisher display_pub;                 //display 정보를 주는 display/display

@@ -82,6 +82,7 @@ namespace Custom
         ros::Publisher ask_state_pub;       //ask game state to board
         ros::Publisher stop_manager_pub;    //stop manager
         ros::Publisher change_pub;
+        ros::Publisher reset_pub;
         //ros::Publisher want_route_pub;
         //service client
         ros::ServiceClient cancel_dispatch_client;

@@ -52,6 +52,9 @@ namespace Custom{
 
         std::string change_topic = "/board/change_state";
         change_pub = nh.advertise<board::change_state_msg>(change_topic, 1000);
+
+        std::string reset_topic = "/navi/reset";
+        reset_pub = nh.advertise<std_msgs::Empty>(reset_topic,10);
         
         //service
         std::string s = "/rosplan_plan_dispatcher/cancel_dispatch";
@@ -130,7 +133,7 @@ namespace Custom{
         state = IDLE;
         state = CANCEL;
         double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        timer = now_time + ((double)(5)*1000000000);
+        timer = now_time + ((double)(1)*1000000000);
     }
 
     void Replanner::update_ghost(){
@@ -226,11 +229,14 @@ namespace Custom{
             state = UPDATE;
         } else if (state == UPDATE) {
             //cout<<"update"<<endl;
-            print_log(node_name, __func__, "update KB");
-            update_ghost();
+            //print_log(node_name, __func__, "update KB");
+            //update_ghost();
+            state = GO_PLAN;
         } else if (state == GO_PLAN) {
             //cout<<"go_plan"<<endl;
             print_log(node_name, __func__, "rerun rosplan");
+            std_msgs::Empty temp;   //reset navi
+            reset_pub.publish(temp);
             std::string call_str = "/rosplan_problem_interface/problem_generation_server";  //service KB update array
             ros::service::waitForService(call_str.c_str(), ros::Duration(20));
             ros::ServiceClient call_client = node_handle->serviceClient<std_srvs::Empty>(call_str.c_str());
@@ -239,7 +245,7 @@ namespace Custom{
             
 
             double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            timer = now_time + ((double)(3)*1000000000);
+            timer = now_time + ((double)(1)*1000000000);
             state = IDLE;
         }
     }

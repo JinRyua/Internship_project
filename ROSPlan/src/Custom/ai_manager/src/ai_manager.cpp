@@ -42,9 +42,6 @@ namespace Custom {
         std::string game_state_topic = "/board/ask_state";
         game_state_pub = nh.advertise<std_msgs::Empty>(game_state_topic, 1000);
 
-        std::string get_stop_state_topic = "/ai_manager/get_state_stop_agent";
-        get_state_stop_agent_pub = nh.advertise<std_msgs::Empty>(get_stop_state_topic, 1000);
-
         std::string change_topic = "/board/change_state";
         change_pub = nh.advertise<board::change_state_msg>(change_topic, 1000);
 
@@ -70,6 +67,9 @@ namespace Custom {
         for (int i = 0; i < agent_names.size(); i++) {  //make agent pub sub
             ros::Publisher pub = nh.advertise<ai_manager::ai_action>("/ai_manager/ai_action/to_" + agent_names[i], 1000);
             agent_pub.push_back(pub);
+            std::string get_stop_state_topic = "/ai_manager/get_state_stop_agent/to_";
+            ros::Publisher pub2 = nh.advertise<std_msgs::Empty>(get_stop_state_topic + agent_names[i], 1000);
+            get_state_stop_agent_pub.push_back(pub2);
         }
 
         plans.resize(agent_names.size());       //resize vector plans, agent_route_flag ... for agent
@@ -143,19 +143,23 @@ namespace Custom {
             
             int number = stoi(name.substr(5)) - 1;  //번호만
             big_plan[number] = msg; //plan 저장
+            cout<<number<<endl;
+
+            std_msgs::Empty temp;
+            get_state_stop_agent_pub[number].publish(temp);
             
-            int row, col;
-            int point = to.find("_");
-            row = stoi(to.substr(5, point - 5));
-            col = stoi(to.substr(point + 1));
+            // int row, col;
+            // int point = to.find("_");
+            // row = stoi(to.substr(5, point - 5));
+            // col = stoi(to.substr(point + 1));
             
-            navi::want_route msg;
-            msg.name = agent_names[number];
-            msg.from = agents_axis[number];
-            msg.to.row = row;
-            msg.to.col = col;
-            print_log(node_name, __func__, "ask route to navi");
-            want_route_pub.publish(msg);
+            // navi::want_route msg;
+            // msg.name = agent_names[number];
+            // msg.from = agents_axis[number];
+            // msg.to.row = row;
+            // msg.to.col = col;
+            // print_log(node_name, __func__, "ask route to navi");
+            // want_route_pub.publish(msg);
 
             // vector<custom_msgs::axis> send_msg;
             // custom_msgs::axis temp;
@@ -294,7 +298,7 @@ namespace Custom {
                 game_state_pub.publish(temp);   //publish ask game_state
                 for(int i = 0; i < agent_route_flag.size(); i++)        //init route_flag
                     agent_route_flag[i] = 0;
-                timer = now_time + ((double)(100) * 1000000000);    //set timer(INF)
+                timer = now_time + ((double)(0.5) * 1000000000);    //set timer(INF)
             }
 
             if (get_state == true){     //subscribe game_state
@@ -302,8 +306,8 @@ namespace Custom {
                 //get state and stop agent
                 std_msgs::Empty msg;
                 //publish
-                get_state_stop_agent_pub.publish(msg);
-                get_state = false;
+                // get_state_stop_agent_pub.publish(msg);
+                // get_state = false;
             }
             else if(get_agent_state == true){
                 //calc dest
@@ -480,16 +484,40 @@ namespace Custom {
         agents_axis[i] = data->agent;
         int count = 0;
 
-        for (i = 0; i < agent_stop_flag.size(); i++) {  //Check all agent stop
-            if (agent_stop_flag[i] == true)
-                count++;
-        }
-        if(count == agent_stop_flag.size()){
-            for (i = 0; i < agent_stop_flag.size(); i++) {  //Check all agent stop
-                agent_stop_flag[i] = false;
+        vector<diagnostic_msgs::KeyValue> params = big_plan[i].parameters;
+        string name, from, to;
+        for (int j = 0; j < params.size(); j++) {
+            if (params[j].key == "a") {
+                name = params[j].value;
+            } else if (params[j].key == "from") {
+                from = params[j].value;
+            } else if (params[j].key == "to") {
+                to = params[j].value;
             }
-            get_agent_state = true;
         }
+
+        int row, col;
+        point = to.find("_");
+        row = stoi(to.substr(5, point - 5));
+        col = stoi(to.substr(point + 1));
+        navi::want_route msg;
+        msg.name = agent_names[i];
+        msg.from = agents_axis[i];
+        msg.to.row = row;
+        msg.to.col = col;
+        print_log(node_name, __func__, "ask route to navi");
+        want_route_pub.publish(msg);
+
+        // for (i = 0; i < agent_stop_flag.size(); i++) {  //Check all agent stop
+        //     if (agent_stop_flag[i] == true)
+        //         count++;
+        // }
+        // if(count == agent_stop_flag.size()){
+        //     for (i = 0; i < agent_stop_flag.size(); i++) {  //Check all agent stop
+        //         agent_stop_flag[i] = false;
+        //     }
+        //     get_agent_state = true;
+        // }
     }
 
     void Ai_Manager::init_oper() {
@@ -803,11 +831,10 @@ int main(int argc, char **argv)
     ros::Subscriber give_route_sub = nh.subscribe(give_route_topic, 1000, &Custom::Ai_Manager::give_route_Callback,
                                                dynamic_cast<Custom::Ai_Manager *>(&mi));
 
-
     ros::Rate loopRate(1);
-  ros::AsyncSpinner spinner(4);		//다중 스레드 사용
-  spinner.start();
-  ros::waitForShutdown();
+    ros::AsyncSpinner spinner(4);  //다중 스레드 사용
+    spinner.start();
+    ros::waitForShutdown();
     // std::string exit_topic = "/board/exit_call";
     // nh.getParam("exit_name", exit_topic);
     // ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Navi::exit_Callback,
@@ -819,9 +846,9 @@ int main(int argc, char **argv)
 
     // //service server
     // ros::ServiceServer ask_dist_mat_srv = nh.advertiseService("/navi/ask_dist_mat", &Custom::Navi::ask_dist_mat_Callback, dynamic_cast<Custom::Navi *>(&ni));
-    
-    return 0;    
-}
+
+    return 0;
+    }
 
 void print_log(string node_name, string func,string str){
 	cout<< "[";

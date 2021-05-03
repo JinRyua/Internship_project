@@ -259,7 +259,7 @@ int main(int argc, char **argv)
     ros::Subscriber state__sub = nh.subscribe(state_topic, 1000, &Custom::Ai_Agent::state_Callback,
                                                       dynamic_cast<Custom::Ai_Agent *>(&ai));
 
-    std::string state_stop_topic = "/ai_manager/get_state_stop_agent";
+    std::string state_stop_topic = "/ai_manager/get_state_stop_agent/to_" + node_name;
     ros::Subscriber state_and_stop_sub = nh.subscribe(state_stop_topic, 1000, &Custom::Ai_Agent::state_and_stop_Callback,
                                                dynamic_cast<Custom::Ai_Agent *>(&ai));
 
