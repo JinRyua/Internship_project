@@ -16,6 +16,8 @@
 	</node>
 	<node name="replanner" pkg="replanner" type="replanner" respawn="false" output="screen">
 	</node>
+	<node name="player" pkg="player" type="player" respawn="false" output="screen" launch-prefix="gnome-terminal -e">
+	</node>
 	<!-- display 
 	<node name="display" pkg="display" type="display" respawn="false" output="screen">
 		<param name="display_name" value="$(arg display_name)" />

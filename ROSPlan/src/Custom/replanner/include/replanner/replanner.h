@@ -30,6 +30,7 @@ namespace Custom
         
         double timer;
         int state;
+        
 
         std::vector<std::string> agent_names;       //agent_names
 
@@ -94,6 +95,8 @@ namespace Custom
         void state_Callback(const board::game_state_msg& msg );
         void agent_state_Callback(const ros::MessageEvent<ai_agent::agent_state_time>& msg);
         void exitCallback(const std_msgs::Empty& msg);
+        void callCallback(const std_msgs::Empty& msg);
+        void dispatchCallback(const std_msgs::Empty& msg);
 
         //void act_dispatched_Callback(const rosplan_dispatch_msgs::ActionDispatch& msg);
        // void reset_Callback(const std_msgs::Empty& msg);

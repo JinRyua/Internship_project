@@ -124,6 +124,7 @@ namespace Custom
         void ask_state_callback(const ros::MessageEvent<std_msgs::Empty>& msg); //현재 게임 상태를 물어보는 sub
         void select_menu_callback(const board::select_menu_msg& msg);           //menu를 선택하는 sub
         void set_ai_loc_callback(const ros::MessageEvent<board::set_ai_loc_msg>& msg);  //ai가 자신의 위치를 set하는 sub
+        void exit_callback(const std_msgs::Empty& msg);
 
     };
 }   //close namespace

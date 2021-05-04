@@ -9,10 +9,13 @@
 #include "diagnostic_msgs/KeyValue.h"
 #include "board/set_ai_msg.h"
 #include "board/reset_ai_msg.h"
+#include "std_msgs/Empty.h"
 
 #include <chrono>
 #include <iostream>
 using namespace std;
+
+void print_log(string node_name, string func,string str);
 
 namespace Custom{
     Ai_Agent::Ai_Agent(ros::NodeHandle &nh){
@@ -39,6 +42,9 @@ namespace Custom{
         std::string ai_feedback_topic = "/ai_manager/ai_feedback/";
         feedback_pub = nh.advertise<ai_manager::ai_feedback>(ai_feedback_topic, 1000);
 
+        std::string replan_topic = "/replanner/call_replanner";
+        call_replan_pub = nh.advertise<std_msgs::Empty>(replan_topic, 1000);
+
         //set client srv
         std::stringstream ss;
         ss.str("");
@@ -47,6 +53,7 @@ namespace Custom{
 
         speed = 2;
         plan_number = -1;
+        replan_flag = false;
 
         agent.col = 11; //TODO:
         agent.row = 11;
@@ -67,6 +74,8 @@ namespace Custom{
         init_knowledge.values = temp;
         knowledge = init_knowledge;
 
+        
+
     }
 
     Ai_Agent::~Ai_Agent(){
@@ -76,7 +85,12 @@ namespace Custom{
     void Ai_Agent::run_AI_Agent(double duration){
         if(state == RUN){
             custom_msgs::axis dest = plan[plan_number]; //현재 목적지
-
+            if(plan_number >= plan.size() - 4 && replan_flag == false){
+                std_msgs::Empty msg;
+                call_replan_pub.publish(msg);
+                replan_flag = true;
+                print_log(node_name, __func__, "call replanner");
+            }
             float move_distance = duration * speed;
             
             int direction = LEFT;
@@ -151,6 +165,7 @@ namespace Custom{
                 ai_manager::ai_feedback feed;
                 feed.status = "achieved";
                 feedback_pub.publish(feed);
+                print_log(node_name, __func__ , "finish plan");
             }
 
             //cout<<
@@ -184,6 +199,7 @@ namespace Custom{
         plan_number = 0;
         state = RUN;
         stop_flag = false;
+        replan_flag = false;
         ai_manager::ai_feedback temp;
         temp.status = "enabled";
         feedback_pub.publish(temp);
@@ -329,4 +345,14 @@ int main(int argc, char **argv)
 
     ros::spin();
     return 0;    
+}
+
+void print_log(string node_name, string func,string str){
+	cout<< "[";
+	cout.width(9);cout.fill(' ');cout<<fixed;cout.precision(3);
+	cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()/1000.0<<"][";
+	cout.width(13);cout.fill(' ');
+	cout<<node_name<<"][";
+	cout.width(17);cout.fill(' ');
+	cout<<func<<"] ( "<<str<<" )"<<endl;
 }

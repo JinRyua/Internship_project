@@ -46,6 +46,7 @@ namespace Custom
 
         //publisher
         ros::Publisher select_menu_pub;
+        ros::Publisher exit_pub;
 
         //service client
         ros::ServiceClient move_check_cli;

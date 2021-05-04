@@ -15,8 +15,11 @@
 #include <chrono>
 #include <algorithm>
 #include <cmath>
+#include <signal.h>
 
 using namespace std;
+void print_log(string node_name, string func,string str);
+
 
 namespace Custom{
     Board::Board(ros::NodeHandle &nh)   //생성자
@@ -303,11 +306,13 @@ namespace Custom{
 
         post_knowledge.values = temp;
         knowledge = post_knowledge;
+
+        string path = "firefox /home/jylee/jylee/ROSPlan/src/a.html &";
+        system(path.c_str());      //exec display
     }
 
     Board::~Board() 
-    {
-
+    {   
     }
     
     void Board::check_timer(){
@@ -362,6 +367,7 @@ namespace Custom{
         vector<custom_msgs::map> map_temp2;
         custom_msgs::map map_temp;
         if (game_state == IN_GAME) {
+            
             check_timer();  //timer check
             check_eat_star();
             check_collision();
@@ -509,6 +515,10 @@ namespace Custom{
                     //publish
                     ros::MessageEvent<std_msgs::Empty> temp_call;
                     ask_state_callback(temp_call);
+
+                    board::change_state_msg tm;  //player stay
+                    tm.state = "wait";
+                    change_state_pub.publish(tm);
                     cout<< "call_Replan"<<endl;
 
                     //ghost timer
@@ -540,6 +550,7 @@ namespace Custom{
 
     void Board::do_collision(pair<custom_msgs::axis, bool>& agent, int i){
         if(agent.second == true){   //eat ghost
+            print_log("board", __func__, "eat ghost");
             score = score + 3;
             //need init
             
@@ -547,7 +558,7 @@ namespace Custom{
             board::set_ai_msg temp;
             agents[i] = init_agents[i];
             temp.loc = init_agents[i].first;
-            temp.speed = 3;
+            temp.speed = 2;
             set_AI_pub[i].publish(temp);
 
 
@@ -580,10 +591,15 @@ namespace Custom{
 
             update_knowledge_client.call(srv);  //call update array
 
+            board::change_state_msg tm;      //player stay
+            tm.state = "wait";
+            change_state_pub.publish(tm);
+
             ros::MessageEvent<std_msgs::Empty> temp_call;
             ask_state_callback(temp_call);  //call replan
         }
         else{   //eat player
+            print_log("board", __func__, "ghost eat player");
             board::reset_ai_msg temp;
             agents = init_agents;
             temp.loc = init_agents[0].first;
@@ -616,9 +632,10 @@ namespace Custom{
             post_knowledge = knowledge;
 
             update_knowledge_client.call(srv);  //call update array
-            // board::change_state_msg tm;
-            // tm.state = "wait";
-            // change_state_pub.publish(tm);
+
+            board::change_state_msg tm;      //player stay
+            tm.state = "wait";
+            change_state_pub.publish(tm);
 
             ros::MessageEvent<std_msgs::Empty> temp_call;
             ask_state_callback(temp_call);  //call replan
@@ -952,16 +969,19 @@ namespace Custom{
         res.map = map_temp;
         return true;
     }
+    void Board::exit_callback(const std_msgs::Empty& msg){
+        exit(0);
 
-
+    }
 }//close namespace
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "board");
+    ros::init(argc, argv, "board");//,  ros::init_options::NoSigintHandler);
     ros::NodeHandle nh("~");
-
+    //signal(SIGINT, my_handler);
     Custom::Board bi(nh);
+    //b = &bi;
 
     //service
     ros::ServiceServer ask_map_size = nh.advertiseService("/board/ask_map_size", &Custom::Board::ask_map_size_callback, dynamic_cast<Custom::Board *>(&bi));
@@ -976,11 +996,13 @@ int main(int argc, char **argv)
     ros::Subscriber ask_state_sub = nh.subscribe("/board/ask_state", 1, &Custom::Board::ask_state_callback, dynamic_cast<Custom::Board *>(&bi));
     ros::Subscriber select_menu_sub = nh.subscribe("/board/select_menu", 100, &Custom::Board::select_menu_callback, dynamic_cast<Custom::Board *>(&bi));
     ros::Subscriber set_ai_loc_sub = nh.subscribe("/board/set_ai_loc", 10000, &Custom::Board::set_ai_loc_callback, dynamic_cast<Custom::Board *>(&bi));
+    ros::Subscriber exit_sub = nh.subscribe("/board/exit_call", 1, &Custom::Board::exit_callback, dynamic_cast<Custom::Board *>(&bi));
+    
 
     std::cout<<"ready to run board"<<std::endl;
     // ROS_INFO("Custom: (%s) Ready to receive", ros::this_node::getName().c_str());
     double act_time = 0.04;
-    while (1)
+    while (ros::ok())
     {
         sleep(0);
         double start_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -997,6 +1019,16 @@ int main(int argc, char **argv)
         }
     }
 
-    //ros::spin();
+        
     return 0;
+}
+
+void print_log(string node_name, string func,string str){
+	cout<< "[";
+	cout.width(9);cout.fill(' ');cout<<fixed;cout.precision(3);
+	cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()/1000.0<<"][";
+	cout.width(13);cout.fill(' ');
+	cout<<node_name<<"][";
+	cout.width(17);cout.fill(' ');
+	cout<<func<<"] ( "<<str<<" )"<<endl;
 }

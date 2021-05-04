@@ -40,6 +40,7 @@ namespace Custom
         int state;
         int plan_number;
         bool stop_flag;
+        bool replan_flag;
         bool in_grid;
         std::vector<custom_msgs::axis> plan;
         // std::vector<std::vector<std::string>> map;
@@ -74,6 +75,7 @@ namespace Custom
         ros::Publisher stop_response_pub;
         ros::Publisher feedback_pub;
         ros::Publisher state_time_pub;
+        ros::Publisher call_replan_pub;
         //ros::Publisher want_route_pub;
         //service client
         ros::ServiceClient update_knowledge_client;

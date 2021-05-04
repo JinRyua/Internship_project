@@ -17,7 +17,7 @@ void print_log(string node_name, string func,string str);
 namespace Custom{
     Replanner::Replanner(ros::NodeHandle &nh, string node_n) {
         node_handle = &nh;
-
+    
         node_name = node_n;
         state = IDLE;
 
@@ -136,48 +136,48 @@ namespace Custom{
         timer = now_time + ((double)(1)*1000000000);
     }
 
-    void Replanner::update_ghost(){
-        std::string update_str = "/rosplan_knowledge_base/update_array";     //service KB update array
-        ros::service::waitForService(update_str.c_str(), ros::Duration(20));
-        ros::ServiceClient update_client = node_handle->serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(update_str.c_str());
-        rosplan_knowledge_msgs::KnowledgeUpdateServiceArray update_srv;
-
-
-        std::vector<rosplan_knowledge_msgs::KnowledgeItem> item;
-        std::vector<unsigned char> type;
-
-        for (int i = 0; i < ghost.size(); i++) {
-
-            //make knowledge
-            rosplan_knowledge_msgs::KnowledgeItem temp;
-            temp.knowledge_type = 1;    //FACT
-            temp.attribute_name = "is-ghost";   //ghost operator
-
-            std::vector<diagnostic_msgs::KeyValue> value;  //make value
-            diagnostic_msgs::KeyValue temp_value;
-            temp_value.key = "a";
-            temp_value.value = agent_names[i];
-            value.push_back(temp_value);
-            temp.values = value;
-
-            item.push_back(temp);
-
-            if (ghost[i] == true) { //set type
-                type.push_back(0);  //ADD_KNOWLEDGE
-            } else {
-                type.push_back(2);  //REMOVE_KNOWLEDGE
-            }
-        }
-
-        update_srv.request.knowledge = item;
-        update_srv.request.update_type = type;
-
-        if (update_client.call(update_srv)){  //call update
-            state = GO_PLAN;
-        }
-
-        
-    }
+    // void Replanner::update_ghost(){
+    //     std::string update_str = "/rosplan_knowledge_base/update_array";     //service KB update array
+    //     ros::service::waitForService(update_str.c_str(), ros::Duration(20));
+    //     ros::ServiceClient update_client = node_handle->serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(update_str.c_str());
+    //     rosplan_knowledge_msgs::KnowledgeUpdateServiceArray update_srv;
+    //
+    //
+    //     std::vector<rosplan_knowledge_msgs::KnowledgeItem> item;
+    //     std::vector<unsigned char> type;
+    //
+    //     for (int i = 0; i < ghost.size(); i++) {
+    //    //
+    //         //make knowledge
+    //         rosplan_knowledge_msgs::KnowledgeItem temp;
+    //         temp.knowledge_type = 1;    //FACT
+    //         temp.attribute_name = "is-ghost";   //ghost operator
+    //
+    //         std::vector<diagnostic_msgs::KeyValue> value;  //make value
+    //         diagnostic_msgs::KeyValue temp_value;
+    //         temp_value.key = "a";
+    //         temp_value.value = agent_names[i];
+    //         value.push_back(temp_value);
+    //         temp.values = value;
+    //
+    //         item.push_back(temp);
+    //
+    //         if (ghost[i] == true) { //set type
+    //             type.push_back(0);  //ADD_KNOWLEDGE
+    //         } else {
+    //             type.push_back(2);  //REMOVE_KNOWLEDGE
+    //         }
+    //     }
+    //
+    //     update_srv.request.knowledge = item;
+    //     update_srv.request.update_type = type;
+    //
+    //     if (update_client.call(update_srv)){  //call update
+    //         state = GO_PLAN;
+    //     }
+    //
+    //  
+    // }
 
     void Replanner::run_replanner(){
         if(state == IDLE){ //check timer runout
@@ -206,7 +206,7 @@ namespace Custom{
             std_srvs::Empty srv;
             cancel_dispatch_client.call(srv);
 
-            // board::change_state_msg tm;
+            // board::change_state_msg tm;     //player stay during replan
             // tm.state = "wait";
             // change_pub.publish(tm);
 
@@ -245,12 +245,23 @@ namespace Custom{
             
 
             double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            timer = now_time + ((double)(1)*1000000000);
+            timer = now_time + ((double)(2)*1000000000);
             state = IDLE;
         }
     }
     void Replanner::exitCallback(const std_msgs::Empty& msg){
         exit(0);
+    }
+
+    void Replanner::callCallback(const std_msgs::Empty& msg){
+        if(state == IDLE || state == CHECK)
+            state = CANCEL; //go replan no check
+    }
+
+    void Replanner::dispatchCallback(const std_msgs::Empty& msg){
+        board::change_state_msg tm;     //player stay during replan
+        tm.state = "playing game";
+        change_pub.publish(tm);
     }
 
 }  // namespace Custom
@@ -275,6 +286,14 @@ int main(int argc, char **argv) {
     std::string exit_topic = "/board/exit_call";
     nh.getParam("exit_name", exit_topic);
     ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Replanner::exitCallback,
+                                            dynamic_cast<Custom::Replanner *>(&ri));
+
+    std::string call_topic = "/replanner/call_replanner";
+    ros::Subscriber call_sub = nh.subscribe(call_topic, 1, &Custom::Replanner::callCallback,
+                                            dynamic_cast<Custom::Replanner *>(&ri));
+
+    std::string dispatch_topic = "/rosplan_plan_dispatcher/start_dispatch";
+    ros::Subscriber dispatch_sub = nh.subscribe(dispatch_topic, 1, &Custom::Replanner::dispatchCallback,
                                             dynamic_cast<Custom::Replanner *>(&ri));
 
     while(1){

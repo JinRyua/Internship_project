@@ -101,6 +101,8 @@ namespace Custom {
         
         init_oper();
 
+        
+
     }
     
     Ai_Manager::~Ai_Manager(){

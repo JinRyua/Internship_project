@@ -104,6 +104,9 @@ namespace Custom{
         nh.getParam("select_name", select_topic);
         select_menu_pub = nh.advertise<board::select_menu_msg>(select_topic, 1000);
 
+        std::string exit_topic = "/board/exit_call";
+        exit_pub = nh.advertise<std_msgs::Empty>(exit_topic, 1000);
+
         //service cli select_menu
         std::string check_topic = "/board/move_check";
         nh.getParam("check_name", check_topic);
@@ -206,7 +209,7 @@ namespace Custom{
     }
 
     void Player::exitCallback(const std_msgs::Empty& msg){
-        exit(0);
+        ros::shutdown();
     }
 
     void Player::setCallback(const board::set_ai_loc_msg& msg){
@@ -285,6 +288,7 @@ int main(int argc, char **argv)
         if(_kbhit()){       //들어온 입력이 있는가?
             int buf;
             buf = _getch();
+            //cout<<buf<<endl;
             if(buf == 27){
                 if (_kbhit()){
                     buf = _getch();
@@ -298,8 +302,13 @@ int main(int argc, char **argv)
             else if(buf == 13){     //엔터일때
                 pi.have_input(buf);
             }
-            else if(buf == 3)
+            else if(buf == 3){   //eof
+                std_msgs::Empty msg;
+                pi.exit_pub.publish(msg);
+                string tm = "rosnode kill -a";
+                system(tm.c_str());
                 break;
+            }
         }
         while(_kbhit()){    //남은 입력 제거
             int trash = _getch();
