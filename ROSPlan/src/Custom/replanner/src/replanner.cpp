@@ -245,7 +245,7 @@ namespace Custom{
             
 
             double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            timer = now_time + ((double)(2)*1000000000);
+            timer = now_time + ((double)(0.6)*1000000000);
             state = IDLE;
         }
     }

@@ -112,8 +112,9 @@ function step(timestamp) {
   if(progress >=20){
     ctx.clearRect(0,0,1000,1000);
     ctx.fillStyle = "black";
-    ctx.fillRect(0,0,pixel_size*map_col,pixel_size*map_row);
+    ctx.fillRect(0,0,pixel_size*map_col,pixel_size*(map_row + 1));
     var i;
+
     
     //block
     if(typeof block !== 'undefined'){
@@ -178,8 +179,14 @@ function step(timestamp) {
       ctx.restore();
       }
     }
+
+
     ctx.save();
     
+    ctx.font = "20px malgun gothic"; //폰트의 크기, 글꼴체 지정      
+    ctx.fillStyle = "rgb(255,255,255)"; //색상지정
+    ctx.fillText("SCORE : " + score, pixel_size*((map_col/5)*1), pixel_size*(map_row+1));
+    ctx.fillText("LIFE : " + life, pixel_size*((map_col/5)*3), pixel_size*(map_row+1));
     ctx.restore();
     
 

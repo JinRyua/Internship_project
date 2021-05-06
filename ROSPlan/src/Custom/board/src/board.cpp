@@ -33,8 +33,13 @@ namespace Custom{
         life = 3;           //game life
         score = 0;          //game score
         in_grid = true;     //start is in_grid
+        re_start = false;   //restart 중인가
         ghost_time = 5;     //ghost_time
+        speed = 3;          //기본 속도
         ghost_timer = (double)(10000)*(double)(1000000000);    //ghost_timer
+        double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        score_timer = now_time + ((double)(5)*(double)(1000000000));
+        finish_score = 200;
 
         //set client srv
         std::stringstream ss;
@@ -322,7 +327,7 @@ namespace Custom{
                 agents[i].second = false;
                 board::set_ai_msg temp;
                 temp.loc = agents[i].first;
-                temp.speed = 2;
+                temp.speed = speed;
 
                 set_AI_pub[i].publish(temp);
             }
@@ -360,6 +365,11 @@ namespace Custom{
             cout<< "call_Replan timer"<<endl;
             ask_state_callback(temp_call);
             ghost_timer = now_time + ((double)(1000)*(1000000000));
+        }
+        now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        if(score_timer <= now_time){
+            score++;
+            score_timer = now_time + ((double)(3)*(double)(1000000000));
         }
     }
     void Board::run_board() {
@@ -414,6 +424,14 @@ namespace Custom{
         }
         //publish to display
         display_pub.publish(display_temp);
+
+        //finish check
+        if(score >= finish_score){
+            std_msgs::Empty msg;
+            exit_call_pub.publish(msg);
+            print_log("board", __func__, "the end game");
+        }
+
         ros::spinOnce();
     }
     void Board::check_eat_star(){
@@ -464,7 +482,7 @@ namespace Custom{
                         agents[i].second = true;    //set ghost all
                         board::set_ai_msg temp;
                         temp.loc = agents[i].first;
-                        temp.speed = 1.5;
+                        temp.speed = speed / 2;
                         set_AI_pub[i].publish(temp);
                     }
 
@@ -555,11 +573,17 @@ namespace Custom{
             //need init
             
             agents[i].second = false; //not ghost
-            board::set_ai_msg temp;
             agents[i] = init_agents[i];
-            temp.loc = init_agents[i].first;
-            temp.speed = 2;
-            set_AI_pub[i].publish(temp);
+
+            for(int j = 0; j <agents.size();j++){
+                board::set_ai_msg temp;
+                temp.loc = init_agents[i].first;
+                if( i == j) //eaten ghost
+                    temp.speed = speed;
+                else        //only change state
+                    temp.speed = 0;
+                set_AI_pub[j].publish(temp);
+            }
 
 
             //update KB
@@ -600,8 +624,9 @@ namespace Custom{
         }
         else{   //eat player
             print_log("board", __func__, "ghost eat player");
+            re_start = true;        //restart flag
             board::reset_ai_msg temp;
-            agents = init_agents;
+            agents = init_agents;   //TODO:
             temp.loc = init_agents[0].first;
             reset_AI_pub.publish(temp);
 
@@ -641,6 +666,7 @@ namespace Custom{
             ask_state_callback(temp_call);  //call replan
 
             life--;
+            //re_start = false;
             cout<<life<<endl;
             if(life == 0){
                 cout<<"game end => score : "<<score <<endl;
@@ -806,80 +832,82 @@ namespace Custom{
         return false;
     }
     bool Board::player_action_callback(board::player_act_srv::Request& req, board::player_act_srv::Response& res){
+        if (re_start == false) {
+            custom_msgs::axis loc = req.loc;
+            int point_row = (int)(max(loc.row, player[0].row));
+            int point_col = (int)(max(loc.col, player[0].col));
 
-        custom_msgs::axis loc = req.loc;
-        int point_row = (int)(max(loc.row, player[0].row));
-        int point_col = (int)(max(loc.col, player[0].col));
-        
-        //cout<<in_grid<<endl;
-        // if((loc.row >= point_row && point_row > player[0].row) ||
-        //     (loc.row < point_row && point_row <= player[0].row) ||
-        //     (loc.col >= point_col && point_col > player[0].col) ||
-        //     (loc.col < point_col && point_col <= player[0].col) )
-        if(in_grid == false && (abs(ceil(loc.row) - ceil(player[0].row))!=0 ||
-            abs(ceil(loc.col) - ceil(player[0].col))!=0))
-            {
+            //cout<<in_grid<<endl;
+            // if((loc.row >= point_row && point_row > player[0].row) ||
+            //     (loc.row < point_row && point_row <= player[0].row) ||
+            //     (loc.col >= point_col && point_col > player[0].col) ||
+            //     (loc.col < point_col && point_col <= player[0].col) )
+            if (in_grid == false && (abs(ceil(loc.row) - ceil(player[0].row)) != 0 ||
+                                     abs(ceil(loc.col) - ceil(player[0].col)) != 0)) {
                 //cout<<"grid "<<loc.row<<" "<<loc.col<<" "<<player[0].row<<" "<<player[0].col<<endl;
-            in_grid = true;
+                in_grid = true;
 
-            float point_row = loc.row;
-            float point_col = loc.col;
-            if(req.loc.direction == LEFT)
-                point_col = floor(player[0].col);
-            else if(req.loc.direction == UP)
-                point_row = floor(player[0].row);
-            else if(req.loc.direction == RIGHT)
-                point_col = ceil(player[0].col);
-            else if(req.loc.direction == DOWN)
-                point_row = ceil(player[0].row);
-                
+                float point_row = loc.row;
+                float point_col = loc.col;
+                if (req.loc.direction == LEFT)
+                    point_col = floor(player[0].col);
+                else if (req.loc.direction == UP)
+                    point_row = floor(player[0].row);
+                else if (req.loc.direction == RIGHT)
+                    point_col = ceil(player[0].col);
+                else if (req.loc.direction == DOWN)
+                    point_row = ceil(player[0].row);
 
+                res.result.row = point_row;
+                res.result.col = point_col;
+                res.result.direction = req.loc.direction;
 
-            res.result.row = point_row;
-            res.result.col = point_col;
-            res.result.direction = req.loc.direction;
+                player[0] = res.result;
 
-            player[0] = res.result;
+                vector<unsigned char> type;  //update KB
+                vector<rosplan_knowledge_msgs::KnowledgeItem> know;
 
-            vector<unsigned char> type;         //update KB
-            vector<rosplan_knowledge_msgs::KnowledgeItem> know;
+                type.push_back(2);  //remove present
+                know.push_back(post_knowledge);
+                rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
 
-            type.push_back(2);  //remove present
-            know.push_back(post_knowledge);
-            rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
-
-            type.push_back(0);                                   //ADD present
-            for (int i = 0; i < knowledge.values.size(); i++) {  //make knowledge
-                if (knowledge.values[i].key == "p") {
-                    knowledge.values[i].value = "point" + to_string((int)(player[0].row)) + "_" + to_string((int)(player[0].col));
-                    break;
+                type.push_back(0);                                   //ADD present
+                for (int i = 0; i < knowledge.values.size(); i++) {  //make knowledge
+                    if (knowledge.values[i].key == "p") {
+                        knowledge.values[i].value = "point" + to_string((int)(player[0].row)) + "_" + to_string((int)(player[0].col));
+                        break;
+                    }
                 }
+                know.push_back(knowledge);
+                srv.request.update_type = type;
+                srv.request.knowledge = know;
+
+                post_knowledge = knowledge;
+
+                update_knowledge_client.call(srv);  //call update array
+
+                return true;
+            } else {
+                in_grid = false;
+                //TODO:
+
+                res.result = req.loc;  //across map
+                if (req.loc.col <= 0.5) {
+                    res.result.col = map_col + 0.5 - req.loc.col;
+                } else if (req.loc.col > map_col + 0.5)
+                    res.result.col = req.loc.col - map_col - 0.5;
+
+                player[0] = res.result;
+                
+                return true;
             }
-            know.push_back(knowledge);
-            srv.request.update_type = type;
-            srv.request.knowledge = know;
-
-            post_knowledge = knowledge;
-
-            update_knowledge_client.call(srv);  //call update array
-
-            return true;
+            return false;
         }
         else{
-            in_grid = false;
-            //TODO:
-
-            res.result = req.loc;       //across map
-            if(req.loc.col <= 0.5){
-                res.result.col = map_col + 0.5 - req.loc.col;
-            }
-            else if(req.loc.col > map_col + 0.5 )
-                res.result.col = req.loc.col - map_col - 0.5;
-
-            player[0] = res.result;
+            res.result = player[0];
+            re_start = false;
             return true;
         }
-        return false;
     }
     bool Board::ask_player_stat_srv_callback(board::ask_player_stat_srv::Request& req, board::ask_player_stat_srv::Response& res){
         res.player = init_player;

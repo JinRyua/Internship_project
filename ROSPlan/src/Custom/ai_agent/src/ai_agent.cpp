@@ -51,7 +51,7 @@ namespace Custom{
         ss << "/rosplan_knowledge_base/update_array";
         update_knowledge_client = node_handle->serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());
 
-        speed = 2;
+        speed = 3;
         plan_number = -1;
         replan_flag = false;
 
@@ -241,8 +241,10 @@ namespace Custom{
     void Ai_Agent::set_ai_Callback(const board::set_ai_msg& msg){
         //TODO: set ai  speed, state....
         state = IDLE;
-        agent = msg.loc;
-        speed = msg.speed;
+        if(msg.speed != 0){
+            agent = msg.loc;
+            speed = msg.speed;
+        }
         
     }
 

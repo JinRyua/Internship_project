@@ -54,16 +54,20 @@ namespace Custom
 
         double timer;       //타이머
         double ghost_timer; //유령화 타이머
+        double score_timer; //시간당 점수
 
         std::vector<std::string> agent_names;       //problem의 에이전트이름
 
         std::vector<custom_msgs::axis> init_player; //플레이어 초기상태
         std::vector<custom_msgs::axis> player;      //플레이어 현 상태
         bool in_grid;       //player가 grid에 있는가?
+        bool re_start;      //restart 중인가
 
         int life;       //목숨
         int score;      //점수
-
+        int speed;      //기본 속도
+        int finish_score;   //승리 점수
+        
         std::vector<std::pair<custom_msgs::axis, bool>> init_agents;    //AI 초기상태
         std::vector<std::pair<custom_msgs::axis, bool>> agents;         //AI 현상태
         

@@ -65,10 +65,11 @@ int main(int argc, char* argv[]) {
     string temp;
     fs.open(s,ios::in);
     int max=0;
+    cout<<"csp"<<endl;
     while(!fs.eof())
     {
         getline(fs,temp);
-        
+        cout<<temp<<endl;
         if( temp == "ghost")
             state.push_back(1);
         else if(temp == "non_ghost"){
