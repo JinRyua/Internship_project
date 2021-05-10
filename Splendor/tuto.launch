@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<launch>
+<!-- arguments -->
+	<arg name="domain_path"	default="/home/jylee/jylee/Splendor/domain_splendor.pddl" />
+	<arg name="problem_path"	default="/home/jylee/jylee/Splendor/problem_splendor.pddl" />
+<!-- arguments -->
+	<arg name="node_name"                default="rosplan_plan_dispatcher" />
+	<arg name="knowledge_base"           default="rosplan_knowledge_base" />
+	<arg name="plan_topic"               default="/rosplan_parsing_interface/complete_plan" />
+	<arg name="action_dispatch_topic"    default="action_dispatch" />
+	<arg name="action_feedback_topic"    default="action_feedback" />
+	<!-- visualize edges with colors: interference edge, conditional edge, etc -->
+	<arg name="display_edge_type"        default="false" />
+    <arg name="timeout_actions"          default="false" />
+    <arg name="action_timeout_fraction"  default="0" />
+
+	<!-- knowledge base -->
+	<node name="rosplan_knowledge_base" pkg="rosplan_knowledge_base" type="knowledgeBase" respawn="false" output="screen">
+		<param name="domain_path" value="$(arg domain_path)" />
+		<param name="problem_path" value="$(arg problem_path)" />
+		<!-- conditional planning flags -->
+		<param name="use_unknowns" value="false" />
+	</node>
+	
+	
+
+
+
+<!-- sim actions 
+	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+		<arg name="pddl_action_name" value="extinguish" />
+		<arg name="action_duration" value="10" />
+	</include>
+	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+		<arg name="pddl_action_name" value="extinguish_finish" />
+		<arg name="action_duration" value="10" />
+	</include>
+	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+		<arg name="pddl_action_name" value="resque_human" />
+		<arg name="action_duration" value="1" />
+	</include>
+	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+		<arg name="pddl_action_name" value="put_human" />
+		<arg name="action_duration" value="1" />
+	</include>
+	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+		<arg name="pddl_action_name" value="move" />
+		<arg name="action_duration" value="10" />
+	</include>
+	-->
+
+
+</launch>

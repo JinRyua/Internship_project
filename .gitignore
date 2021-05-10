@@ -13,3 +13,10 @@ ROSPlan/logs/
 ROSPlan/.vscode/
 ROSPlan/.catkin_tools/
 ROSPlan/src/ROSPlan/
+Splendor/build/
+Splendor/devel/
+Splendor/logs/
+Splendor/.vscode/
+Splendor/.catkin_tools/
+Splendor/src/
+
