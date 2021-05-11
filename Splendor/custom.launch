@@ -16,20 +16,20 @@
 	</node>
 	<node name="replanner" pkg="replanner" type="replanner" respawn="false" output="screen">
 	</node>
-	<node name="player" pkg="player" type="player" respawn="false" output="screen" launch-prefix="gnome-terminal -e">
-	</node>
+	<!--<node name="player" pkg="player" type="player" respawn="false" output="screen" launch-prefix="gnome-terminal -e">
+	</node>-->
 	<!-- display 
 	<node name="display" pkg="display" type="display" respawn="false" output="screen">
 		<param name="display_name" value="$(arg display_name)" />
 		<param name="exit_name" value="$(arg exit_name)" />
 	</node>
 	-->
-	<!--<node name="display" pkg="display" type="display" respawn="false"
- 		output="screen" launch-prefix="gnome-terminal -geometry 21x28+21+28 -e">
+	<node name="display" pkg="display" type="display" respawn="false"
+ 		output="screen" launch-prefix="gnome-terminal --geometry 136x36+136+36 -e">
 		<param name="display_name" value="$(arg display_name)" />
 		<param name="exit_name" value="$(arg exit_name)" />
 	</node>
-	-->
+	
 
 
 
