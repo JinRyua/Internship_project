@@ -29,6 +29,9 @@
 		<param name="display_name" value="$(arg display_name)" />
 		<param name="exit_name" value="$(arg exit_name)" />
 	</node>
+	<node name="log_display" pkg="log_display" type="log_display" respawn="false"
+ 		output="screen" launch-prefix="gnome-terminal -e">
+	</node>
 	
 
 

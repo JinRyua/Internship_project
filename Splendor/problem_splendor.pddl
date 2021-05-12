@@ -393,7 +393,7 @@ level3_0 level3_1 level3_2 level3_3 level3_4 level3_5 level3_6 level3_7 level3_8
 (=(need-token level1_38 black) 0)
 (fold level1_39)
 (s-color level1_39 red)
-(=(s-point level1_39) 0)
+(=(s-point level1_39) 1)
 (=(need-token level1_39 white) 4)
 (=(need-token level1_39 blue) 0)
 (=(need-token level1_39 green) 0)
