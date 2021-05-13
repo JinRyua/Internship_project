@@ -26,6 +26,7 @@
     (need-token ?ca -card ?to -token)
     (s-point ?ca -card)
     (have-token ?ch -character ?to -token)
+    (have-score ?ch -character)
 )
 (:durative-action move
     :parameters (?a -agent ?to -point)

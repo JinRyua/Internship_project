@@ -814,6 +814,8 @@ level3_0 level3_1 level3_2 level3_3 level3_4 level3_5 level3_6 level3_7 level3_8
 (=(have-token player1 green) 0)
 (=(have-token player1 red) 0)
 (=(have-token player1 black) 0)
+(=(have-score player1) 0) 
+(=(have-score ai1) 0)
 )
 (:goal (and
 (=(timer)4)

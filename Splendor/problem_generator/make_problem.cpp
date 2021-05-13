@@ -189,61 +189,15 @@ int main()
     s += "(=(have-token player1 green) 0)\n";
     s += "(=(have-token player1 red) 0)\n";
     s += "(=(have-token player1 black) 0)\n";
+    s += "(=(have-score player1) 0)\n";     //player score
+    s += "(=(have-score ai1) 0)\n";   //ai score
     s += ")\n";  //end init
     writeFile.write(s.c_str(), s.length());
 
     s = "(:goal (and\n(=(timer)4)\n))\n)";  //goal and end problem
     writeFile.write(s.c_str(), s.length());
 
-    //     for(int i=1;i<=row;i++){
-    //         for(int j=1; j<=col; j++){
-    //             s="point"+ to_string(i) + "_" + to_string(j)+" ";
-    //             writeFile.write(s.c_str(), s.length());
-    //         }
-    //         s="-point\n";
-    //         writeFile.write(s.c_str(), s.length());
-    //     }
-    //     s = " ( in-block player point" + to_string(player_row) + "_" + to_string(player_col) + " )\n";
-    //     writeFile.write(s.c_str(), s.length());
-    //     s = " (=(direction player)"+ to_string(1) + " )\n";
-    //     writeFile.write(s.c_str(), s.length());
-    //     for (int i = 1; i <= count_agent; i++){
-    //         s = "( in-block agent" + to_string(i) + " point" + to_string(agent[i - 1].row) + "_" + to_string(agent[i - 1].col) + " )\n";
-    //         writeFile.write(s.c_str(), s.length());
-    //         s = " (=(direction agent"+ to_string(i) + ")1)\n";
-    //         writeFile.write(s.c_str(), s.length());
-    //     }
-    //     s = "(=(row)" + to_string(row) + ")\n";
-    //     writeFile.write(s.c_str(), s.length());
-    //     s = "(=(col)" + to_string(col) + ")\n";
-    //     writeFile.write(s.c_str(), s.length());
-    //     s = "(=(timer)3)\n";
-    //     writeFile.write(s.c_str(), s.length());
-    //     for (int i = 0; i < block.size(); i++){
-    //         s = "(is-wall point" + to_string(block[i].row) + "_" + to_string(block[i].col) + " )\n";
-    //         writeFile.write(s.c_str(), s.length());
-    //     }
-    //     for (int i = 0; i < blank.size(); i++){
-    //         s = "(is-blank point" + to_string(blank[i].row) + "_" + to_string(blank[i].col) + " )\n";
-    //         writeFile.write(s.c_str(), s.length());
-    //     }
-    //     for (int i = 0; i < scookie.size(); i++){
-    //         s = "(is-scookie point" + to_string(scookie[i].row) + "_" + to_string(scookie[i].col) + " )\n";
-    //         writeFile.write(s.c_str(), s.length());
-    //     }
-    //     for (int i = 0; i < lcookie.size(); i++){
-    //         s = "(is-lcookie point" + to_string(lcookie[i].row) + "_" + to_string(lcookie[i].col) + " )\n";
-    //         writeFile.write(s.c_str(), s.length());
-    //     }
-    //     for (int i = 0; i < menu.size(); i++){
-    //         s = "(is-menu point" + to_string(menu[i].row) + "_" + to_string(menu[i].col) + " )\n";
-    //         writeFile.write(s.c_str(), s.length());
-    //     }
-    //     s = "(is-start point" + to_string(start.row) + "_" + to_string(start.col) + " )\n";
-    //     writeFile.write(s.c_str(), s.length());
-    //     s = "(is-end point" + to_string(end.row) + "_" + to_string(end.col) + " )\n";
-    //     writeFile.write(s.c_str(), s.length());
-    // }
+   
 
     writeFile.write("\n",1);
 

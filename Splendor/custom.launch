@@ -9,13 +9,13 @@
 	<node name="board" pkg="board" type="board" respawn="false" output="screen">
 		<param name="knowledge_base" value="$(arg knowledge_base)" />
 	</node>
-	<node name="navi" pkg="navi" type="navi" respawn="false" output="screen">
+	<!--<node name="navi" pkg="navi" type="navi" respawn="false" output="screen">
 	</node>
 
 	<node name="ai_manager" pkg="ai_manager" type="ai_manager" respawn="false" output="screen">
 	</node>
 	<node name="replanner" pkg="replanner" type="replanner" respawn="false" output="screen">
-	</node>
+	</node>-->
 	<!--<node name="player" pkg="player" type="player" respawn="false" output="screen" launch-prefix="gnome-terminal -e">
 	</node>-->
 	<!-- display 
