@@ -92,7 +92,13 @@ int main()
     s="ai1 -ai\n";                  //make ai
     writeFile.write(s.c_str(), s.length());
 
-    s="white blue green red black -token\n";                  //make token
+    s="white blue green red black none -token\n";                  //make token
+    writeFile.write(s.c_str(), s.length());
+    
+    s="order1 order2 order3 order4 -order\n";                  //make order
+    writeFile.write(s.c_str(), s.length());
+
+    s="buy_level1 buy_level2 buy_level3 -buylevel\n";          //make buylevel
     writeFile.write(s.c_str(), s.length());
 
 

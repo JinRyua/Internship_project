@@ -9,7 +9,8 @@
     player ai field -character
     nobility level1 level2 level3 -card
     token
-    action
+    buylevel
+    order
 )
 
 ; un-comment following line if constants are needed
@@ -28,21 +29,34 @@
     (have-token ?ch -character ?to -token)
     (have-score ?ch -character)
 )
-(:durative-action move
-    :parameters (?a -agent ?to -point)
+(:durative-action three_coin
+    :parameters (?get_arg1 ?get_arg2 ?get_arg3 ?abandon_arg1 ?abandon_arg2 ?abandon_arg3 -token)
     :duration (= ?duration 1)
     :condition (and 
-        ;(at start (and 
-            ;(in-block ?a ?from)
-        ;))
+        
     )
     :effect (and 
-        ;(at start (and 
-            ;(not(in-block ?a ?from))
-        ;))
-        ;(at end (and 
-            ;(in-block ?a ?to)
-        ;))
+        
+    )
+)
+(:durative-action two_coin
+    :parameters (?get_arg1 -token)
+    :duration (= ?duration 1)
+    :condition (and 
+        
+    )
+    :effect (and 
+        
+    )
+)
+(:durative-action buy
+    :parameters (?get_arg1 -buylevel ?get_arg2 -order)
+    :duration (= ?duration 1)
+    :condition (and 
+        
+    )
+    :effect (and 
+        
     )
 )
 

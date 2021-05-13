@@ -32,6 +32,10 @@
 	<node name="log_display" pkg="log_display" type="log_display" respawn="false"
  		output="screen" launch-prefix="gnome-terminal -e">
 	</node>
+	<node name="player" pkg="player" type="player" respawn="false" output="screen">
+	</node>
+	<node name="ai1" pkg="ai_agent" type="ai_agent" respawn="false" output="screen">
+	</node>
 	
 
 

@@ -2,11 +2,13 @@
 (:objects
 player1 -player
 ai1 -ai
-white blue green red black -token
+white blue green red black none -token
 nobility_0 nobility_1 nobility_2 nobility_3 nobility_4 nobility_5 nobility_6 nobility_7 nobility_8 nobility_9 -nobility
 level1_0 level1_1 level1_2 level1_3 level1_4 level1_5 level1_6 level1_7 level1_8 level1_9 level1_10 level1_11 level1_12 level1_13 level1_14 level1_15 level1_16 level1_17 level1_18 level1_19 level1_20 level1_21 level1_22 level1_23 level1_24 level1_25 level1_26 level1_27 level1_28 level1_29 level1_30 level1_31 level1_32 level1_33 level1_34 level1_35 level1_36 level1_37 level1_38 level1_39 -level1
 level2_0 level2_1 level2_2 level2_3 level2_4 level2_5 level2_6 level2_7 level2_8 level2_9 level2_10 level2_11 level2_12 level2_13 level2_14 level2_15 level2_16 level2_17 level2_18 level2_19 level2_20 level2_21 level2_22 level2_23 level2_24 level2_25 level2_26 level2_27 level2_28 level2_29 -level2
 level3_0 level3_1 level3_2 level3_3 level3_4 level3_5 level3_6 level3_7 level3_8 level3_9 level3_10 level3_11 level3_12 level3_13 level3_14 level3_15 level3_16 level3_17 level3_18 level3_19 -level3
+order1 order2 order3 order4 -order
+buy_level1 buy_level2 buy_level3 -buylevel
 )
 (:init
 (fold nobility_0)
