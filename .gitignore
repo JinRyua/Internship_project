@@ -18,5 +18,6 @@ Splendor/devel/
 Splendor/logs/
 Splendor/.vscode/
 Splendor/.catkin_tools/
-Splendor/src/
+Splendor/src/ROSPlan/
+
 
