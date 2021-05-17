@@ -94,11 +94,11 @@ namespace Custom{
             }
         }
 
-
+        cout<<msg.game_state<<endl;
         if (msg.game_state == PLAYER_TURN)      //print game state
-            display_info[0].replace( 1, 14, "Player's turn");
+            display_info[0].replace( 1, 23, "\x1b[44mPlayer's turn\x1b[0m");
         else if (msg.game_state == AI_TURN)
-            display_info[0].replace( 1, 10, "AI's turn");
+            display_info[0].replace( 1, 19, "\x1b[41mAI's turn\x1b[0m");
 
         display_info[3].replace(50, 13, "AI score : " + to_string(msg.ai_score));    //print AI
         string temp = "coin :  \x1b[0m◆ : \x1b[0m" + to_string(msg.ai_coin.white)

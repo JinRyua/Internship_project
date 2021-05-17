@@ -260,11 +260,11 @@ namespace Custom{
         update_srv.request.knowledge = updator;
         update_knowledge_client.call(update_srv);  //call update array
         //test
-        player_coin.white=1;
-        player_coin.blue=1;
-        player_coin.black=0;
-        player_coin.green=0;
-        player_coin.red=1;
+        // player_coin.white=1;
+        // player_coin.blue=1;
+        // player_coin.black=0;
+        // player_coin.green=0;
+        // player_coin.red=1;
     }
 
     custom_msgs::coin* Board::select_coin_vector() { //select find vector by name

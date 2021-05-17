@@ -7,9 +7,9 @@
 #ifndef DISPLAY
 #define DISPLAY
 
-#define PLAYER_TURN 1
-#define AI_TURN 2
-#define WAIT 3
+#define PLAYER_TURN 0
+#define AI_TURN 1
+#define WAIT 2
 
 #define WHITE 0
 #define BLUE 1
