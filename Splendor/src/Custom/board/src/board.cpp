@@ -265,6 +265,11 @@ namespace Custom{
         // player_coin.black=0;
         // player_coin.green=0;
         // player_coin.red=1;
+        ai_coin.white=10;
+        ai_coin.blue=10;
+        ai_coin.black=10;
+        ai_coin.green=10;
+        ai_coin.red=10;
     }
 
     custom_msgs::coin* Board::select_coin_vector() { //select find vector by name
@@ -557,8 +562,8 @@ namespace Custom{
         sort(d.begin(), d.end());
         d.erase(unique(d.begin(),d.end()),d.end()); //중복 제거
 
-        if (d.size() == 3 && details.size() == 3) {  //3개 종류 일때만
-            for (int i = 0; i < 3; i++) {
+        if (d.size() == details.size() && details.size() <= 3) {  //3개 종류 이하 일때만
+            for (int i = 0; i < details.size(); i++) {
                 if (details[i] < WHITE || details[i] > BLACK) { //허용된 코인 체크
                     return false;
                 }
@@ -574,7 +579,7 @@ namespace Custom{
 
             vector<rosplan_knowledge_msgs::KnowledgeItem> updator;
             vector<unsigned char> type;
-            for (int i = 0; i < 3; i++) {   
+            for (int i = 0; i < details.size(); i++) {   
                 if (select_coin(&field_coin, details[i]) > 0) {  //코인이 field에 있으면
                     select_coin(coin_vector, details[i])++;
                     select_coin(&field_coin, details[i])--;
