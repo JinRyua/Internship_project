@@ -19,7 +19,7 @@ namespace Custom{
         // //state call
 
         ros::service::waitForService("/board/do_action", ros::Duration(20));
-        ros::ServiceClient do_action_cli = nh.serviceClient<board::do_action_srv>("/board/do_action");
+        do_action_cli = nh.serviceClient<board::do_action_srv>("/board/do_action");
         
     }
 
@@ -43,12 +43,14 @@ namespace Custom{
     void AI::dispatch_callback(const rosplan_dispatch_msgs::ActionDispatch& msg){
         state = GAME;
         //publish enabled
+        if(msg.name == "cancel_action")
+            return;
         rosplan_dispatch_msgs::ActionFeedback feed;
         feed.action_id = msg.action_id;
         feed.status = "action enabled";
         feed.information = msg.parameters;
         feedback_pub.publish(feed);
-
+        ros::spinOnce();
         plan = msg;
         board::do_action_srv srv;
         srv.request.name = node_name;
@@ -81,6 +83,7 @@ namespace Custom{
             
             details.push_back(change_to_color_int_from_string(params[0].value));
 
+
             srv.request.details = details;
         }
         else if(msg.name == "buy"){
@@ -96,25 +99,29 @@ namespace Custom{
             else if (params[0].value == "buy_level3")
                 details.push_back(2);
 
-            if (params[0].value == "order1")
+            if (params[1].value == "order1")
                 details.push_back(0);
-            else if (params[0].value == "order2")
+            else if (params[1].value == "order2")
                 details.push_back(1);
-            else if (params[0].value == "order3")
+            else if (params[1].value == "order3")
                 details.push_back(2);
-            else if (params[0].value == "order4")
+            else if (params[1].value == "order4")
                 details.push_back(3);
+
 
             srv.request.details = details;
 
         }
 
+        ros::service::waitForService("/board/do_action", ros::Duration(20));
         if (do_action_cli.call(srv)) {
             if (srv.response.success == true) {
                 feed.status = "action achieved";
                 feedback_pub.publish(feed);
                 state = WAIT;
             }
+        }else {
+        cout<<"why?"<<endl;
         }
     }
         

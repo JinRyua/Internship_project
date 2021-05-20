@@ -122,6 +122,7 @@ namespace Custom
        
         //service client
         ros::ServiceClient update_knowledge_client;
+        ros::ServiceClient call_plan_client;
 
         // //publisher
         ros::Publisher display_pub;  //display 정보를 주는 display/display

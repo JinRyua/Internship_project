@@ -6,6 +6,7 @@
 #include "custom_msgs/card_holder.h"
 #include "log_display/log_msg.h"
 #include "diagnostic_msgs/KeyValue.h"
+#include "std_srvs/Empty.h"
 
 
 
@@ -44,8 +45,12 @@ namespace Custom{
         //set updator
         stringstream ss;
         ss.str("");
+        ss << "/rosplan_problem_interface/problem_generation_server";
+        call_plan_client = node_handle->serviceClient<std_srvs::Empty>(ss.str());     
+
+        ss.str("");
         ss << "/rosplan_knowledge_base/update_array";
-        update_knowledge_client = node_handle->serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());     
+        update_knowledge_client = node_handle->serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());    
 
         //set publisher
         std::string display_topic = "/display/display";     //display topic
@@ -264,12 +269,12 @@ namespace Custom{
         // player_coin.blue=1;
         // player_coin.black=0;
         // player_coin.green=0;
-        // player_coin.red=1;
-        ai_coin.white=10;
-        ai_coin.blue=10;
-        ai_coin.black=10;
-        ai_coin.green=10;
-        ai_coin.red=10;
+        // // player_coin.red=1;
+        // ai_coin.white = 10;
+        // ai_coin.blue = 10;
+        // ai_coin.black = 10;
+        // ai_coin.green = 10;
+        // ai_coin.red = 10;
     }
 
     custom_msgs::coin* Board::select_coin_vector() { //select find vector by name
@@ -402,16 +407,31 @@ namespace Custom{
     }
     
     void Board::change_state(){
-        if (game_state == PLAYER_TURN)
+        if (game_state == PLAYER_TURN){
             game_state = AI_TURN;
+            std_srvs::Empty temp;
+            call_plan_client.call(temp);
+        }
         else if (game_state == AI_TURN)
             game_state = PLAYER_TURN;
     }
 
     bool Board::do_action_callback(board::do_action_srv::Request& req, board::do_action_srv::Response& res){
         log_display::log_msg temp;
-        temp.log_str = "hi";
+        temp.log_str = "do_action" + req.name;
         log_pub.publish(temp);
+        
+        cout<<req.name<<" "<<req.action<<" [";
+        for(int i =0;i<req.details.size();i++){
+            cout<<req.details[i]<<", ";
+        }
+        cout<<"] [";
+        for(int i =0;i<req.abandon.size();i++){
+            cout<<req.abandon[i]<<", ";
+        }
+        cout<<"]"<<endl;
+
+
         if (game_state != WAIT) {   //TODO: add state change
             if (player_names[game_state] == req.name) {
                 if (req.action == THREE_COIN) {
@@ -420,34 +440,50 @@ namespace Custom{
                         change_state();
                         display();
                         //TODO: need to replan
-                    }
+                        temp.log_str = "return true";
+                    } else
+                        temp.log_str = "return false";
+                    log_pub.publish(temp);
                     return true;
                 } else if (req.action == TWO_COIN) {
                     res.success = two_coin(req.details);
                     if(res.success == true){
                         change_state();
                         display();
-                    }
+                        temp.log_str = "return true";
+                    } else
+                        temp.log_str = "return false";
+                    log_pub.publish(temp);
                     return true;
                 } else if (req.action == BUY_CARD) {
                     res.success = buy_card(req.details);
                     if(res.success == true){
                         change_state();
                         display();
+                        temp.log_str = "return true";
                     }
+                    else temp.log_str = "return false";
+                    log_pub.publish(temp);
+                    
                     return true;
                 } else {
                     res.success = false;
+                    temp.log_str = "return false";
+                    log_pub.publish(temp);
                     return true;
                 }
             }
             else{
                 res.success = false;
+                temp.log_str = "return false";
+                    log_pub.publish(temp);
                 return true;
             }
         }
         else{
                 res.success = false;
+                temp.log_str = "return false";
+                    log_pub.publish(temp);
                 return true;
         }
     }
@@ -585,10 +621,11 @@ namespace Custom{
                     select_coin(&field_coin, details[i])--;
                 }
             }
-
             for (int i = 0; i < abandon.size(); i++) {  //abandon coin
-                if (select_coin(coin_vector, abandon[i]) > 0)
+                if (select_coin(coin_vector, abandon[i]) > 0){
                     select_coin(coin_vector, abandon[i])--;
+                    select_coin(&field_coin, abandon[i])++;
+                }
                 else{
                     for(int j = 0; j<5;j++){    //잘못된 버리기면 무작위로 버림
                         if(select_coin(coin_vector,j)>0){
@@ -606,17 +643,16 @@ namespace Custom{
                 name = "ai1";
             for (int i = 0; i < 5; i++) {
                 //make array for update coin
-                make_know_array_for_coin(updator, type, select_coin(coin_vector, details[i]),
-                                         name, details[i]);
-                make_know_array_for_coin(updator, type, select_coin(&field_coin, details[i]),
-                                         "field", details[i]);
+                make_know_array_for_coin(updator, type, select_coin(coin_vector, i),
+                                         name, i);
+                make_know_array_for_coin(updator, type, select_coin(&field_coin, i),
+                                         "field", i);
             }
 
             rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
             srv.request.update_type = type;
             srv.request.knowledge = updator;
             update_knowledge_client.call(srv);  //call update array
-
             return true;
 
         } else {
@@ -706,10 +742,10 @@ namespace Custom{
                 select_coin(&field_coin, i) += coin;
 
                 //make array for update coin
-                make_know_array_for_coin(updator, type, select_coin(coin_vector, details[i]),
-                                         name, details[i]);
-                make_know_array_for_coin(updator, type, select_coin(&field_coin, details[i]),
-                                         "field", details[i]);
+                make_know_array_for_coin(updator, type, select_coin(coin_vector, i),
+                                         name, i);
+                make_know_array_for_coin(updator, type, select_coin(&field_coin, i),
+                                         "field", i);
             }
 
 
