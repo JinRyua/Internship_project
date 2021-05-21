@@ -429,7 +429,7 @@ namespace Custom{
     bool Board::do_action_callback(board::do_action_srv::Request& req, board::do_action_srv::Response& res){
         log_display::log_msg temp;
         temp.log_str = "do_action" + req.name;
-        log_pub.publish(temp);
+        //log_pub.publish(temp);
         
         cout<<req.name<<" "<<req.action<<" [";
         for(int i =0;i<req.details.size();i++){
@@ -453,7 +453,7 @@ namespace Custom{
                         temp.log_str = "return true";
                     } else
                         temp.log_str = "return false";
-                    log_pub.publish(temp);
+                    //log_pub.publish(temp);
                     return true;
                 } else if (req.action == TWO_COIN) {
                     res.success = two_coin(req.details);
@@ -463,7 +463,7 @@ namespace Custom{
                         temp.log_str = "return true";
                     } else
                         temp.log_str = "return false";
-                    log_pub.publish(temp);
+                    //log_pub.publish(temp);
                     return true;
                 } else if (req.action == BUY_CARD) {
                     res.success = buy_card(req.details);
@@ -473,27 +473,27 @@ namespace Custom{
                         temp.log_str = "return true";
                     }
                     else temp.log_str = "return false";
-                    log_pub.publish(temp);
+                    //log_pub.publish(temp);
                     
                     return true;
                 } else {
                     res.success = false;
                     temp.log_str = "return false";
-                    log_pub.publish(temp);
+                    //log_pub.publish(temp);
                     return true;
                 }
             }
             else{
                 res.success = false;
                 temp.log_str = "return false";
-                    log_pub.publish(temp);
+                    //log_pub.publish(temp);
                 return true;
             }
         }
         else{
                 res.success = false;
                 temp.log_str = "return false";
-                    log_pub.publish(temp);
+                    //log_pub.publish(temp);
                 return true;
         }
     }
