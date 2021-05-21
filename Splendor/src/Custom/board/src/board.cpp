@@ -46,7 +46,11 @@ namespace Custom{
         stringstream ss;
         ss.str("");
         ss << "/rosplan_problem_interface/problem_generation_server";
-        call_plan_client = node_handle->serviceClient<std_srvs::Empty>(ss.str());     
+        ai_call_plan_client = node_handle->serviceClient<std_srvs::Empty>(ss.str());     
+
+        ss.str("");
+        ss << "/rosplan_problem_interface2/problem_generation_server";
+        player_call_plan_client = node_handle->serviceClient<std_srvs::Empty>(ss.str());  
 
         ss.str("");
         ss << "/rosplan_knowledge_base/update_array";
@@ -238,6 +242,7 @@ namespace Custom{
         for (int i = LEVEL1; i <= LEVEL3; i++) {  //init field card
             vector<custom_msgs::card>* level_vector = select_level(i);
             std::vector<custom_msgs::card>* fold_vector;
+            int k = 0;  //no random
             while (level_vector->size() < 4) {
                 if (i == LEVEL1)
                     fold_vector = &level1_fold;
@@ -246,10 +251,12 @@ namespace Custom{
                 else if (i == LEVEL3)
                     fold_vector = &level3_fold;
                 if (!fold_vector->empty()) {
-                    int rand_num = rand() % fold_vector->size();
+                    //int rand_num = rand() % fold_vector->size();
+                    int rand_num = k;
                     level_vector->push_back(fold_vector->at(rand_num));
                     fold_vector->erase(fold_vector->begin() + rand_num);
                     make_know_array_for_card_open(updator, type, level_vector->back().name);
+                    k++;
                 }
             }
         }
@@ -410,10 +417,13 @@ namespace Custom{
         if (game_state == PLAYER_TURN){
             game_state = AI_TURN;
             std_srvs::Empty temp;
-            call_plan_client.call(temp);
+            ai_call_plan_client.call(temp);
         }
-        else if (game_state == AI_TURN)
+        else if (game_state == AI_TURN){
             game_state = PLAYER_TURN;
+            std_srvs::Empty temp;
+            player_call_plan_client.call(temp);
+        }
     }
 
     bool Board::do_action_callback(board::do_action_srv::Request& req, board::do_action_srv::Response& res){
@@ -837,6 +847,17 @@ namespace Custom{
             srv.request.knowledge = updator;
             update_knowledge_client.call(srv);  //call update array
 
+
+            if(final_score >= 15){
+                if(game_state == PLAYER_TURN)
+                {
+                    cout<<"player win"<<endl;
+                }
+                else{
+                    cout<<"ai win"<<endl;
+                }
+                game_state=WAIT;
+            }
             return true;
 
         } else {

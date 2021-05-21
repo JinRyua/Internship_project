@@ -35,13 +35,14 @@
 		<arg name="problem_path"         value="$(find rosplan_demos)/common/problem.pddl" />
 		<arg name="data_path"            value="$(find rosplan_demos)/common/" />
 		<arg name="planner_command"      value="timeout 20 $(find rosplan_planning_system)/common/bin/csp PROBLEM" />
+		<param name="planner_name"	     value="ai1"/>
 	</include>
 	<node name="rosplan_parsing_interface" pkg="rosplan_planning_system" type="pddl_esterel_plan_parser" respawn="false" output="screen">
 		<param name="knowledge_base" value="rosplan_knowledge_base" />
 		<param name="planner_topic"  value="/rosplan_planner_interface/planner_output" />
 		<param name="plan_topic"     value="complete_plan" />
 	</node>
-<node name="$(arg node_name)" pkg="rosplan_planning_system" type="pddl_esterel_plan_dispatcher" respawn="false" output="screen">
+<node name="rosplan_plan_dispatcher" pkg="rosplan_planning_system" type="pddl_esterel_plan_dispatcher" respawn="false" output="screen">
 		<param name="knowledge_base"        value="$(arg knowledge_base)" />
 		<param name="plan_topic"            value="$(arg plan_topic)" />
 		<param name="action_dispatch_topic" value="$(arg action_dispatch_topic)" />
@@ -50,7 +51,39 @@
         <param name="timeout_actions"         value="$(arg timeout_actions)" />
         <param name="action_timeout_fraction" value="$(arg action_timeout_fraction)" />
 	</node>
-
+	<!-- player's rosplan-->
+<include file="$(find rosplan_planning_system)/launch/includes/problem_interface.launch">
+		<arg name="node_name" 	     default="rosplan_problem_interface2" />
+		<arg name="knowledge_base"   value="rosplan_knowledge_base" />
+		<arg name="domain_path"      value="$(arg domain_path)" />
+		<arg name="problem_path"     value="$(find rosplan_demos)/common/problem.pddl" />
+		<arg name="problem_topic"    value="problem_instance2" />
+	</include> 
+	<include file="$(find rosplan_planning_system)/launch/includes/planner_interface.launch">
+		<arg name="node_name"            default="rosplan_planner_interface2" />
+		<arg name="use_problem_topic"    value="true" />
+		<arg name="problem_topic"        value="/rosplan_problem_interface2/problem_instance2" />
+		<arg name="planner_topic"        value="planner_output2" />
+		<arg name="domain_path"          value="$(arg domain_path)" />
+		<arg name="problem_path"         value="$(find rosplan_demos)/common/problem.pddl" />
+		<arg name="data_path"            value="$(find rosplan_demos)/common/" />
+		<arg name="planner_command"      value="timeout 20 $(find rosplan_planning_system)/common/bin/csp PROBLEM" />
+		<arg name="planner_name"	     value="player1"/>
+	</include>
+	<node name="rosplan_parsing_interface2" pkg="rosplan_planning_system" type="pddl_esterel_plan_parser" respawn="false" output="screen">
+		<param name="knowledge_base" value="rosplan_knowledge_base" />
+		<param name="planner_topic"  value="/rosplan_planner_interface2/planner_output2" />
+		<param name="plan_topic"     value="/rosplan_parsing_interface2/complete_plan2" />
+	</node>
+<node name="rosplan_plan_dispatcher2" pkg="rosplan_planning_system" type="pddl_esterel_plan_dispatcher" respawn="false" output="screen">
+		<param name="knowledge_base"        value="$(arg knowledge_base)" />
+		<param name="plan_topic"            value="/rosplan_parsing_interface2/complete_plan2" />
+		<param name="action_dispatch_topic" value="action_dispatch/to_player" />
+		<param name="action_feedback_topic" value="action_feedback/from_player" />
+		<param name="display_edge_type"     value="$(arg display_edge_type)" />
+        <param name="timeout_actions"         value="$(arg timeout_actions)" />
+        <param name="action_timeout_fraction" value="$(arg action_timeout_fraction)" />
+	</node>
 	
 	
 
