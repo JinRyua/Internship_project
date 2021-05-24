@@ -7,6 +7,7 @@
 #include "log_display/log_msg.h"
 #include "diagnostic_msgs/KeyValue.h"
 #include "std_srvs/Empty.h"
+#include "board/game.h"
 
 
 
@@ -23,6 +24,11 @@
 using namespace std;
 void print_log(string node_name, string func,string str);
 
+// vector<int> lv3 = {3,6,10,19,7,5,9,15,1,2,16,13,0,4,14,8,17,18,11,16};
+// vector<int> lv2 = {3,6,24,10,19,29,25,7,5,20,9,15,1,2,21,26,16,13,0,27,4,22,14,8,17,23,18,28,11,16};
+// vector<int> lv1 = {39,3,6,24,10,37,30,19,29,25,38,7,31,5,20,9,15,1,33,32,2,21,26,16,34,13,0,27,4,22,35,14,8,17,23,36,18,28,11,16};
+// vector<int> nob = {0,5,2,3,9,8,4,6,7,1};
+
 
 namespace Custom{
     Board::Board(ros::NodeHandle &nh)   //생성자
@@ -32,6 +38,10 @@ namespace Custom{
         game_state = PLAYER_TURN; //init_state = select menu
         player_score = 0;
         ai_score = 0;
+        restart_flag = false;
+        timer = 0;
+        turn = 1;
+        game_count = 1;
         player_names.push_back("/player");
         player_names.push_back("/ai1");
 
@@ -237,12 +247,50 @@ namespace Custom{
             }
         }
 
+
+        init_stat.player_card = player_card;  //save init state for restart
+        init_stat.player_coin = player_coin;               
+        init_stat.ai_card = ai_card;
+        init_stat.ai_coin = ai_coin;
+        init_stat.nobility_open = nobility_open;
+        init_stat.nobility_fold = nobility_fold;
+        init_stat.level1_fold = level1_fold;
+        init_stat.level2_fold = level2_fold;
+        init_stat.level3_fold = level3_fold;
+        init_stat.level1_open = level1_open;
+        init_stat.level2_open = level2_open;
+        init_stat.level3_open = level3_open;
+        init_stat.field_coin = field_coin;
+        init_stat.player_score = player_score;
+        init_stat.ai_score = ai_score;
+
+        //TEST: sort card to fixed order with global array
+        cout<<"hhhi"<<endl;
+        vector<vector<vector<int>>> glob_array;
+        glob_array.push_back(lv1);
+         glob_array.push_back(lv2);
+        glob_array.push_back(lv3);
+        glob_array.push_back(nob);
+        for(int i = 0; i< 4; i++){
+            string v[4] = {"level1", "level2", "level3", "nobility"};
+            vector<custom_msgs::card>* level_vector = select_vector(v[i]);
+            vector<custom_msgs::card> temp;
+            temp.clear();
+            for(int j = 0; j<glob_array[i][game_count-1].size();j++){
+                temp.push_back(level_vector->at(glob_array[i][game_count-1][j]));
+            }
+            level_vector->clear();
+            *level_vector = temp;
+        }
+        cout<<"Hi"<<endl;
+
+
         vector<rosplan_knowledge_msgs::KnowledgeItem> updator;
         vector<unsigned char> type;
         for (int i = LEVEL1; i <= LEVEL3; i++) {  //init field card
             vector<custom_msgs::card>* level_vector = select_level(i);
             std::vector<custom_msgs::card>* fold_vector;
-            int k = 0;  //no random
+            int k = 0;  //no random     //TEST:
             while (level_vector->size() < 4) {
                 if (i == LEVEL1)
                     fold_vector = &level1_fold;
@@ -251,8 +299,8 @@ namespace Custom{
                 else if (i == LEVEL3)
                     fold_vector = &level3_fold;
                 if (!fold_vector->empty()) {
-                    //int rand_num = rand() % fold_vector->size();
-                    int rand_num = k;
+                    //int rand_num = rand() % fold_vector->size();  //random
+                    int rand_num = 0;       //TEST:
                     level_vector->push_back(fold_vector->at(rand_num));
                     fold_vector->erase(fold_vector->begin() + rand_num);
                     make_know_array_for_card_open(updator, type, level_vector->back().name);
@@ -271,7 +319,15 @@ namespace Custom{
         update_srv.request.update_type = type;
         update_srv.request.knowledge = updator;
         update_knowledge_client.call(update_srv);  //call update array
-        //test
+
+        
+
+        //make init updator
+        init_updator.clear();
+        init_type.clear();
+        make_current_knowledge(0, init_updator, init_type); //add type
+
+        //TEST:
         // player_coin.white=1;
         // player_coin.blue=1;
         // player_coin.black=0;
@@ -284,7 +340,298 @@ namespace Custom{
         // ai_coin.red = 10;
     }
 
-    custom_msgs::coin* Board::select_coin_vector() { //select find vector by name
+    void Board::make_current_knowledge(int type_num, vector<rosplan_knowledge_msgs::KnowledgeItem>& updator, vector<unsigned char>& type){
+        //update
+        rosplan_knowledge_msgs::KnowledgeItem know;
+        for (int i = 0; i < player_card.size(); i++) {  //have card player's
+            for (int j = 0; j < player_card[i].size(); j++) {
+                vector<diagnostic_msgs::KeyValue> temp;
+                diagnostic_msgs::KeyValue value;
+                temp.clear();
+
+                know.knowledge_type = 1;            //FACT
+                know.attribute_name = "have-card";  //card
+                value.key = "ch";                   
+                value.value = "player1";
+                temp.push_back(value);
+                value.key = "ca";
+                value.value = player_card[i][j].name;
+                temp.push_back(value);
+                know.values = temp;
+
+                updator.push_back(know);  //insert knowledge
+                type.push_back(type_num);     //add or remove knowledge type
+            }
+        }
+
+        for (int i = 0; i < ai_card.size(); i++) {  //have card ai's
+            for (int j = 0; j < ai_card[i].size(); j++) {
+                vector<diagnostic_msgs::KeyValue> temp;
+                diagnostic_msgs::KeyValue value;
+                temp.clear();
+
+                know.knowledge_type = 1;            //FACT
+                know.attribute_name = "have-card";  //card
+                value.key = "ch";                  
+                value.value = "ai1";
+                temp.push_back(value);
+                value.key = "ca";
+                value.value = ai_card[i][j].name;
+                temp.push_back(value);
+                know.values = temp;
+
+                updator.push_back(know);  //insert knowledge
+                type.push_back(type_num);     //add or remove knowledge type
+            }
+        }
+
+        for (int i = 0; i < 4; i++) {  //have card field's
+            vector<custom_msgs::card>* level_vector = select_level(i);
+            for (int j = 0; j < level_vector->size(); j++) {
+                vector<diagnostic_msgs::KeyValue> temp;
+                diagnostic_msgs::KeyValue value;
+                temp.clear();
+
+                know.knowledge_type = 1;            //FACT
+                know.attribute_name = "have-card";  //card
+                value.key = "ch";                   //make value for add to field
+                value.value = "field";
+                temp.push_back(value);
+                value.key = "ca";
+                value.value = level_vector->at(j).name;
+                temp.push_back(value);
+                know.values = temp;
+
+                updator.push_back(know);  //insert knowledge
+                type.push_back(type_num);     //add or remove knowledge type
+            }
+        }
+
+        for (int i = 0; i < 4; i++) {  //fold card
+            string v[4] = {"level1", "level2", "level3", "nobility"};
+            vector<custom_msgs::card>* level_vector = select_vector(v[i]);
+            for (int j = 0; j < level_vector->size(); j++) {
+                vector<diagnostic_msgs::KeyValue> temp;
+                diagnostic_msgs::KeyValue value;
+                temp.clear();
+
+                know.knowledge_type = 1;            //FACT
+                know.attribute_name = "fold";  //card
+                value.key = "ca";
+                value.value = level_vector->at(j).name;
+                temp.push_back(value);
+                know.values = temp;
+
+                updator.push_back(know);  //insert knowledge
+                type.push_back(type_num);     //add or remove knowledge type
+            }
+        }
+
+        for (int i = 0; i < 5; i++) {  //have-token player's and ai's and field's
+            //player's
+            int& coin = select_coin(&player_coin, i);
+            vector<diagnostic_msgs::KeyValue> temp;
+            diagnostic_msgs::KeyValue value;
+            temp.clear();
+
+            know.knowledge_type = 2;             //FUNCTION
+            know.attribute_name = "have-token";  //token
+            value.key = "ch";
+            value.value = "player1";
+            temp.push_back(value);
+            value.key = "to";
+            value.value = convert_to_color_from_int(i);
+            temp.push_back(value);
+            know.values = temp;
+            know.function_value = coin;
+
+            updator.push_back(know);   //insert knowledge
+            type.push_back(type_num);  //add or remove knowledge type
+
+            //ai's
+
+            int& coin2 = select_coin(&ai_coin, i);
+            temp.clear();
+
+            know.knowledge_type = 2;             //FACT
+            know.attribute_name = "have-token";  //token
+            value.key = "ch";
+            value.value = "ai1";
+            temp.push_back(value);
+            value.key = "to";
+            value.value = convert_to_color_from_int(i);
+            temp.push_back(value);
+            know.values = temp;
+            know.function_value = coin2;
+
+            updator.push_back(know);   //insert knowledge
+            type.push_back(type_num);  //add or remove knowledge type
+
+            //field's
+
+            int& coin3 = select_coin(&field_coin, i);
+            temp.clear();
+
+            know.knowledge_type = 2;             //FACT
+            know.attribute_name = "have-token";  //token
+            value.key = "ch";
+            value.value = "field";
+            temp.push_back(value);
+            value.key = "to";
+            value.value = convert_to_color_from_int(i);
+            temp.push_back(value);
+            know.values = temp;
+            know.function_value = coin3;
+
+            updator.push_back(know);   //insert knowledge
+            type.push_back(type_num);  //add or remove knowledge type
+        }
+
+        for (int i = 0; i < 2; i++) {   //player's ai's score
+            int score;
+            string v[2] = {"player1", "ai1"};
+            if (i == 0)
+                score = player_score;
+            else if (i == 1)
+                score = ai_score;
+
+            vector<diagnostic_msgs::KeyValue> temp;
+            diagnostic_msgs::KeyValue value;
+            temp.clear();
+
+            know.knowledge_type = 2;             //FUNCTION
+            know.attribute_name = "have-score";  //score
+            value.key = "ch";
+            value.value = v[i];
+            temp.push_back(value);
+            know.values = temp;
+            know.function_value = score;
+
+            updator.push_back(know);   //insert knowledge
+            type.push_back(type_num);  //add or remove knowledge type
+        }
+    }
+
+    void Board::restart_game(){
+        //restart game and update KB
+        //remove current state
+        game_count++;
+        if (game_count <= 20) {
+            vector<rosplan_knowledge_msgs::KnowledgeItem> updator;  //update array
+            vector<unsigned char> type;                             //update type
+
+            make_current_knowledge(2, updator, type);  //remove type
+            cout << endl
+                 << "1" << endl;
+            rosplan_knowledge_msgs::KnowledgeUpdateServiceArray srv;
+            srv.request.update_type = type;
+            srv.request.knowledge = updator;
+            update_knowledge_client.call(srv);  //call update array for remove current
+
+            cout << endl
+                 << "2" << endl;
+            //change state to init
+            player_card = init_stat.player_card;  //save init state for restart
+            player_coin = init_stat.player_coin;
+            ai_card = init_stat.ai_card;
+            ai_coin = init_stat.ai_coin;
+            nobility_open = init_stat.nobility_open;
+            nobility_fold = init_stat.nobility_fold;
+            level1_fold = init_stat.level1_fold;
+            level2_fold = init_stat.level2_fold;
+            level3_fold = init_stat.level3_fold;
+            level1_open = init_stat.level1_open;
+            level2_open = init_stat.level2_open;
+            level3_open = init_stat.level3_open;
+            field_coin = init_stat.field_coin;
+            player_score = init_stat.player_score;
+            ai_score = init_stat.ai_score;
+
+            cout << endl
+                 << "3" << endl;
+            vector<vector<vector<int>>> glob_array;
+            glob_array.push_back(lv1);
+            glob_array.push_back(lv2);
+            glob_array.push_back(lv3);
+            glob_array.push_back(nob);
+            for (int i = 0; i < 4; i++) {
+                string v[4] = {"level1", "level2", "level3", "nobility"};
+                vector<custom_msgs::card>* level_vector = select_vector(v[i]);
+                vector<custom_msgs::card> temp;
+                temp.clear();
+                for (int j = 0; j < glob_array[i][game_count - 1].size(); j++) {
+                    temp.push_back(level_vector->at(glob_array[i][game_count - 1][j]));
+                }
+                level_vector->clear();
+                *level_vector = temp;
+            }
+
+            for (int i = LEVEL1; i <= LEVEL3; i++) {  //init field card
+                vector<custom_msgs::card>* level_vector = select_level(i);
+                std::vector<custom_msgs::card>* fold_vector;
+                int k = 0;  //no random     //TEST:
+                while (level_vector->size() < 4) {
+                    if (i == LEVEL1)
+                        fold_vector = &level1_fold;
+                    else if (i == LEVEL2)
+                        fold_vector = &level2_fold;
+                    else if (i == LEVEL3)
+                        fold_vector = &level3_fold;
+                    if (!fold_vector->empty()) {
+                        //int rand_num = rand() % fold_vector->size();  //random
+                        int rand_num = 0;  //TEST:
+                        level_vector->push_back(fold_vector->at(rand_num));
+                        fold_vector->erase(fold_vector->begin() + rand_num);
+                        k++;
+                    }
+                }
+            }
+            for (int i = 0; i < 3; i++) {  //init field nobility
+                int rand_num = rand() % nobility_fold.size();
+                nobility_open.push_back(nobility_fold[rand_num]);
+                nobility_fold.erase(nobility_fold.begin() + rand_num);
+            }
+
+            cout << endl
+                 << "4" << endl;
+
+            //make init updator
+            init_updator.clear();
+            init_type.clear();
+            make_current_knowledge(0, init_updator, init_type);  //add type
+            srv.request.update_type = init_type;                 //call update array for add init state
+            srv.request.knowledge = init_updator;
+            update_knowledge_client.call(srv);
+        }
+
+        if(game_count <= 20){        //set turn count
+            turn = 0;
+            
+            restart_flag = true;
+            timer = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            timer += double(5)*double(1000000000);  //restart timer
+        
+        }
+        else{
+            game_state = WAIT;
+
+            int game_size = results.size();
+            double avg_turn = 0;
+            double rate = 0;
+            for(int i =0;i<results.size();i++){
+                avg_turn += results[i].turns;
+                if(results[i].winner == "player")
+                    rate++;
+            }
+            avg_turn = avg_turn / game_size;
+            rate = rate / game_size * 100;
+            log_display::log_msg temp;
+            temp.log_str = "all " + to_string(game_size) + " game end\n " + "avg turn : " + to_string(avg_turn) + ", player's rate : " + to_string(rate) +"\n";
+            log_pub.publish(temp);
+        }
+    }
+
+    custom_msgs::coin* Board::select_coin_vector() {  //select find vector by name
         if (game_state == PLAYER_TURN)
             return &player_coin;
         else if (game_state == AI_TURN)
@@ -333,6 +680,8 @@ namespace Custom{
             return &level2_open;
         else if (n == LEVEL3)
             return &level3_open;
+        else if (n == 3)
+            return &nobility_open;
     }
 
     std::vector<std::vector<custom_msgs::card>>* Board::select_card_vector(){
@@ -377,6 +726,12 @@ namespace Custom{
     }
     
     void Board::run_board(){
+        double start_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        if(start_time > timer && restart_flag == true){
+            game_state = AI_TURN;   //restart game 
+            restart_flag = false;
+            change_state();
+        }
         display();
     }
 
@@ -414,6 +769,7 @@ namespace Custom{
     }
     
     void Board::change_state(){
+        turn++;
         if (game_state == PLAYER_TURN){
             game_state = AI_TURN;
             std_srvs::Empty temp;
@@ -428,8 +784,9 @@ namespace Custom{
 
     bool Board::do_action_callback(board::do_action_srv::Request& req, board::do_action_srv::Response& res){
         log_display::log_msg temp;
-        temp.log_str = "do_action" + req.name;
-        //log_pub.publish(temp);
+        temp.log_str = "game count : " + to_string(game_count) + "\nturn " + to_string(turn) + " start\n";
+        log_pub.publish(temp);
+        
         
         cout<<req.name<<" "<<req.action<<" [";
         for(int i =0;i<req.details.size();i++){
@@ -468,7 +825,8 @@ namespace Custom{
                 } else if (req.action == BUY_CARD) {
                     res.success = buy_card(req.details);
                     if(res.success == true){
-                        change_state();
+                        if(restart_flag != true)
+                            change_state();
                         display();
                         temp.log_str = "return true";
                     }
@@ -797,7 +1155,8 @@ namespace Custom{
             else if (details[0] == LEVEL3)
                 fold_vector = &level3_fold;
             if (!fold_vector->empty()) {
-                int rand_num = rand() % fold_vector->size();
+                //int rand_num = rand() % fold_vector->size();        //random
+                int rand_num = 0;   //no random //TEST:
                 level_vector->push_back(fold_vector->at(rand_num));
                 fold_vector->erase(fold_vector->begin() + rand_num);
             }
@@ -848,15 +1207,28 @@ namespace Custom{
             update_knowledge_client.call(srv);  //call update array
 
 
-            if(final_score >= 15){
+            if(final_score >= 15){  //game end and restart game
                 if(game_state == PLAYER_TURN)
                 {
-                    cout<<"player win"<<endl;
+                    log_display::log_msg temp;
+                    temp.log_str = "game count : " + to_string(game_count) + "\nturn : " + to_string(turn) + "\nplayer win!\nplayer : "+to_string(player_score)+", ai : "+to_string(ai_score)+"\n";
+                    log_pub.publish(temp);
+                    end_info temp2;
+                    temp2.turns = turn;
+                    temp2.winner = "player";
+                    results.push_back(temp2);
+                    restart_game();
                 }
                 else{
-                    cout<<"ai win"<<endl;
+                    log_display::log_msg temp;
+                    temp.log_str = "game count : " + to_string(game_count) + "\nturn : " + to_string(turn) + "\nai win!\nplayer : "+to_string(player_score)+", ai : "+to_string(ai_score)+"\n";
+                    log_pub.publish(temp);
+                    end_info temp2;
+                    temp2.turns = turn;
+                    temp2.winner = "ai";
+                    results.push_back(temp2);
+                    restart_game();
                 }
-                game_state=WAIT;
             }
             return true;
 
@@ -887,7 +1259,7 @@ int main(int argc, char **argv)
 
     std::cout<<"ready to run board"<<std::endl;
     ROS_INFO("Custom: (%s) Ready to receive", ros::this_node::getName().c_str());
-    double act_time = 2;
+    double act_time = 1;
     while (ros::ok())
     {
         sleep(0);

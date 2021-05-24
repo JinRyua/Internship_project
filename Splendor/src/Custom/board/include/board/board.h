@@ -46,13 +46,48 @@
 
 namespace Custom
 {
-    class Board
-    {
+    struct init_state{
+        std::vector<std::vector<custom_msgs::card>> player_card;  //player's card  order = white, blue, green, red, black, nobility
+        custom_msgs::coin player_coin;               //player's coin
+
+        std::vector<std::vector<custom_msgs::card>> ai_card;  //ai's card
+        custom_msgs::coin ai_coin;     //ai's coin
+
+        std::vector<custom_msgs::card> nobility_open;
+        std::vector<custom_msgs::card> nobility_fold;
+
+        std::vector<custom_msgs::card> level1_fold; //fold cards
+        std::vector<custom_msgs::card> level2_fold;
+        std::vector<custom_msgs::card> level3_fold;
+
+        std::vector<custom_msgs::card> level1_open; //open cards
+        std::vector<custom_msgs::card> level2_open;
+        std::vector<custom_msgs::card> level3_open;
+
+        custom_msgs::coin field_coin;  //field's coin
+
+        int player_score;
+        int ai_score;
+    };
+
+    struct end_info{
+        int turns;
+        std::string winner;    
+    };
+    class Board{
+
     private:
         ros::NodeHandle *node_handle;
 
         /* params */
+
+        std::vector<end_info> results;
+
         std::string kb;
+
+        init_state init_stat;       //init state
+        std::vector<rosplan_knowledge_msgs::KnowledgeItem> init_updator; //init updator
+        std::vector<unsigned char> init_type;    //init update type
 
         int game_state;     //게임 상태
 
@@ -84,7 +119,11 @@ namespace Custom
         rosplan_knowledge_msgs::KnowledgeItem post_knowledge;   //player's post knowledge
         rosplan_knowledge_msgs::KnowledgeItem knowledge;
 
-        double timer;       //start timer
+        double timer;       //restart timer
+
+        int turn;       //currnet game turn
+        int game_count; //current game count
+        bool restart_flag;
 
 
 
@@ -101,6 +140,9 @@ namespace Custom
         std::vector<std::vector<custom_msgs::card>>* select_card_vector();           //select player,ai card 
         int& select_color_from_card(custom_msgs::card* at, int& n);
         std::string convert_to_color_from_int(const int color);                 //convert to color form int
+
+        void restart_game(); //restart game
+        void make_current_knowledge(int type_num, std::vector<rosplan_knowledge_msgs::KnowledgeItem>& updator, std::vector<unsigned char>& type); //make current all knowledge    type => remove or add
 
         void make_know_array_for_coin(std::vector<rosplan_knowledge_msgs::KnowledgeItem>& updator, std::vector<unsigned char>& type,
                                 const int function_value, const std::string name, const int color);     //make know array for coin update   )

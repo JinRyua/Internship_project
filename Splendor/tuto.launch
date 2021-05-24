@@ -36,8 +36,8 @@
 		<arg name="data_path"            value="$(find rosplan_demos)/common/" />
 		<arg name="planner_command"      value="timeout 20 $(find rosplan_planning_system)/common/bin/csp PROBLEM" />
 		<param name="planner_name"	     value="ai1"/>
-		<arg name="hyper_nobility"	default="2"/>
-		<arg name="hyper_level"		default="1"/>
+		<arg name="hyper_nobility"	default="1"/>
+		<arg name="hyper_level"		default="2"/>
 	</include>
 	<node name="rosplan_parsing_interface" pkg="rosplan_planning_system" type="pddl_esterel_plan_parser" respawn="false" output="screen">
 		<param name="knowledge_base" value="rosplan_knowledge_base" />
