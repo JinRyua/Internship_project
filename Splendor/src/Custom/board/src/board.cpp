@@ -41,7 +41,7 @@ namespace Custom{
         restart_flag = false;
         timer = 0;
         turn = 1;
-        game_count = 1;
+        game_count = GAME_COUNT;
         player_names.push_back("/player");
         player_names.push_back("/ai1");
 

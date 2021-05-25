@@ -44,6 +44,8 @@
 #define BLACK 4
 #define NOBILITY 5
 
+#define GAME_COUNT 17
+
 namespace Custom
 {
     struct init_state{
