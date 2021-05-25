@@ -43,6 +43,8 @@ namespace Custom{
         restart_flag = false;
         timer = 0;
         turn = 1;
+        ai_win =0;
+        player_win =0;
         game_count = GAME_COUNT;
         player_names.push_back("/player");
         player_names.push_back("/ai1");
@@ -1221,8 +1223,10 @@ namespace Custom{
                 
                 if(game_state == PLAYER_TURN)
                 {
+                    player_win++;
                     log_display::log_msg temp;
                     temp.log_str = "game count : " + to_string(game_count) + "\nturn : " + to_string(turn) + "\nplayer win!\nplayer : "+to_string(player_score)+", ai : "+to_string(ai_score)+"\n";
+                    temp.log_str += "plyaer_win : " + to_string(player_win) + ", ai_win : " + to_string(ai_win) + "\n";
                     log_pub.publish(temp);
                     string s = temp.log_str;
                     writeFile.write(s.c_str(), s.length());
@@ -1233,8 +1237,10 @@ namespace Custom{
                     restart_game();
                 }
                 else{
+                    ai_win++;
                     log_display::log_msg temp;
                     temp.log_str = "game count : " + to_string(game_count) + "\nturn : " + to_string(turn) + "\nai win!\nplayer : "+to_string(player_score)+", ai : "+to_string(ai_score)+"\n";
+                    temp.log_str += "plyaer_win : " + to_string(player_win) + ", ai_win : " + to_string(ai_win) + "\n";
                     log_pub.publish(temp);
                     string s = temp.log_str;
                     writeFile.write(s.c_str(), s.length());

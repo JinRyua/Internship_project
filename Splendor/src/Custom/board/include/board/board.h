@@ -132,6 +132,9 @@ namespace Custom
         std::string path;    //path save log
         std::ofstream writeFile;  //ofstream to save log
 
+        int ai_win;
+        int player_win;
+
 
 
 

@@ -1,0 +1,40 @@
+agame count : 1
+turn : 49
+player win!
+player : 16, ai : 5
+plyaer_win : 1, ai_win : 0
+game count : 2
+turn : 54
+ai win!
+player : 12, ai : 19
+plyaer_win : 1, ai_win : 1
+game count : 3
+turn : 58
+ai win!
+player : 8, ai : 16
+plyaer_win : 1, ai_win : 2
+game count : 4
+turn : 61
+player win!
+player : 15, ai : 14
+plyaer_win : 2, ai_win : 2
+game count : 5
+turn : 50
+ai win!
+player : 6, ai : 16
+plyaer_win : 2, ai_win : 3
+game count : 6
+turn : 61
+player win!
+player : 17, ai : 13
+plyaer_win : 3, ai_win : 3
+game count : 7
+turn : 53
+player win!
+player : 16, ai : 5
+plyaer_win : 4, ai_win : 3
+game count : 8
+turn : 54
+ai win!
+player : 12, ai : 16
+plyaer_win : 4, ai_win : 4
