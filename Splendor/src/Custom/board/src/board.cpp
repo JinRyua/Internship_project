@@ -33,6 +33,8 @@ void print_log(string node_name, string func,string str);
 namespace Custom{
     Board::Board(ros::NodeHandle &nh)   //생성자
     {
+        
+        
         node_handle = &nh;  //get node handle
 
         game_state = PLAYER_TURN; //init_state = select menu
@@ -45,6 +47,12 @@ namespace Custom{
         player_names.push_back("/player");
         player_names.push_back("/ai1");
 
+
+        path = ".";    //path save log
+		node_handle->getParam("log_path", path);
+        cout<<"path : "<<path<<endl;
+        writeFile.open(path);
+        writeFile.write("a",1);
 
         player_card.resize(6);  //init player, ai card 
         ai_card.resize(6);      //6 => nobility card        
@@ -612,7 +620,7 @@ namespace Custom{
             timer += double(5)*double(1000000000);  //restart timer
         
         }
-        else{
+        else{       //game end 20 games
             game_state = WAIT;
 
             int game_size = results.size();
@@ -628,6 +636,8 @@ namespace Custom{
             log_display::log_msg temp;
             temp.log_str = "all " + to_string(game_size) + " game end\n " + "avg turn : " + to_string(avg_turn) + ", player's rate : " + to_string(rate) +"\n";
             log_pub.publish(temp);
+            writeFile.write(temp.log_str.c_str(), temp.log_str.length());
+            writeFile.close();  //close log save
         }
     }
 
@@ -1208,11 +1218,14 @@ namespace Custom{
 
 
             if(final_score >= 15){  //game end and restart game
+                
                 if(game_state == PLAYER_TURN)
                 {
                     log_display::log_msg temp;
                     temp.log_str = "game count : " + to_string(game_count) + "\nturn : " + to_string(turn) + "\nplayer win!\nplayer : "+to_string(player_score)+", ai : "+to_string(ai_score)+"\n";
                     log_pub.publish(temp);
+                    string s = temp.log_str;
+                    writeFile.write(s.c_str(), s.length());
                     end_info temp2;
                     temp2.turns = turn;
                     temp2.winner = "player";
@@ -1223,6 +1236,8 @@ namespace Custom{
                     log_display::log_msg temp;
                     temp.log_str = "game count : " + to_string(game_count) + "\nturn : " + to_string(turn) + "\nai win!\nplayer : "+to_string(player_score)+", ai : "+to_string(ai_score)+"\n";
                     log_pub.publish(temp);
+                    string s = temp.log_str;
+                    writeFile.write(s.c_str(), s.length());
                     end_info temp2;
                     temp2.turns = turn;
                     temp2.winner = "ai";

@@ -8,6 +8,7 @@
 	<!-- board -->
 	<node name="board" pkg="board" type="board" respawn="false" output="screen">
 		<param name="knowledge_base" value="$(arg knowledge_base)" />
+		<param name="log_path"	value="$(find board)/log/log.txt"	/>
 	</node>
 	<!--<node name="navi" pkg="navi" type="navi" respawn="false" output="screen">
 	</node>

@@ -15,6 +15,8 @@
 #include "custom_msgs/coin.h"
 #include "board/do_action_srv.h"
 
+#include <fstream>
+
 
 
 #include <utility>
@@ -44,7 +46,7 @@
 #define BLACK 4
 #define NOBILITY 5
 
-#define GAME_COUNT 17
+#define GAME_COUNT 1
 
 namespace Custom
 {
@@ -126,6 +128,9 @@ namespace Custom
         int turn;       //currnet game turn
         int game_count; //current game count
         bool restart_flag;
+
+        std::string path;    //path save log
+        std::ofstream writeFile;  //ofstream to save log
 
 
 

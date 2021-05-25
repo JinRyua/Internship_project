@@ -1,0 +1,82 @@
+agame count : 1
+turn : 55
+player win!
+player : 15, ai : 7
+game count : 2
+turn : 59
+player win!
+player : 15, ai : 14
+game count : 3
+turn : 53
+player win!
+player : 15, ai : 7
+game count : 4
+turn : 52
+ai win!
+player : 9, ai : 15
+game count : 5
+turn : 47
+player win!
+player : 16, ai : 12
+game count : 6
+turn : 58
+ai win!
+player : 8, ai : 16
+game count : 7
+turn : 54
+ai win!
+player : 8, ai : 16
+game count : 8
+turn : 60
+ai win!
+player : 10, ai : 15
+game count : 9
+turn : 60
+ai win!
+player : 12, ai : 16
+game count : 10
+turn : 58
+ai win!
+player : 12, ai : 20
+game count : 11
+turn : 56
+ai win!
+player : 8, ai : 16
+game count : 12
+turn : 56
+ai win!
+player : 12, ai : 18
+game count : 13
+turn : 52
+ai win!
+player : 4, ai : 15
+game count : 14
+turn : 55
+player win!
+player : 17, ai : 13
+game count : 15
+turn : 60
+ai win!
+player : 12, ai : 15
+game count : 16
+turn : 66
+ai win!
+player : 12, ai : 15
+game count : 17
+turn : 58
+ai win!
+player : 9, ai : 22
+game count : 18
+turn : 58
+ai win!
+player : 11, ai : 15
+game count : 19
+turn : 52
+ai win!
+player : 9, ai : 17
+game count : 20
+turn : 53
+player win!
+player : 15, ai : 13
+all 20 game end
+ avg turn : 56.100000, player's rate : 30.000000
