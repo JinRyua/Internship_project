@@ -38,7 +38,7 @@
 		<param name="planner_name"	     value="ai1"/>
 		<arg name="hyper_nobility"	value="2"/>
 		<arg name="hyper_level"		value="1"/>
-		<arg name="depth"		value="1"/>
+		<arg name="depth"		value="3"/>
 	</include>
 	<node name="rosplan_parsing_interface" pkg="rosplan_planning_system" type="pddl_esterel_plan_parser" respawn="false" output="screen">
 		<param name="knowledge_base" value="rosplan_knowledge_base" />
@@ -74,7 +74,7 @@
 		<arg name="planner_name"	     value="player1"/>
 		<arg name="hyper_nobility"	value="2"/>
 		<arg name="hyper_level"		value="1"/>
-		<arg name="depth"		value="3"/>
+		<arg name="depth"		value="1"/>
 	</include>
 	<node name="rosplan_parsing_interface2" pkg="rosplan_planning_system" type="pddl_esterel_plan_parser" respawn="false" output="screen">
 		<param name="knowledge_base" value="rosplan_knowledge_base" />

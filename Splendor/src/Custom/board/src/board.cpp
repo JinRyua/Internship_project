@@ -790,7 +790,7 @@ namespace Custom{
         else if (game_state == AI_TURN){
             game_state = PLAYER_TURN;
             std_srvs::Empty temp;
-            player_call_plan_client.call(temp);
+            //player_call_plan_client.call(temp);
         }
     }
 
@@ -812,6 +812,19 @@ namespace Custom{
 
 
         if (game_state != WAIT) {   //TODO: add state change
+            if(turn >= 90){
+                    temp.log_str = "draw game!!\n";
+                    temp.log_str += "plyaer_win : " + to_string(player_win) + ", ai_win : " + to_string(ai_win) + "\n";
+                    log_pub.publish(temp);
+                    string s = temp.log_str;
+                    writeFile.write(s.c_str(), s.length());
+                    end_info temp2;
+                    temp2.turns = turn;
+                    temp2.winner = "player";
+                    results.push_back(temp2);
+                    restart_game();
+                    return true;
+            }
             if (player_names[game_state] == req.name) {
                 if (req.action == THREE_COIN) {
                     res.success = three_coin(req.details, req.abandon);
