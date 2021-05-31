@@ -1,10 +1,1 @@
-agame count : 1
-turn : 58
-ai win!
-player : 4, ai : 15
-plyaer_win : 0, ai_win : 1
-game count : 2
-turn : 68
-ai win!
-player : 3, ai : 18
-plyaer_win : 0, ai_win : 2
+a
