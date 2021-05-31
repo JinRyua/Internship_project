@@ -8,6 +8,7 @@
 #include "diagnostic_msgs/KeyValue.h"
 #include "std_srvs/Empty.h"
 #include "board/game.h"
+#include "board/do_action_srv.h"
 
 
 
@@ -790,7 +791,7 @@ namespace Custom{
         else if (game_state == AI_TURN){
             game_state = PLAYER_TURN;
             std_srvs::Empty temp;
-            //player_call_plan_client.call(temp);
+            player_call_plan_client.call(temp);
         }
     }
 

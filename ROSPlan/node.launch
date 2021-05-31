@@ -2,4 +2,12 @@
 <launch>
 <!-- arguments -->
 <arg name="pddl_action_name" />
+<node name="agent1" pkg="ai_agent" type="ai_agent" respawn="false" output="screen">
+</node>
+<node name="agent2" pkg="ai_agent" type="ai_agent" respawn="false" output="screen">
+</node>
+<node name="agent3" pkg="ai_agent" type="ai_agent" respawn="false" output="screen">
+</node>
+<node name="agent4" pkg="ai_agent" type="ai_agent" respawn="false" output="screen">
+</node>
 </launch>

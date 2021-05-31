@@ -1,11 +1,9 @@
 #include "ros/ros.h"
 #include "rosplan_dispatch_msgs/ActionDispatch.h"
 
-#include "custom_msgs/axis.h"
-#include "board/change_state_msg.h"
+
 #include "std_msgs/Empty.h"
-#include "player/player_state_time_srv.h"
-#include "board/set_ai_loc_msg.h"
+
 #include <vector>
 #include <string>
 #ifndef PLAYER

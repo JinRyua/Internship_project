@@ -1,19 +1,11 @@
 #include "ros/ros.h"
 
-#include "board/ask_map_size.h"
-#include "board/ask_agent_srv.h"
-#include "board/move_check_srv.h"
-#include "board/set_ai_loc_msg.h"
-#include "board/player_act_srv.h"
-#include "board/select_menu_msg.h"
-#include "board/ask_player_stat_srv.h"
-#include "board/ask_map_srv.h"
 #include "std_msgs/Empty.h"
 #include "rosplan_knowledge_msgs/KnowledgeItem.h"
+#include "board/do_action_srv.h"
 
 #include "custom_msgs/card.h"
 #include "custom_msgs/coin.h"
-#include "board/do_action_srv.h"
 
 #include <fstream>
 

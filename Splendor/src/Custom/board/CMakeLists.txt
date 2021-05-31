@@ -15,22 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 add_message_files(FILES 
-  game_state_msg.msg
-  set_ai_loc_msg.msg
-  set_ai_msg.msg
-  select_menu_msg.msg
-  change_state_msg.msg
-  reset_ai_msg.msg
 )
 
 add_service_files(
   FILES
-  ask_agent_srv.srv
-  ask_map_size.srv
-  move_check_srv.srv
-  player_act_srv.srv
-  ask_player_stat_srv.srv
-  ask_map_srv.srv
   do_action_srv.srv
 )
 

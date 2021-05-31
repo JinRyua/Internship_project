@@ -4,12 +4,7 @@
 #include "rosplan_dispatch_msgs/ActionFeedback.h"
 #include "diagnostic_msgs/KeyValue.h"
 
-#include "custom_msgs/axis.h"
-#include "board/ask_player_stat_srv.h"
-#include "board/select_menu_msg.h"
-#include "board/move_check_srv.h"
-#include "board/player_act_srv.h"
-#include "board/set_ai_loc_msg.h"
+
 
 #include <chrono>
 #include <iostream>
