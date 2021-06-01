@@ -19,6 +19,12 @@ Splendor/logs/
 Splendor/.vscode/
 Splendor/.catkin_tools/
 Splendor/src/ROSPlan/
-hearthbreaker/
+Mahjong/devel/
+Mahjong/build/
+Mahjong/log/
+Mahjong/logs/
+Mahjong/mahjong_akochan/
+Mahjong/src/ROSPlan/
+*.exe
 
 

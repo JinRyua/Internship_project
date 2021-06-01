@@ -1,0 +1,102 @@
+agame count : 1
+turn : 62
+ai win!
+player : 7, ai : 16
+plyaer_win : 0, ai_win : 1
+game count : 2
+turn : 57
+player win!
+player : 15, ai : 6
+plyaer_win : 1, ai_win : 1
+game count : 3
+turn : 65
+player win!
+player : 16, ai : 7
+plyaer_win : 2, ai_win : 1
+game count : 4
+turn : 71
+player win!
+player : 16, ai : 11
+plyaer_win : 3, ai_win : 1
+game count : 5
+turn : 70
+ai win!
+player : 7, ai : 16
+plyaer_win : 3, ai_win : 2
+game count : 6
+turn : 62
+ai win!
+player : 3, ai : 15
+plyaer_win : 3, ai_win : 3
+game count : 7
+turn : 73
+player win!
+player : 17, ai : 9
+plyaer_win : 4, ai_win : 3
+game count : 8
+turn : 78
+ai win!
+player : 10, ai : 15
+plyaer_win : 4, ai_win : 4
+game count : 9
+turn : 63
+player win!
+player : 15, ai : 1
+plyaer_win : 5, ai_win : 4
+game count : 10
+turn : 56
+ai win!
+player : 3, ai : 15
+plyaer_win : 5, ai_win : 5
+game count : 11
+turn : 65
+player win!
+player : 15, ai : 11
+plyaer_win : 6, ai_win : 5
+game count : 12
+turn : 67
+player win!
+player : 15, ai : 10
+plyaer_win : 7, ai_win : 5
+game count : 13
+turn : 59
+player win!
+player : 15, ai : 1
+plyaer_win : 8, ai_win : 5
+game count : 14
+turn : 69
+player win!
+player : 16, ai : 9
+plyaer_win : 9, ai_win : 5
+game count : 15
+turn : 67
+player win!
+player : 15, ai : 3
+plyaer_win : 10, ai_win : 5
+game count : 16
+turn : 79
+player win!
+player : 16, ai : 5
+plyaer_win : 11, ai_win : 5
+game count : 17
+turn : 58
+ai win!
+player : 4, ai : 18
+plyaer_win : 11, ai_win : 6
+game count : 18
+turn : 67
+player win!
+player : 15, ai : 11
+plyaer_win : 12, ai_win : 6
+game count : 19
+turn : 56
+ai win!
+player : 11, ai : 15
+plyaer_win : 12, ai_win : 7
+game count : 20
+turn : 62
+ai win!
+player : 10, ai : 15
+plyaer_win : 12, ai_win : 8
+all 20 game end
+ avg turn : 65.300000, player's rate : 60.000000
