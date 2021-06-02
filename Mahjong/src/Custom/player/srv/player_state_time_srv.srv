@@ -1,5 +1,0 @@
-# player's state time callback
-
----
-custom_msgs/axis[] player
-float64 time

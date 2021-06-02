@@ -1,5 +1,0 @@
-ROSPlan/rosplan_sensing_interface
-/home/jylee/jylee/Splendor/devel/.private/rosplan_sensing_interface/cmake.lock /home/jylee/jylee/Splendor/devel/./cmake.lock
-/home/jylee/jylee/Splendor/devel/.private/rosplan_sensing_interface/share/rosplan_sensing_interface/cmake/rosplan_sensing_interfaceConfig-version.cmake /home/jylee/jylee/Splendor/devel/share/rosplan_sensing_interface/cmake/rosplan_sensing_interfaceConfig-version.cmake
-/home/jylee/jylee/Splendor/devel/.private/rosplan_sensing_interface/share/rosplan_sensing_interface/cmake/rosplan_sensing_interfaceConfig.cmake /home/jylee/jylee/Splendor/devel/share/rosplan_sensing_interface/cmake/rosplan_sensing_interfaceConfig.cmake
-/home/jylee/jylee/Splendor/devel/.private/rosplan_sensing_interface/lib/pkgconfig/rosplan_sensing_interface.pc /home/jylee/jylee/Splendor/devel/lib/pkgconfig/rosplan_sensing_interface.pc
