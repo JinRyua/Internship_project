@@ -29,16 +29,6 @@ namespace Custom{
         node_handle = &nh;  //get node handle
 
         
-        // player_coin.white=1;
-        // player_coin.blue=1;
-        // player_coin.black=0;
-        // player_coin.green=0;
-        // // player_coin.red=1;
-        // ai_coin.white = 10;
-        // ai_coin.blue = 10;
-        // ai_coin.black = 10;
-        // ai_coin.green = 10;
-        // ai_coin.red = 10;
     }
 
     
@@ -47,13 +37,117 @@ namespace Custom{
     }
     
     void Board::run_board(){
-  
+        //type = tsumo, dahai, start_kyoku, chi, pon, hora
+        // reach, reach_accepted, end_kyoku, ryukyoku, end_game...
+        if(buf_info.type == "start_kyoku")
+            ChangeStateWithStartKyoku();
+        else if(buf_info.type == "tsumo")
+            ChangeStateWithTsumo();
+        else if(buf_info.type == "dahai")
+            ChangeStateWithDahai();
+        //else if(buf_info.type == "reach")
+            //TODO: reach
+        else if(buf_info.type == "hora")
+            ChangeStateWithHora();
+        else if(buf_info.type == "ryukyoku")
+            ChangeStateWithRyokyoku();
+        else if(buf_info.type == "chi")
+            ChangeStateWithChi();
+        else if(buf_info.type == "pon")
+            ChangeStateWithPon();
+
     }
 
-    void Board::DivideBuffer(std::string buf) {
+    void Board::ChangeStateWithStartKyoku(){    //set game state init
+        game_state.haipai.resize(38,4);
+
+        game_state.bakaze = buf_info.bakaze;
+        game_state.dora_marker.clear();
+        game_state.dora_marker.push_back(hai_str_to_int(buf_info.dora_marker));
+        game_state.haipai[hai_str_to_int(buf_info.dora_marker)]--;
+        game_state.honba = buf_info.honba;
+        game_state.kyoku = buf_info.kyoku;
+        game_state.kyotaku = buf_info.kyotaku;
+        game_state.oya = buf_info.oya;
+        game_state.score = buf_info.score;
+        game_state.turn = 0;   //70개 뽑음 -> 136(총패) - 14개 영상,도라  - 13*4 배패
+        game_state.dahai.resize(4);
+        game_state.tehai.resize(4);
+        game_state.Fuuro.resize(4);
+        for (int i = 0; i < game_state.tehai.size(); i++)
+            game_state.tehai[i].resize(38, 0); //reset all to ?
+        for (int i = 0; i < buf_info.start_tehai.size(); i++){
+            game_state.tehai[0][hai_str_to_int(buf_info.start_tehai[i])]++;
+            game_state.haipai[hai_str_to_int(buf_info.start_tehai[i])]--;
+        }
+        
+
+
+        
+    }
+    void Board::ChangeStateWithTsumo(){
+        if(buf_info.actor == PLAYER){   //if player's tsumo
+            game_state.actor = 0;
+            game_state.tsumo = hai_str_to_int(buf_info.pai);
+            game_state.tehai[PLAYER][hai_str_to_int(buf_info.pai)]++;
+            game_state.haipai[hai_str_to_int(buf_info.pai)]--;
+            game_state.turn++;
+        } else {
+            game_state.actor = buf_info.actor;
+            game_state.turn++;
+        }
+    }
+    void Board::ChangeStateWithDahai(){
+        game_state.actor = buf_info.actor;
+        game_state.recent_dahai = hai_str_to_int(buf_info.pai);
+        game_state.dahai[game_state.actor].push_back(game_state.recent_dahai);
+    }
+    void Board::ChangeStateWithHora(){
+        //TODO: 
+        game_state.score = buf_info.score;
+    }
+    void Board::ChangeStateWithRyokyoku(){
+        //TODO:
+        game_state.score = buf_info.score;
+    }
+    void Board::ChangeStateWithChi(){
+        Fuuro_Elem temp;
+        temp.type = CHI;
+        temp.hai = hai_str_to_int(buf_info.pai);
+        temp.consumed.push_back(hai_str_to_int(buf_info.consumed[0]));
+        temp.consumed.push_back(hai_str_to_int(buf_info.consumed[1]));
+        temp.target_relative = buf_info.actor * 10 + buf_info.target;
+
+        game_state.recent_dahai = 0;
+
+        game_state.actor = buf_info.actor;
+        for (int i = 0; i < buf_info.consumed.size(); i++)
+            game_state.tehai[game_state.actor][hai_str_to_int(buf_info.consumed[i])]--;
+
+        game_state.Fuuro[game_state.actor].push_back(temp);
+    }
+    void Board::ChangeStateWithPon(){
+        Fuuro_Elem temp;
+        temp.type = PON;
+        temp.hai = hai_str_to_int(buf_info.pai);
+        temp.consumed.push_back(hai_str_to_int(buf_info.consumed[0]));
+        temp.consumed.push_back(hai_str_to_int(buf_info.consumed[1]));
+        temp.target_relative = buf_info.actor * 10 + buf_info.target;
+
+        game_state.recent_dahai = 0;
+
+        game_state.actor = buf_info.actor;
+        for (int i = 0; i < buf_info.consumed.size(); i++)
+            game_state.tehai[game_state.actor][hai_str_to_int(buf_info.consumed[i])]--;
+
+        game_state.Fuuro[game_state.actor].push_back(temp);
+
+    }
+
+    void Board::DivideAndParseBuffer(std::string buf) {
         //TODO: divide buf
         int pos = 0;
-        buffer new_buffer;
+        struct buffer new_buffer;
         while(1){
             pos = buf.find(":", pos);  //find type pos
             if(pos == -1)
@@ -62,65 +156,104 @@ namespace Custom{
             int end_type_pos = buf.rfind("\"", pos);    //find type name
             int start_type_pos = buf.rfind("\"", end_type_pos - 1);
             string type = buf.substr(start_type_pos + 1, end_type_pos - start_type_pos - 1);
-            new_buffer.type = type;
-            cout<<type<<" : ";
 
             //save state
             pos = pos + 1;
             if (type == "actor") {
                 int end_pos = buf.find(",", pos);
                 new_buffer.actor = stoi(buf.substr(pos, end_pos - pos));
-                cout << new_buffer.actor;
             } else if (type == "pai") {
                 int start_pos = buf.find("\"", pos) + 1;
                 int end_pos = buf.find("\"", start_pos);
                 new_buffer.pai = buf.substr(start_pos, end_pos - start_pos);
-                cout << new_buffer.pai;
             } else if (type == "type") {
-                cout << new_buffer.type;
+                int start_pos = buf.find("\"", pos) + 1;
+                int end_pos = buf.find("\"", start_pos);
+                new_buffer.type = buf.substr(start_pos, end_pos - start_pos);
             } else if (type == "target") {
                 int end_pos = buf.find(",", pos);
                 new_buffer.target = stoi(buf.substr(pos, end_pos - pos));
-                cout << new_buffer.target;
             } else if (type == "tsumogiri") {
                 int end_pos = buf.find("false", pos);
                 if(end_pos!=-1)
-                    new_buffer.tsumogiri = true;
-                else
                     new_buffer.tsumogiri = false;
-                cout << new_buffer.tsumogiri;
+                else
+                    new_buffer.tsumogiri = true;
             } else if (type == "honba") {
                 int end_pos = buf.find(",", pos);
                 new_buffer.honba = stoi(buf.substr(pos, end_pos - pos));
-                cout << new_buffer.honba;
             } else if (type == "kyoku") {
                 int end_pos = buf.find(",", pos);
                 new_buffer.kyoku = stoi(buf.substr(pos, end_pos - pos));
-                cout << new_buffer.kyoku;
             } else if (type == "kyotaku") {
                 int end_pos = buf.find(",", pos);
                 new_buffer.kyotaku = stoi(buf.substr(pos, end_pos - pos));
-                cout << new_buffer.kyotaku;
             } else if (type == "oya") {
                 int end_pos = buf.find(",", pos);
                 new_buffer.oya = stoi(buf.substr(pos, end_pos - pos));
-                cout << new_buffer.oya;
             } else if (type == "bakaze") {
                 int start_pos = buf.find("\"", pos) + 1;
                 int end_pos = buf.find("\"", start_pos);
                 new_buffer.bakaze = buf.substr(start_pos, end_pos - start_pos);
-                cout << new_buffer.bakaze;
             } else if (type == "dora_marker") {
                 int start_pos = buf.find("\"", pos) + 1;
                 int end_pos = buf.find("\"", start_pos);
                 new_buffer.dora_marker = buf.substr(start_pos, end_pos - start_pos);
-                cout << new_buffer.dora_marker;
+            } else if (type == "scores") {
+                int start_pos = buf.find("[", pos) + 1;
+                int end_pos = buf.find("]", start_pos);
+                string list_str = buf.substr(start_pos, end_pos - start_pos);
+                vector<int> vector_score = SplitToInt(list_str, ',');
+                new_buffer.score = vector_score;
+            } else if (type == "uradora_marker") {
+                int start_pos = buf.find("[", pos) + 1;
+                int end_pos = buf.find("]", start_pos);
+                string list_str = buf.substr(start_pos, end_pos - start_pos);
+                vector<string> vector_uradora = SplitToString(list_str, ',', true);
+                new_buffer.uradora_marker = vector_uradora;
+            } else if (type == "hora_tehais") {
+                int start_pos = buf.find("[", pos) + 1;
+                int end_pos = buf.find("]", start_pos);
+                string list_str = buf.substr(start_pos, end_pos - start_pos);
+                vector<string> vector_uradora = SplitToString(list_str, ',', true);
+                new_buffer.hora_tehais = vector_uradora;
+            } else if (type == "tehais") {
+                int start_pos = buf.find("[", pos) + 1;
+                if (buf[start_pos] != '[') {   //only player (start)
+                    int end_pos = buf.find("]", start_pos);
+                    string list_str = buf.substr(start_pos, end_pos - start_pos);
+                    vector<string> vector_tehai = SplitToString(list_str, ',', true);
+                    new_buffer.start_tehai = vector_tehai;
+                }
+                else{
+                    pos = start_pos;
+                    vector<vector<string>> all_vector;
+                    for (int i = 0; i < 4; i++) {
+                        int start_pos = buf.find("[", pos) + 1;
+                        int end_pos = buf.find("]", start_pos);
+                        string list_str = buf.substr(start_pos, end_pos - start_pos);
+                        vector<string> vector_tehai = SplitToString(list_str, ',', true);
+                        all_vector.push_back(vector_tehai);
+                        
+                        pos = end_pos;
+                    }
+                    new_buffer.all_tehai = all_vector;
+                    
+                }
+            } else if (type == "consumed") {
+                int start_pos = buf.find("[", pos) + 1;
+                int end_pos = buf.find("]", start_pos);
+                string list_str = buf.substr(start_pos, end_pos - start_pos);
+                vector<string> vector_consumed = SplitToString(list_str, ',', true);
+                new_buffer.consumed = vector_consumed;
+                
             }
-            //TODO: list
             
             cout<<endl;
 
         }
+        
+        buf_info = new_buffer;
 
 
     }
@@ -288,6 +421,53 @@ namespace Custom{
         }
         return hai_str;
     }
+
+    std::vector<std::string> SplitToString(std::string input, char delimiter, bool remove) {
+        std::vector<std::string> answer;
+        std::stringstream ss(input);
+        std::string temp;
+
+        while (getline(ss, temp, delimiter)) {
+            if (temp != "" && temp != " "){
+                if (remove == true) {
+                    int pos = 0;
+                    while (1) {
+                        pos = 0;
+                        pos = temp.find("\"", pos);
+                        if (pos != -1) {
+                            temp.erase(temp.begin() + pos);
+                        } else
+                            break;
+                    }
+                    while (1) {
+                        pos = 0;
+                        pos = temp.find(" ", pos);
+                        if (pos != -1) {
+                            temp.erase(temp.begin() + pos);
+                        } else
+                            break;
+                    }
+                }
+                answer.push_back(temp);
+
+            }
+        }
+
+        return answer;
+    }
+
+    std::vector<int> SplitToInt(std::string input, char delimiter) {
+        std::vector<int> answer;
+        std::stringstream ss(input);
+        std::string temp;
+
+        while (getline(ss, temp, delimiter)) {
+            if (temp != "" && temp != " ")
+                answer.push_back(stoi(temp));
+        }
+
+        return answer;
+    }
 }
 //close namespace
 
@@ -339,12 +519,16 @@ int main(int argc, char **argv)
         if(str_len != 0){
             buf[str_len] = 0;
             buff = buf;
-            cout << buff << endl;
-            cout << str_len << endl;
+            vector<string> buf_list = Custom::SplitToString(buff, '}' , false);
+            for(int i =0;i<buf_list.size();i++){
+            cout << buf_list[i] << endl;
+            //cout << str_len << endl;
             //TODO: 겹치기 예외 처리
 
-            bi.DivideBuffer(buff);
+            bi.DivideAndParseBuffer(buf_list[i]);
             bi.run_board();  //run_board if received stream from socket
+            }
+            
         }
 
         // double finish_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
