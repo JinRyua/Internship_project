@@ -65,6 +65,7 @@ namespace Custom
         std::vector<std::string> start_tehai;
         std::vector<std::vector<std::string>> all_tehai;
         std::vector<std::string> consumed;
+        std::vector<Fuuro_Elem> reqeust;
         
     };
 
@@ -82,6 +83,7 @@ namespace Custom
 
         state game_state;   //게임 상태
 
+        int serv_sock;
 
         struct buffer buf_info;
 
@@ -93,7 +95,7 @@ namespace Custom
 
 
     public:
-        Board(ros::NodeHandle &nh);
+        Board(ros::NodeHandle &nh, const int sock);
         ~Board();
 
         void run_board();
@@ -101,6 +103,8 @@ namespace Custom
 
         int hai_str_to_int(const std::string hai_str);  //convert 패 37가지 1~37
         std::string hai_int_to_str(int hai_int);
+
+        void PrintTehai();  //print all tehai 
 
         //change state funcion
         void ChangeStateWithStartKyoku();
@@ -110,7 +114,8 @@ namespace Custom
         void ChangeStateWithRyokyoku();
         void ChangeStateWithChi();
         void ChangeStateWithPon();
-
+        void ChangeStateWithRequest();
+        
         //service client
 
         // //publisher

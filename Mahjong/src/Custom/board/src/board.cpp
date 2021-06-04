@@ -22,11 +22,12 @@ void print_log(string node_name, string func,string str);
 
 
 namespace Custom{
-    Board::Board(ros::NodeHandle &nh)   //생성자
+    Board::Board(ros::NodeHandle &nh, const int sock)   //생성자
     {
         
         
         node_handle = &nh;  //get node handle
+        serv_sock = sock;
 
         
     }
@@ -55,10 +56,13 @@ namespace Custom{
             ChangeStateWithChi();
         else if(buf_info.type == "pon")
             ChangeStateWithPon();
+        else if(buf_info.type == "request")
+            ChangeStateWithRequest();
 
     }
 
     void Board::ChangeStateWithStartKyoku(){    //set game state init
+        game_state.haipai.clear();
         game_state.haipai.resize(38,4);
 
         game_state.bakaze = buf_info.bakaze;
@@ -71,19 +75,23 @@ namespace Custom{
         game_state.oya = buf_info.oya;
         game_state.score = buf_info.score;
         game_state.turn = 0;   //70개 뽑음 -> 136(총패) - 14개 영상,도라  - 13*4 배패
+
+        game_state.dahai.clear();
+        game_state.tehai.clear();
+        game_state.Fuuro.clear();
+
         game_state.dahai.resize(4);
         game_state.tehai.resize(4);
         game_state.Fuuro.resize(4);
-        for (int i = 0; i < game_state.tehai.size(); i++)
+        for (int i = 0; i < game_state.tehai.size(); i++){
+            game_state.tehai[i].clear();
             game_state.tehai[i].resize(38, 0); //reset all to ?
+        }
         for (int i = 0; i < buf_info.start_tehai.size(); i++){
             game_state.tehai[0][hai_str_to_int(buf_info.start_tehai[i])]++;
             game_state.haipai[hai_str_to_int(buf_info.start_tehai[i])]--;
         }
-        
-
-
-        
+    
     }
     void Board::ChangeStateWithTsumo(){
         if(buf_info.actor == PLAYER){   //if player's tsumo
@@ -92,6 +100,14 @@ namespace Custom{
             game_state.tehai[PLAYER][hai_str_to_int(buf_info.pai)]++;
             game_state.haipai[hai_str_to_int(buf_info.pai)]--;
             game_state.turn++;
+
+            //select Dahai  insert AI TODO:
+            string dahai;
+            PrintTehai();
+            //dahai = buf_info.pai;   //test
+            cin>>dahai;
+            write(serv_sock,dahai.c_str(),dahai.size());
+
         } else {
             game_state.actor = buf_info.actor;
             game_state.turn++;
@@ -99,8 +115,17 @@ namespace Custom{
     }
     void Board::ChangeStateWithDahai(){
         game_state.actor = buf_info.actor;
-        game_state.recent_dahai = hai_str_to_int(buf_info.pai);
-        game_state.dahai[game_state.actor].push_back(game_state.recent_dahai);
+        if(game_state.actor == PLAYER){ 
+            string dahai;
+            //cin >> dahai;
+            //dahai = to_string(hai_str_to_int(dahai));
+            game_state.recent_dahai = hai_str_to_int(buf_info.pai);
+            game_state.dahai[game_state.actor].push_back(game_state.recent_dahai);
+            game_state.tehai[game_state.actor][game_state.recent_dahai]--;
+        } else {
+            game_state.recent_dahai = hai_str_to_int(buf_info.pai);
+            game_state.dahai[game_state.actor].push_back(game_state.recent_dahai);
+        }
     }
     void Board::ChangeStateWithHora(){
         //TODO: 
@@ -144,115 +169,175 @@ namespace Custom{
 
     }
 
+    void Board::ChangeStateWithRequest(){
+      //TODO: select Fuuro number   0 => dont select 1~
+      string buf = "no";   //test dont select
+      cout<<"please type:";
+      cin>>buf;
+      write(serv_sock,buf.c_str(),buf.size());
+    }
+
+    void Board::PrintTehai(){
+        cout << "player's tehai : ";
+        for (int i = 0; i < game_state.tehai[PLAYER].size(); i++) {
+            for (int j = 0; j < game_state.tehai[PLAYER][i]; j++) {
+                cout << hai_int_to_str(i) << ", ";
+            }
+        }
+        cout << endl;
+    }
+
     void Board::DivideAndParseBuffer(std::string buf) {
         //TODO: divide buf
         int pos = 0;
         struct buffer new_buffer;
-        while(1){
-            pos = buf.find(":", pos);  //find type pos
-            if(pos == -1)
-                break;
-            
-            int end_type_pos = buf.rfind("\"", pos);    //find type name
-            int start_type_pos = buf.rfind("\"", end_type_pos - 1);
-            string type = buf.substr(start_type_pos + 1, end_type_pos - start_type_pos - 1);
+        if(buf.find("request", pos) != -1){ //if request
+            new_buffer.type = "request";
+            int start_action_pos = buf.find("[",pos) + 1;   //find action list
+            int end_action_pos = buf.rfind("]");
+            string action_list = buf.substr(start_action_pos, end_action_pos - start_action_pos);
+            vector<Fuuro_Elem> action_list_vector;
+            start_action_pos = 0;
+            while(1){
+                start_action_pos = buf.find("consumed", start_action_pos);
+                if(start_action_pos == -1)
+                    break;
+                Fuuro_Elem req_temp;
+                start_action_pos = buf.find("[", start_action_pos) + 1;
+                end_action_pos = buf.find("]", start_action_pos);
+                string temp = buf.substr(start_action_pos, end_action_pos - start_action_pos);
+                vector<string> consumed = SplitToString(temp, ',', true);
+                vector<int> int_consumed;
+                int_consumed.clear();
+                for (int i = 0; i < consumed.size(); i++)
+                    int_consumed.push_back(hai_str_to_int(consumed[i]));
+                req_temp.consumed = int_consumed;
 
-            //save state
-            pos = pos + 1;
-            if (type == "actor") {
-                int end_pos = buf.find(",", pos);
-                new_buffer.actor = stoi(buf.substr(pos, end_pos - pos));
-            } else if (type == "pai") {
-                int start_pos = buf.find("\"", pos) + 1;
-                int end_pos = buf.find("\"", start_pos);
-                new_buffer.pai = buf.substr(start_pos, end_pos - start_pos);
-            } else if (type == "type") {
-                int start_pos = buf.find("\"", pos) + 1;
-                int end_pos = buf.find("\"", start_pos);
-                new_buffer.type = buf.substr(start_pos, end_pos - start_pos);
-            } else if (type == "target") {
-                int end_pos = buf.find(",", pos);
-                new_buffer.target = stoi(buf.substr(pos, end_pos - pos));
-            } else if (type == "tsumogiri") {
-                int end_pos = buf.find("false", pos);
-                if(end_pos!=-1)
-                    new_buffer.tsumogiri = false;
-                else
-                    new_buffer.tsumogiri = true;
-            } else if (type == "honba") {
-                int end_pos = buf.find(",", pos);
-                new_buffer.honba = stoi(buf.substr(pos, end_pos - pos));
-            } else if (type == "kyoku") {
-                int end_pos = buf.find(",", pos);
-                new_buffer.kyoku = stoi(buf.substr(pos, end_pos - pos));
-            } else if (type == "kyotaku") {
-                int end_pos = buf.find(",", pos);
-                new_buffer.kyotaku = stoi(buf.substr(pos, end_pos - pos));
-            } else if (type == "oya") {
-                int end_pos = buf.find(",", pos);
-                new_buffer.oya = stoi(buf.substr(pos, end_pos - pos));
-            } else if (type == "bakaze") {
-                int start_pos = buf.find("\"", pos) + 1;
-                int end_pos = buf.find("\"", start_pos);
-                new_buffer.bakaze = buf.substr(start_pos, end_pos - start_pos);
-            } else if (type == "dora_marker") {
-                int start_pos = buf.find("\"", pos) + 1;
-                int end_pos = buf.find("\"", start_pos);
-                new_buffer.dora_marker = buf.substr(start_pos, end_pos - start_pos);
-            } else if (type == "scores") {
-                int start_pos = buf.find("[", pos) + 1;
-                int end_pos = buf.find("]", start_pos);
-                string list_str = buf.substr(start_pos, end_pos - start_pos);
-                vector<int> vector_score = SplitToInt(list_str, ',');
-                new_buffer.score = vector_score;
-            } else if (type == "uradora_marker") {
-                int start_pos = buf.find("[", pos) + 1;
-                int end_pos = buf.find("]", start_pos);
-                string list_str = buf.substr(start_pos, end_pos - start_pos);
-                vector<string> vector_uradora = SplitToString(list_str, ',', true);
-                new_buffer.uradora_marker = vector_uradora;
-            } else if (type == "hora_tehais") {
-                int start_pos = buf.find("[", pos) + 1;
-                int end_pos = buf.find("]", start_pos);
-                string list_str = buf.substr(start_pos, end_pos - start_pos);
-                vector<string> vector_uradora = SplitToString(list_str, ',', true);
-                new_buffer.hora_tehais = vector_uradora;
-            } else if (type == "tehais") {
-                int start_pos = buf.find("[", pos) + 1;
-                if (buf[start_pos] != '[') {   //only player (start)
+                start_action_pos = buf.find("pai\": \"", end_action_pos + 1) + 7;
+                end_action_pos = buf.find("\"", start_action_pos);
+                req_temp.hai = hai_str_to_int(buf.substr(start_action_pos, end_action_pos - start_action_pos));
+
+                start_action_pos = buf.find("target\": ", end_action_pos + 1) + 9;
+                end_action_pos = buf.find(",", start_action_pos);
+                req_temp.target_relative = stoi(buf.substr(start_action_pos, end_action_pos - start_action_pos));
+
+                start_action_pos = buf.find("type\": \"", end_action_pos + 1) + 8;
+                end_action_pos = buf.find("\"", start_action_pos);
+                string type_temp = buf.substr(start_action_pos, end_action_pos - start_action_pos);
+                if (type_temp == "pon")
+                    req_temp.type = PON;
+                else if (type_temp == "chi")
+                    req_temp.type = CHI;
+                else if (type_temp == "kan")
+                    req_temp.type = KAN;
+
+                action_list_vector.push_back(req_temp);
+            }
+
+            new_buffer.actor = 0;
+            new_buffer.reqeust = action_list_vector;
+        } else{
+            while (1) {
+                pos = buf.find(":", pos);  //find type pos
+                if (pos == -1)
+                    break;
+
+                int end_type_pos = buf.rfind("\"", pos);  //find type name
+                int start_type_pos = buf.rfind("\"", end_type_pos - 1);
+                string type = buf.substr(start_type_pos + 1, end_type_pos - start_type_pos - 1);
+
+                //save state
+                pos = pos + 1;
+                if (type == "actor") {
+                    int end_pos = buf.find(",", pos);
+                    new_buffer.actor = stoi(buf.substr(pos, end_pos - pos));
+                } else if (type == "pai") {
+                    int start_pos = buf.find("\"", pos) + 1;
+                    int end_pos = buf.find("\"", start_pos);
+                    new_buffer.pai = buf.substr(start_pos, end_pos - start_pos);
+                } else if (type == "type") {
+                    int start_pos = buf.find("\"", pos) + 1;
+                    int end_pos = buf.find("\"", start_pos);
+                    new_buffer.type = buf.substr(start_pos, end_pos - start_pos);
+                } else if (type == "target") {
+                    int end_pos = buf.find(",", pos);
+                    new_buffer.target = stoi(buf.substr(pos, end_pos - pos));
+                } else if (type == "tsumogiri") {
+                    int end_pos = buf.find("false", pos);
+                    if (end_pos != -1)
+                        new_buffer.tsumogiri = false;
+                    else
+                        new_buffer.tsumogiri = true;
+                } else if (type == "honba") {
+                    int end_pos = buf.find(",", pos);
+                    new_buffer.honba = stoi(buf.substr(pos, end_pos - pos));
+                } else if (type == "kyoku") {
+                    int end_pos = buf.find(",", pos);
+                    new_buffer.kyoku = stoi(buf.substr(pos, end_pos - pos));
+                } else if (type == "kyotaku") {
+                    int end_pos = buf.find(",", pos);
+                    new_buffer.kyotaku = stoi(buf.substr(pos, end_pos - pos));
+                } else if (type == "oya") {
+                    int end_pos = buf.find(",", pos);
+                    new_buffer.oya = stoi(buf.substr(pos, end_pos - pos));
+                } else if (type == "bakaze") {
+                    int start_pos = buf.find("\"", pos) + 1;
+                    int end_pos = buf.find("\"", start_pos);
+                    new_buffer.bakaze = buf.substr(start_pos, end_pos - start_pos);
+                } else if (type == "dora_marker") {
+                    int start_pos = buf.find("\"", pos) + 1;
+                    int end_pos = buf.find("\"", start_pos);
+                    new_buffer.dora_marker = buf.substr(start_pos, end_pos - start_pos);
+                } else if (type == "scores") {
+                    int start_pos = buf.find("[", pos) + 1;
                     int end_pos = buf.find("]", start_pos);
                     string list_str = buf.substr(start_pos, end_pos - start_pos);
-                    vector<string> vector_tehai = SplitToString(list_str, ',', true);
-                    new_buffer.start_tehai = vector_tehai;
-                }
-                else{
-                    pos = start_pos;
-                    vector<vector<string>> all_vector;
-                    for (int i = 0; i < 4; i++) {
-                        int start_pos = buf.find("[", pos) + 1;
+                    vector<int> vector_score = SplitToInt(list_str, ',');
+                    new_buffer.score = vector_score;
+                } else if (type == "uradora_marker") {
+                    int start_pos = buf.find("[", pos) + 1;
+                    int end_pos = buf.find("]", start_pos);
+                    string list_str = buf.substr(start_pos, end_pos - start_pos);
+                    vector<string> vector_uradora = SplitToString(list_str, ',', true);
+                    new_buffer.uradora_marker = vector_uradora;
+                } else if (type == "hora_tehais") {
+                    int start_pos = buf.find("[", pos) + 1;
+                    int end_pos = buf.find("]", start_pos);
+                    string list_str = buf.substr(start_pos, end_pos - start_pos);
+                    vector<string> vector_uradora = SplitToString(list_str, ',', true);
+                    new_buffer.hora_tehais = vector_uradora;
+                } else if (type == "tehais") {
+                    int start_pos = buf.find("[", pos) + 1;
+                    if (buf[start_pos] != '[') {  //only player (start)
                         int end_pos = buf.find("]", start_pos);
                         string list_str = buf.substr(start_pos, end_pos - start_pos);
                         vector<string> vector_tehai = SplitToString(list_str, ',', true);
-                        all_vector.push_back(vector_tehai);
-                        
-                        pos = end_pos;
-                    }
-                    new_buffer.all_tehai = all_vector;
-                    
-                }
-            } else if (type == "consumed") {
-                int start_pos = buf.find("[", pos) + 1;
-                int end_pos = buf.find("]", start_pos);
-                string list_str = buf.substr(start_pos, end_pos - start_pos);
-                vector<string> vector_consumed = SplitToString(list_str, ',', true);
-                new_buffer.consumed = vector_consumed;
-                
-            }
-            
-            cout<<endl;
+                        new_buffer.start_tehai = vector_tehai;
+                    } else {
+                        pos = start_pos;
+                        vector<vector<string>> all_vector;
+                        for (int i = 0; i < 4; i++) {
+                            int start_pos = buf.find("[", pos) + 1;
+                            int end_pos = buf.find("]", start_pos);
+                            string list_str = buf.substr(start_pos, end_pos - start_pos);
+                            vector<string> vector_tehai = SplitToString(list_str, ',', true);
+                            all_vector.push_back(vector_tehai);
 
+                            pos = end_pos;
+                        }
+                        new_buffer.all_tehai = all_vector;
+                    }
+                } else if (type == "consumed") {
+                    int start_pos = buf.find("[", pos) + 1;
+                    int end_pos = buf.find("]", start_pos);
+                    string list_str = buf.substr(start_pos, end_pos - start_pos);
+                    vector<string> vector_consumed = SplitToString(list_str, ',', true);
+                    new_buffer.consumed = vector_consumed;
+                }
+
+                cout << endl;
+            }
         }
-        
         buf_info = new_buffer;
 
 
@@ -477,7 +562,7 @@ int main(int argc, char **argv)
     ros::NodeHandle nh("~");
     srand((unsigned int)time(NULL));        //set random seed
     //signal(SIGINT, my_handler);
-    Custom::Board bi(nh);
+    
     //b = &bi;
 
     //service
@@ -504,6 +589,8 @@ int main(int argc, char **argv)
     if(connect(sock,(struct sockaddr*)&serv_addr,sizeof(serv_addr))==-1){
         return 0;
     }
+
+    Custom::Board bi(nh, sock);
 
     std::cout<<"ready to run board"<<std::endl;
     ROS_INFO("Custom: (%s) Ready to receive", ros::this_node::getName().c_str());
