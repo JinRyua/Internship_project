@@ -12,6 +12,7 @@
 
 #define PLAYER 0
 
+#define NONE -1
 #define PON 0
 #define CHI 1
 #define KAN 2
@@ -94,6 +95,8 @@ namespace Custom
 
 
 
+
+
     public:
         Board(ros::NodeHandle &nh, const int sock);
         ~Board();
@@ -106,6 +109,9 @@ namespace Custom
 
         void PrintTehai();  //print all tehai 
 
+        void Planner(std::string act);
+        int dahai(int possible, state& new_game_state, int depth, int actor);
+
         //change state funcion
         void ChangeStateWithStartKyoku();
         void ChangeStateWithTsumo();
@@ -115,7 +121,8 @@ namespace Custom
         void ChangeStateWithChi();
         void ChangeStateWithPon();
         void ChangeStateWithRequest();
-        
+        void WriteDahai();
+
         //service client
 
         // //publisher

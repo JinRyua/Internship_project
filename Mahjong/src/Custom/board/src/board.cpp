@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <cstring>
+#include <algorithm>
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -31,10 +32,82 @@ namespace Custom{
 
         
     }
-
     
     Board::~Board() 
     {   
+    }
+
+    void Board::Planner(std::string act){
+        if(act == "dahai"){
+            vector<int> possible;
+            cout<<"gd"<<endl;
+            for (int i = 1; i < game_state.tehai[0].size(); i++) { //make possible action
+                if (game_state.tehai[0][i] > 0)
+                    possible.push_back(i);
+            }
+            cout<<"god"<<endl;
+            vector<int> haipai_temp;
+            for (int i = 1; i < game_state.haipai.size(); i++) {
+                for (int j = 0; j < game_state.haipai[i]; j++)
+                    haipai_temp.push_back(i);
+            }
+            cout<<"good"<<endl;
+            vector<int> fuuro;
+            fuuro.resize(4);
+            for (int i = 1; i < 4; i++) {
+                int count = 0;
+                for (int j = 0; j < game_state.Fuuro[i].size(); j++) {
+                    for (int k = 0; k < game_state.Fuuro[i][j].consumed.size(); k++) {
+                        count++;
+                    }
+                    count++;
+                }
+                fuuro[i] = count;
+            }
+            cout<<"goood"<<endl;
+            for (int j = 0; j < 1; j++) {
+                state new_game_state = game_state;
+                vector<int> new_haipai = haipai_temp;
+
+                for (int k = 1; k < 4; k++) {  //make ai's tehai
+                    for (int l = 0; l < 13 - fuuro[k]; l++) {
+                        int random = rand() % new_haipai.size();
+                        new_game_state.tehai[k][new_haipai[random]]++;
+                        new_game_state.haipai[new_haipai[random]]--;
+                        new_haipai.erase(new_haipai.begin() + random);
+                    }
+                }
+                random_shuffle(new_haipai.begin(), new_haipai.end());
+                new_game_state.haipai = new_haipai;
+                //finish setting
+                for (int k = 0; k < possible.size(); k++) {
+                    dahai(possible[k], new_game_state, 0, 0);
+                }
+                cout<<"gooood"<<endl;
+                for(int k =0;k<4;k++){
+                    for(int l = 0;l<new_game_state.tehai[k].size();l++){
+                        for(int a = 0;a<new_game_state.tehai[k][l];a++)
+                            cout<<hai_int_to_str(l)<<", ";
+                    }
+                    cout<<endl;
+                }
+                for(int i = 0;i<new_haipai.size();i++){
+                    cout<<hai_int_to_str(new_haipai[i])<<", ";
+                }
+                cout<<endl;
+                //dahai(possible[i]);
+            }
+        }
+    }
+
+    int Board::dahai(int possible, state& new_game_state, int depth, int actor){    
+        if(depth == 0){
+
+        }
+        else{
+
+        }
+        return 0;
     }
     
     void Board::run_board(){
@@ -58,6 +131,8 @@ namespace Custom{
             ChangeStateWithPon();
         else if(buf_info.type == "request")
             ChangeStateWithRequest();
+        else if(buf_info.type == "need dahai")
+            WriteDahai();
 
     }
 
@@ -100,14 +175,6 @@ namespace Custom{
             game_state.tehai[PLAYER][hai_str_to_int(buf_info.pai)]++;
             game_state.haipai[hai_str_to_int(buf_info.pai)]--;
             game_state.turn++;
-
-            //select Dahai  insert AI TODO:
-            string dahai;
-            PrintTehai();
-            //dahai = buf_info.pai;   //test
-            cin>>dahai;
-            write(serv_sock,dahai.c_str(),dahai.size());
-
         } else {
             game_state.actor = buf_info.actor;
             game_state.turn++;
@@ -122,6 +189,7 @@ namespace Custom{
             game_state.recent_dahai = hai_str_to_int(buf_info.pai);
             game_state.dahai[game_state.actor].push_back(game_state.recent_dahai);
             game_state.tehai[game_state.actor][game_state.recent_dahai]--;
+            Planner("dahai");
         } else {
             game_state.recent_dahai = hai_str_to_int(buf_info.pai);
             game_state.dahai[game_state.actor].push_back(game_state.recent_dahai);
@@ -170,11 +238,55 @@ namespace Custom{
     }
 
     void Board::ChangeStateWithRequest(){
-      //TODO: select Fuuro number   0 => dont select 1~
-      string buf = "no";   //test dont select
-      cout<<"please type:";
+        //TODO: select Fuuro number   0 => dont select 1~
+        string buf = "no";  //test dont select
+        for (int i = 0; i < buf_info.reqeust.size(); i++) {
+            cout << i + 1 << " : ";
+            cout << "type : ";
+            if (buf_info.reqeust[i].type == PON)
+                cout << "pon";
+            else if (buf_info.reqeust[i].type == CHI)
+                cout << "chi";
+            else if (buf_info.reqeust[i].type == KAN)
+                cout << "kan";
+            else if (buf_info.reqeust[i].type == NONE)
+                cout << "none";
+            
+            if (buf_info.reqeust[i].type != NONE) {
+                cout << ", ";
+                cout << "consumed : [";
+                for (int j = 0; j < buf_info.reqeust[i].consumed.size(); j++) {
+                    cout << hai_int_to_str(buf_info.reqeust[i].consumed[j]);
+                    if (j != buf_info.reqeust[i].consumed.size() - 1)
+                        cout << ", ";
+                }
+                cout << "], pai : " << hai_int_to_str(buf_info.reqeust[i].hai);
+                cout << ", target : " << buf_info.reqeust[i].target_relative;
+            }
+            cout<<endl;
+        }
+      cout<<"please type number to select action:";
       cin>>buf;
+      cout<<buf<<endl;
       write(serv_sock,buf.c_str(),buf.size());
+    }
+
+    void Board::WriteDahai(){
+        //select Dahai  insert AI TODO:
+            string dahai;
+            for (int i = 0; i < buf_info.consumed.size(); i++) {
+                game_state.tehai[PLAYER][hai_str_to_int(buf_info.consumed[i])]--;
+            }
+
+            PrintTehai();
+            //dahai = buf_info.pai;   //test
+            cout << "please type pai to dahai : ";
+            cin>>dahai;
+            write(serv_sock,dahai.c_str(),dahai.size());
+
+            for (int i = 0; i < buf_info.consumed.size(); i++) {
+                game_state.tehai[PLAYER][hai_str_to_int(buf_info.consumed[i])]++;
+            }
     }
 
     void Board::PrintTehai(){
@@ -191,52 +303,86 @@ namespace Custom{
         //TODO: divide buf
         int pos = 0;
         struct buffer new_buffer;
-        if(buf.find("request", pos) != -1){ //if request
+        if (buf.find("need dahai", pos) != -1) {
+            new_buffer.type = "need dahai";
+            vector<string> consumed = SplitToString(buf,' ',false);
+            consumed.erase(consumed.begin());
+            consumed.erase(consumed.begin());
+            new_buffer.consumed = consumed;
+        } else if (buf.find("request", pos) != -1) {  //if request
             new_buffer.type = "request";
             int start_action_pos = buf.find("[",pos) + 1;   //find action list
             int end_action_pos = buf.rfind("]");
             string action_list = buf.substr(start_action_pos, end_action_pos - start_action_pos);
             vector<Fuuro_Elem> action_list_vector;
             start_action_pos = 0;
+
             while(1){
-                start_action_pos = buf.find("consumed", start_action_pos);
-                if(start_action_pos == -1)
+                int check_pos = action_list.find("actor", start_action_pos);
+
+                if (check_pos == -1){
+                    cout<<"break"<<endl;
                     break;
+                }
+
+                check_pos = action_list.find("consumed", check_pos);
+
                 Fuuro_Elem req_temp;
-                start_action_pos = buf.find("[", start_action_pos) + 1;
-                end_action_pos = buf.find("]", start_action_pos);
-                string temp = buf.substr(start_action_pos, end_action_pos - start_action_pos);
-                vector<string> consumed = SplitToString(temp, ',', true);
-                vector<int> int_consumed;
-                int_consumed.clear();
-                for (int i = 0; i < consumed.size(); i++)
-                    int_consumed.push_back(hai_str_to_int(consumed[i]));
-                req_temp.consumed = int_consumed;
+                if (check_pos != -1) {
+                    start_action_pos = check_pos;
+                    start_action_pos = action_list.find("[", start_action_pos) + 1;
+                    end_action_pos = action_list.find("]", start_action_pos);
+                    string temp = action_list.substr(start_action_pos, end_action_pos - start_action_pos);
 
-                start_action_pos = buf.find("pai\": \"", end_action_pos + 1) + 7;
-                end_action_pos = buf.find("\"", start_action_pos);
-                req_temp.hai = hai_str_to_int(buf.substr(start_action_pos, end_action_pos - start_action_pos));
+                    vector<string> consumed = SplitToString(temp, ',', true);
+                    vector<int> int_consumed;
+                    int_consumed.clear();
+                    for (int i = 0; i < consumed.size(); i++){
+                        int_consumed.push_back(hai_str_to_int(consumed[i]));
+                    }
+                    req_temp.consumed = int_consumed;
+                }
+                check_pos = 0;
 
-                start_action_pos = buf.find("target\": ", end_action_pos + 1) + 9;
-                end_action_pos = buf.find(",", start_action_pos);
-                req_temp.target_relative = stoi(buf.substr(start_action_pos, end_action_pos - start_action_pos));
-
-                start_action_pos = buf.find("type\": \"", end_action_pos + 1) + 8;
-                end_action_pos = buf.find("\"", start_action_pos);
-                string type_temp = buf.substr(start_action_pos, end_action_pos - start_action_pos);
-                if (type_temp == "pon")
-                    req_temp.type = PON;
-                else if (type_temp == "chi")
-                    req_temp.type = CHI;
-                else if (type_temp == "kan")
-                    req_temp.type = KAN;
-
+                check_pos = action_list.find("pai\": \"", end_action_pos + 1);
+                if (check_pos != -1) {
+                    start_action_pos = check_pos + 7;
+                    end_action_pos = action_list.find("\"", start_action_pos);
+                    cout<<action_list.substr(start_action_pos, end_action_pos - start_action_pos)<<endl;
+                    req_temp.hai = hai_str_to_int(action_list.substr(start_action_pos, end_action_pos - start_action_pos));
+                }
+                check_pos = 0;
+                check_pos = action_list.find("target\": ", end_action_pos + 1);
+                if (check_pos != -1) {
+                    start_action_pos = check_pos + 9;
+                    end_action_pos = action_list.find(",", start_action_pos);
+                    req_temp.target_relative = stoi(action_list.substr(start_action_pos, end_action_pos - start_action_pos));
+                }
+                check_pos = action_list.find("type\": \"", end_action_pos + 1);
+                if (check_pos != -1) {
+                    start_action_pos = check_pos + 8;
+                    end_action_pos = action_list.find("\"", start_action_pos);
+                    string type_temp = action_list.substr(start_action_pos, end_action_pos - start_action_pos);
+                    if (type_temp == "pon")
+                        req_temp.type = PON;
+                    else if (type_temp == "chi")
+                        req_temp.type = CHI;
+                    else if (type_temp == "kan")
+                        req_temp.type = KAN;
+                    else if (type_temp == "none")
+                        req_temp.type = NONE;
+                }
+                check_pos = 0;
                 action_list_vector.push_back(req_temp);
+                end_action_pos = start_action_pos;
+
+
+                cout<<"good"<<endl;
             }
 
             new_buffer.actor = 0;
             new_buffer.reqeust = action_list_vector;
-        } else{
+        } else {
             while (1) {
                 pos = buf.find(":", pos);  //find type pos
                 if (pos == -1)
@@ -421,7 +567,8 @@ namespace Custom{
         } else if (hai_str == "?") {
             return -1;
         } else {
-            cout<<"error hai_str_to_int"<<endl;
+            cout<<"error hai_str_to_int "<<hai_str<<endl;
+            exit(0);
             return 0;
         }
     }
@@ -502,7 +649,7 @@ namespace Custom{
         } else if (hai_int == 37) {
             hai_str = "C";
         } else {
-            cout<< "hai_int_to_str invalid_input"<<endl;
+            cout<< "hai_int_to_str invalid_input "<<hai_int<<endl;
         }
         return hai_str;
     }
