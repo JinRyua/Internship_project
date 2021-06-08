@@ -65,6 +65,7 @@
         "mutex": "cpp",
         "variant": "cpp",
         "future": "cpp",
-        "codecvt": "cpp"
+        "codecvt": "cpp",
+        "filesystem": "cpp"
     }
 }

@@ -5,6 +5,7 @@ Custom/board
 /home/jylee/jylee/Mahjong/devel/.private/board/share/board/cmake/board-msg-paths.cmake /home/jylee/jylee/Mahjong/devel/share/board/cmake/board-msg-paths.cmake
 /home/jylee/jylee/Mahjong/devel/.private/board/share/board/cmake/board-msg-extras.cmake /home/jylee/jylee/Mahjong/devel/share/board/cmake/board-msg-extras.cmake
 /home/jylee/jylee/Mahjong/devel/.private/board/share/roseus/ros/board/manifest.l /home/jylee/jylee/Mahjong/devel/share/roseus/ros/board/manifest.l
+/home/jylee/jylee/Mahjong/devel/.private/board/lib/libmahjong.so /home/jylee/jylee/Mahjong/devel/lib/libmahjong.so
 /home/jylee/jylee/Mahjong/devel/.private/board/lib/pkgconfig/board.pc /home/jylee/jylee/Mahjong/devel/lib/pkgconfig/board.pc
 /home/jylee/jylee/Mahjong/devel/.private/board/lib/python2.7/dist-packages/board/__init__.py /home/jylee/jylee/Mahjong/devel/lib/python2.7/dist-packages/board/__init__.py
 /home/jylee/jylee/Mahjong/devel/.private/board/lib/board/board /home/jylee/jylee/Mahjong/devel/lib/board/board
