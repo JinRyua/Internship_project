@@ -111,13 +111,13 @@ namespace Custom
         std::string hai_int_to_str(int hai_int);
         int hai38_to_hai9(int hai_int38);
         
-        void PrintTehai();  //print all tehai 
+        void PrintTehai();  //print all tehai
 
-        
-
+        std::vector<int> CalculateScore(state& use_game_state, json11::Json& move);
         int CalculateShanten(std::vector<int>& tehai, std::vector<Fuuro_Elem_>& Fuuro, int dahai);
 
         std::vector<buffer> CheckNaki(int actor, int target, state& use_game_state, bool last_actor_chi);
+        bool CheckHora(state& use_game_state, int next_actor, json11::Json& last_act);
 
         std::string Planner(std::string act);
         int dahai(int possible, state& use_game_state, int depth, int actor);
