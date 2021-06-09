@@ -117,6 +117,8 @@ namespace Custom
 
         int CalculateShanten(std::vector<int>& tehai, std::vector<Fuuro_Elem_>& Fuuro, int dahai);
 
+        std::vector<buffer> CheckNaki(int actor, int target, state& use_game_state, bool last_actor_chi);
+
         std::string Planner(std::string act);
         int dahai(int possible, state& use_game_state, int depth, int actor);
 
@@ -126,10 +128,14 @@ namespace Custom
         void ChangeStateWithDahai(state& game_state_, buffer& buf_info_);
         void ChangeStateWithHora();
         void ChangeStateWithRyokyoku();
-        void ChangeStateWithChi();
-        void ChangeStateWithPon();
+        void ChangeStateWithChi(state& game_state_, buffer& buf_info_);
+        void ChangeStateWithPon(state& game_state_, buffer& buf_info_);
         void ChangeStateWithRequest();
         void WriteDahai();
+
+
+        buffer MakeChiBuffer(int actor, int target, int pai, std::vector<int> consumed);
+ 
 
         //service client
 

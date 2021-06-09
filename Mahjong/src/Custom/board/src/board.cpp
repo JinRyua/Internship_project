@@ -68,13 +68,25 @@ namespace Custom{
             cout<<"goood"<<endl;
             int act = 0;
             int result = -999999999;
-            for (int j = 0; j < 20; j++) {
+            int simulation_count = 20;
+            int result_vec[possible.size()] = {0,};
+            for (int j = 0; j < simulation_count; j++) {
                 state new_game_state = game_state;
                 vector<int> new_haipai = haipai_temp;
 
                 for (int k = 1; k < 4; k++) {  //make ai's tehai
                     for (int l = 0; l < 13 - fuuro[k]; l++) {
                         int random = rand() % new_haipai.size();
+
+                        //heuristics -> dahai pai usually dont use tehai
+                        if (find(new_game_state.dahai[k].begin(), new_game_state.dahai[k].end(),
+                            new_haipai[random]) != new_game_state.dahai[k].end()) {
+                            if ((rand() % 10) > 2) { //70% -> dont insert dahai pai
+                                l--;
+                                continue;
+                            }
+                        }
+
                         new_game_state.tehai[k][new_haipai[random]]++;
                         new_game_state.haipai[new_haipai[random]]--;
                         new_haipai.erase(new_haipai.begin() + random);
@@ -100,19 +112,18 @@ namespace Custom{
 
                 for (int k = 0; k < possible.size(); k++) {
                     cout<<"start simulation : ";
-                    int comp = dahai(possible[k], new_game_state, 0, PLAYER);
-                    if (result < comp ) {
-                        act = k;
-                        result = comp;
-                    }
-                    cout<<comp<<endl;
+                    result_vec[k] += dahai(possible[k], new_game_state, 0, PLAYER);
                 }
-                //cout<<CalculateShanten(game_state.tehai[PLAYER], game_state.Fuuro[PLAYER], -1)<<endl;
-              
-               
-                
-                //dahai(possible[i], game_state, 0, PLAYER);
             }
+
+            //calculate min value
+            for (int k = 0; k < possible.size(); k++) {
+                if (result < result_vec[k] / simulation_count) {
+                    result = result_vec[k] / simulation_count;
+                    act = k;
+                }
+            }
+
             cout << "result : " << result << ", dahai_act : " << hai_int_to_str(possible[act]) << endl;
             return hai_int_to_str(possible[act]);
         }
@@ -135,10 +146,10 @@ namespace Custom{
             else if (Fuuro[i].type == CHI)
                 fuuro_vec[i].type = FT_CHI;
             fuuro_vec[i].hai = Fuuro[i].hai;
-            tehai[Fuuro[i].hai]--;
+            //tehai[Fuuro[i].hai]--;
             fuuro_vec[i].consumed = Fuuro[i].consumed;  //TODO:
-            for(int j =0;j<Fuuro[i].consumed.size();j++)
-                tehai[Fuuro[i].consumed[j]]--;
+            //for(int j =0;j<Fuuro[i].consumed.size();j++)
+                //tehai[Fuuro[i].consumed[j]]--;
         }
         Hai_Array hai;
         std::copy_n(tehai.begin(), 38, hai.begin());
@@ -154,70 +165,61 @@ namespace Custom{
         //cout << tehai_analyzer.get_titoi_shanten_num() << endl;
         tehai = temp;
         return min(tehai_analyzer.get_mentu_shanten_num(), tehai_analyzer.get_titoi_shanten_num());
-        // if(dahai!=-1){
-        //     if (dahai <= 10)
-        //         man += to_string(hai38_to_hai9(dahai));
-        //     else if (dahai <= 20)
-        //         pin += to_string(hai38_to_hai9(dahai));
-        //     else if (dahai <= 30)
-        //         sou += to_string(hai38_to_hai9(dahai));
-        //     else if (dahai <= 40)
-        //         honors += to_string(hai38_to_hai9(dahai));
-        // }
+    }
 
-        // for (int i = 1; i <= 10; i++) {
-        //     for (int j = 0; j < tehai[i]; j++)
-        //         man += to_string(hai38_to_hai9(i));
+    std::vector<buffer> Board::CheckNaki(int actor, int target, state& use_game_state, bool last_actor_chi){
+        int recent_dahai = use_game_state.recent_dahai;
+        vector<int>& tehai = use_game_state.tehai[actor];
+        vector<buffer> return_vec;
+        if (tehai[recent_dahai] == 2) {  //PON  //TODO: dont check dora
+            buffer temp;
+            temp.actor = actor;
+            temp.type = "pon";
+            temp.pai = hai_int_to_str(recent_dahai);
+            vector<string> temp_vec(2,hai_int_to_str(recent_dahai));
+            temp.consumed = temp_vec;
+            buf_info.target = target;
+            return_vec.push_back(temp);
+        }
 
-        //     for (int j = 0; j < tehai[i + 10]; j++)
-        //         pin += to_string(hai38_to_hai9(i + 10));
+        if(last_actor_chi == true){ //CHI
+            if (recent_dahai < 30) {    //use man, pin ,sou
+                if (hai38_to_hai9(recent_dahai) < 8) {  //LEFT
+                    if (tehai[recent_dahai + 1] > 0 && tehai[recent_dahai + 2] > 0) {
+                        vector<int> temp_vec = {tehai[recent_dahai + 1], tehai[recent_dahai + 2]};
+                        return_vec.push_back(MakeChiBuffer(actor, target, recent_dahai, temp_vec));
+                    }
+                }
+                if (hai38_to_hai9(recent_dahai) < 9 && hai38_to_hai9(recent_dahai) > 1) {  //MIDDLE
+                    if (tehai[recent_dahai - 1] > 0 && tehai[recent_dahai + 1] > 0) {
+                        vector<int> temp_vec = {tehai[recent_dahai - 1], tehai[recent_dahai + 1]};
+                        return_vec.push_back(MakeChiBuffer(actor, target, recent_dahai, temp_vec));
+                    }
+                }
+                if (hai38_to_hai9(recent_dahai) > 2) {  //RIGHT
+                    if (tehai[recent_dahai - 1] > 0 && tehai[recent_dahai - 2] > 0) {
+                        vector<int> temp_vec = {tehai[recent_dahai - 1], tehai[recent_dahai - 2]};
+                        return_vec.push_back(MakeChiBuffer(actor, target, recent_dahai, temp_vec));
+                    }
+                }
+            }
+        }
 
-        //     for (int j = 0; j < tehai[i + 20]; j++)
-        //         sou += to_string(hai38_to_hai9(i + 20));
+        return return_vec;
+    }
 
-        //     if (i < 8) 
-        //         for (int j = 0; j < tehai[i + 30]; j++)
-        //             honors += to_string(hai38_to_hai9(i + 30));
-        // }
+    buffer Board::MakeChiBuffer(int actor, int target, int pai, vector<int> consumed) {
+        buffer temp;
+        temp.actor = actor;
+        temp.type = "chi";
+        temp.pai = hai_int_to_str(pai);
+        vector<string> temp_vec;
+        for(int i =0;i<consumed.size();i++)
+            temp_vec.push_back(hai_int_to_str(consumed[i]));
+        temp.consumed = temp_vec;
+        buf_info.target = target;
 
-        // for (int i = 0; i < Fuuro.size(); i++) {  //TODO:
-        //     if (Fuuro[i].hai <= 10) {
-        //         man += to_string(hai38_to_hai9(Fuuro[i].hai));
-        //         for (int j = 0; j < Fuuro[i].consumed.size(); j++)
-        //             man += to_string(hai38_to_hai9(Fuuro[i].consumed[j]));
-        //     } else if (Fuuro[i].hai <= 20) {
-        //         pin += to_string(hai38_to_hai9(Fuuro[i].hai));
-        //         for (int j = 0; j < Fuuro[i].consumed.size(); j++)
-        //             pin += to_string(hai38_to_hai9(Fuuro[i].consumed[j]));
-        //     } else if (Fuuro[i].hai <= 30) {
-        //         sou += to_string(hai38_to_hai9(Fuuro[i].hai));
-        //         for (int j = 0; j < Fuuro[i].consumed.size(); j++)
-        //             sou += to_string(hai38_to_hai9(Fuuro[i].consumed[j]));
-        //     } else {
-        //         honors += to_string(hai38_to_hai9(Fuuro[i].hai));
-        //         for (int j = 0; j < Fuuro[i].consumed.size(); j++)
-        //             honors += to_string(hai38_to_hai9(Fuuro[i].consumed[j]));
-        //     }
-        //}
-
-        
-
-
-
-        // //TODO: need command line
-        // string cmd = "python3 ~/jylee/Mahjong/shanten.py '"+ man +"' '"+ pin +"' '"+ sou +"' '"+ honors +"'";
-        // //cout<<cmd<<endl;
-        // std::string data ="0";
-        // FILE* stream;
-        // char buffer[1000];
-      
-        
-
-        // // stream = popen(cmd.c_str(), "r");
-        // // while (fgets(buffer, 1000, stream) != NULL)
-        // //     data.append(buffer);
-        // // pclose(stream);
-        // return stoi(data);
+        return temp;
     }
 
     int Board::hai38_to_hai9(int hai_int38){
@@ -250,7 +252,7 @@ namespace Custom{
         //need check end to return
         if (use_game_state.turn >= 70)  //ryukyoku  //TODO: check end
             return -1000;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {   //check ron
             if (i == actor)
                 continue;
             //cout<< depth<<" "<<i<<" : ";
@@ -259,6 +261,38 @@ namespace Custom{
                     return 1000;
                 else
                     return -1000;
+            }
+        }
+        //check pon,chi...
+        if (depth != 0) {
+            for (int i = actor + 3; i < actor + 6; i++) {
+                int j = i;
+                if (j > 3)
+                    j = j % 4;
+                bool last_actor_chi = false;
+                if (j == (actor + 1) % 4)
+                    last_actor_chi = true;
+                vector<buffer> buf_check = CheckNaki(j, actor, use_game_state, last_actor_chi);
+                if (!buf_check.empty()) {
+                    if ((rand() % 10) < 3) {  //30% -> naki, 70% - >dont naki
+                        int select_naki = rand() % buf_check.size();
+
+                        if (buf_check[select_naki].type == "pon")
+                            ChangeStateWithPon(use_game_state, buf_check[select_naki]);
+                        else if (buf_check[select_naki].type == "chi")
+                            ChangeStateWithChi(use_game_state, buf_check[select_naki]);
+
+                        //calc possible
+                        vector<int> possible_vec;
+                        for (int k = 1; k < use_game_state.tehai[next_actor].size(); k++) {  //make possible action
+                            if (use_game_state.tehai[next_actor][k] > 0)
+                                possible_vec.push_back(i);
+                        }
+                        int random = rand() % possible_vec.size();
+                        state next_game_state = use_game_state;
+                        return dahai(possible_vec[random], next_game_state, depth + 1, next_actor);
+                    }
+                }
             }
         }
 
@@ -288,14 +322,15 @@ namespace Custom{
             }
 
             //do simulation
-            for(int i = 0;i<10;i++){
+            int count = 10;
+            for (int i = 0; i < count; i++) {
                 state next_game_state = use_game_state;
                 int random = rand() % possible_vec.size();
                 result += dahai(possible_vec[random], next_game_state, depth + 1, next_actor);
                 //cout<<result<<endl;
             }
             use_game_state = init;
-            return result;
+            return result / count;
         }
         else{
             int result = 0;
@@ -332,9 +367,9 @@ namespace Custom{
         else if(buf_info.type == "ryukyoku")
             ChangeStateWithRyokyoku();
         else if(buf_info.type == "chi")
-            ChangeStateWithChi();
+            ChangeStateWithChi(game_state, buf_info);
         else if(buf_info.type == "pon")
-            ChangeStateWithPon();
+            ChangeStateWithPon(game_state, buf_info);
         else if(buf_info.type == "request")
             ChangeStateWithRequest();
         else if(buf_info.type == "need dahai")
@@ -417,37 +452,37 @@ namespace Custom{
         //TODO:
         game_state.score = buf_info.score;
     }
-    void Board::ChangeStateWithChi(){
+    void Board::ChangeStateWithChi(state& game_state_, buffer& buf_info_){
         Fuuro_Elem_ temp;
         temp.type = CHI;
-        temp.hai = hai_str_to_int(buf_info.pai);
-        temp.consumed.push_back(hai_str_to_int(buf_info.consumed[0]));
-        temp.consumed.push_back(hai_str_to_int(buf_info.consumed[1]));
-        temp.target_relative = buf_info.actor * 10 + buf_info.target;
+        temp.hai = hai_str_to_int(buf_info_.pai);
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[0]));
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[1]));
+        temp.target_relative = buf_info_.actor * 10 + buf_info_.target;
 
-        game_state.recent_dahai = 0;
+        game_state_.recent_dahai = 0;
 
-        game_state.actor = buf_info.actor;
-        for (int i = 0; i < buf_info.consumed.size(); i++)
-            game_state.tehai[game_state.actor][hai_str_to_int(buf_info.consumed[i])]--;
+        game_state_.actor = buf_info_.actor;
+        for (int i = 0; i < buf_info_.consumed.size(); i++)
+            game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
 
-        game_state.Fuuro[game_state.actor].push_back(temp);
+        game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
-    void Board::ChangeStateWithPon(){
+    void Board::ChangeStateWithPon(state& game_state_, buffer& buf_info_){
         Fuuro_Elem_ temp;
         temp.type = PON;
-        temp.hai = hai_str_to_int(buf_info.pai);
-        temp.consumed.push_back(hai_str_to_int(buf_info.consumed[0]));
-        temp.consumed.push_back(hai_str_to_int(buf_info.consumed[1]));
-        temp.target_relative = buf_info.actor * 10 + buf_info.target;
+        temp.hai = hai_str_to_int(buf_info_.pai);
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[0]));
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[1]));
+        temp.target_relative = buf_info_.actor * 10 + buf_info_.target;
 
-        game_state.recent_dahai = 0;
+        game_state_.recent_dahai = 0;
 
-        game_state.actor = buf_info.actor;
-        for (int i = 0; i < buf_info.consumed.size(); i++)
-            game_state.tehai[game_state.actor][hai_str_to_int(buf_info.consumed[i])]--;
+        game_state_.actor = buf_info_.actor;
+        for (int i = 0; i < buf_info_.consumed.size(); i++)
+            game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
 
-        game_state.Fuuro[game_state.actor].push_back(temp);
+        game_state_.Fuuro[game_state_.actor].push_back(temp);
 
     }
 
