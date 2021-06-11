@@ -69,7 +69,7 @@ namespace Custom{
             cout<<"goood"<<endl;
             int act = 0;
             int result = -999999999;
-            int simulation_count = 20;
+            int simulation_count = 40;
             int result_vec[possible.size()] = {0,};
             for (int j = 0; j < simulation_count; j++) {
                 state new_game_state = game_state;
@@ -106,9 +106,9 @@ namespace Custom{
                     }
                     cout<<endl;
                 }
-                cout<<"aa:"<<new_haipai.size()<<endl;
-                for(int i = 0;i<new_haipai.size();i++){
-                    if (i == (new_game_state.turn - 13))
+                cout<<"aa:"<<new_haipai.size()<<", "<<new_game_state.turn<<endl;
+                for(int i = 0;i<new_haipai.size();i++){ //TODO: dora
+                    if (i == (new_haipai.size()- (70 - new_game_state.turn) - 13))
                         cout << "\x1b[32m" << hai_int_to_str(new_haipai[i]) << "\x1b[0m, ";
                     else
                         cout << hai_int_to_str(new_haipai[i]) << ", ";
@@ -118,8 +118,10 @@ namespace Custom{
                 for (int k = 0; k < possible.size(); k++) {
                     cout<<"start simulation : ";
                     result_vec[k] += dahai(possible[k], new_game_state, 0, PLAYER);
+                    cout<<"end simulation"<<endl;
                 }
             }
+            cout<<"end all simulation"<<endl;
 
             //calculate min value
             for (int k = 0; k < possible.size(); k++) {
@@ -150,7 +152,6 @@ namespace Custom{
             //for(int j =0;j<Fuuro[i].consumed.size();j++)
                 //tehai[Fuuro[i].consumed[j]]--;
         }
-        cout<<"1"<<endl;
         Hai_Array tehai;
         vector<int>& tehai_vec = use_game_state.tehai[actor];
         std::copy_n(tehai_vec.begin(), 38, tehai.begin());
@@ -163,7 +164,6 @@ namespace Custom{
         stat.player_state[actor].jikaze = use_game_state.kyoku;
         for(int i = 0;i<4;i++)
             stat.player_state[i].score = use_game_state.score[i];
-        cout<<"2"<<endl;
         
         const Tenpai_Info tenpai_info = cal_tenpai_info(
             stat.bakaze, stat.player_state[actor].jikaze, tehai, stat.player_state[actor].fuuro);
@@ -275,7 +275,6 @@ namespace Custom{
             //for(int j =0;j<Fuuro[i].consumed.size();j++)
                 //tehai[Fuuro[i].consumed[j]]--;
         }
-        cout<<"1"<<endl;
         Hai_Array tehai;
         vector<int>& tehai_vec = use_game_state.tehai[actor];
         std::copy_n(tehai_vec.begin(), 38, tehai.begin());
@@ -290,7 +289,6 @@ namespace Custom{
         stat.player_state[actor].jikaze = use_game_state.kyoku;
         for(int i = 0;i<4;i++)
             stat.player_state[i].score = use_game_state.score[i];
-        cout<<"2"<<endl;
         
         const Tenpai_Info tenpai_info = cal_tenpai_info(
             stat.bakaze, stat.player_state[actor].jikaze, tehai, stat.player_state[actor].fuuro);
@@ -304,7 +302,6 @@ namespace Custom{
             //     han_add++;
             // }
         }
-        cout<<"3"<<endl;
         // ハイテイ、
         tehai[hai]++;
         int dora_num = 0;
@@ -315,7 +312,6 @@ namespace Custom{
             }
         }
         dora_num = count_dora(tehai, stat.player_state[actor].fuuro, stat.dora_marker, uradora_marker);
-        cout<<"4"<<endl;
         for (int i = 0; i < tenpai_info.agari_vec.size(); i++) {
             if (haikind(hai) == tenpai_info.agari_vec[i].hai &&
                 han_add + tenpai_info.agari_vec[i].han_tsumo > 0) {
@@ -326,7 +322,6 @@ namespace Custom{
                 }
             }
         }
-        cout<<"5"<<endl;
         cout<<tenpai_info.agari_vec.size()<<",,"<<agari_id<<endl;
         for(int i = 0;i<tenpai_info.agari_vec.size();i++){
             cout<<hai_int_to_str( tenpai_info.agari_vec[i].hai)<<endl;
@@ -334,12 +329,11 @@ namespace Custom{
         cout<<hai_int_to_str( tenpai_info.agari_vec[agari_id].hai)<<" "<<tenpai_info.agari_vec[agari_id].han_tsumo;
         const int han = han_add + tenpai_info.agari_vec[agari_id].han_tsumo + dora_num;
         const int fu = tenpai_info.agari_vec[agari_id].fu_tsumo;
-        cout<<"6"<<endl;
         std::array<int, 4> ten_move = ten_move_hora(
             actor, actor, han, fu, use_game_state.oya, stat.honba, use_game_state.kyotaku, false);
         
         std::array<int, 4> scores;
-        cout<<endl<<"score : "<<endl;
+        cout<<endl<<"score : ";
 
         vector<int> score_return;
         for (int pid = 0; pid < 4; pid++) {
@@ -347,7 +341,7 @@ namespace Custom{
             score_return.push_back(stat.player_state[pid].score + ten_move[pid]);
         }
         tehai[hai]--;
-        cout<<"end score"<<endl;
+        cout<<score_return[PLAYER]<<endl;
         return score_return;
     }
 
@@ -448,18 +442,10 @@ namespace Custom{
 
         bool check_shanten_flag[4] = {false,};
         
-        //cout<<"aa"<<CalculateShanten(use_game_state.tehai[0], use_game_state.Fuuro[0], -1);  //hora TODO:
-        // for (int i = 0; i < 4; i++) {
-        //     if(i==actor)
-        //         continue;
-        //     if (CalculateShanten(use_game_state.tehai[i],use_game_state.Fuuro[i], -1) == 0)
-        //         check_shanten_flag[i] = true;
-        // }
-        cout<<"start dahai"<<endl;
+       
         ChangeStateWithDahai(use_game_state, new_buf_info);
-        cout<<"end dahai"<<endl;
-        //cout<<"bb"<<CalculateShanten(use_game_state.tehai[0], use_game_state.Fuuro[0], -1);  //hora TODO:
-             
+       
+        
         //cant do pon, chi...
         
         // if (CalculateShanten(use_game_state.tehai[actor],use_game_state.Fuuro[actor], -1) == 0)
@@ -498,6 +484,9 @@ namespace Custom{
 
         for (int i = 0; i < 4; i++) {   //check ron
             if (i == actor )//|| check_shanten_flag[i] == false)
+                continue;
+            //cant ron dahai pai
+            if (find(use_game_state.dahai[i].begin(), use_game_state.dahai[i].end(), use_game_state.recent_dahai) != use_game_state.dahai[i].end())
                 continue;
             //cout<< depth<<" "<<i<<" : ";
             //use_game_state.tehai[i][use_game_state.recent_dahai]++;
@@ -578,39 +567,38 @@ namespace Custom{
 
 
         new_buf_info.actor = next_actor;
-        new_buf_info.pai = hai_int_to_str(use_game_state.haipai[use_game_state.turn - (70 - use_game_state.haipai.size())]);
+        new_buf_info.pai = hai_int_to_str(use_game_state.haipai[use_game_state.haipai.size() - (70 - use_game_state.turn) - 13]);
         ChangeStateWithTsumo(use_game_state, new_buf_info,true);
 
         //need check end
-        //if (check_shanten_flag[next_actor] == true) {
-            json11::Json last_move = make_tsumo(next_actor, use_game_state.tsumo);
-            if (CheckHora(use_game_state, next_actor, last_move)) {
-                //if (CalculateShanten(use_game_state.tehai[next_actor], use_game_state.Fuuro[next_actor], -1) == 0) {  //hora TODO:
-                cout << endl
-                     << "tsumo " << next_actor <<hai_int_to_str(use_game_state.tsumo) << endl;
-                for (int k = next_actor; k < next_actor + 1; k++) {
-                    for (int l = 0; l < use_game_state.tehai[k].size(); l++) {
-                        for (int a = 0; a < use_game_state.tehai[k][l]; a++)
-                            cout << hai_int_to_str(l) << ", ";
-                    }
-                    cout << endl;
+        json11::Json last_move = make_tsumo(next_actor, use_game_state.tsumo);
+        if (CheckHora(use_game_state, next_actor, last_move)) {
+            //if (CalculateShanten(use_game_state.tehai[next_actor], use_game_state.Fuuro[next_actor], -1) == 0) {  //hora TODO:
+            cout << endl
+                 << "tsumo " << next_actor << hai_int_to_str(use_game_state.tsumo) << endl;
+            for (int k = next_actor; k < next_actor + 1; k++) {
+                for (int l = 0; l < use_game_state.tehai[k].size(); l++) {
+                    for (int a = 0; a < use_game_state.tehai[k][l]; a++)
+                        cout << hai_int_to_str(l) << ", ";
                 }
-                cout << "fuuro" << endl;
-                int j = next_actor;
-                for (int k = j; k < j + 1; k++) {
-                    for (int l = 0; l < use_game_state.Fuuro[k].size(); l++) {
-                        cout << hai_int_to_str(use_game_state.Fuuro[k][l].hai) << ", ";
-                        for (int a = 0; a < use_game_state.Fuuro[k][l].consumed.size(); a++)
-                            cout << hai_int_to_str(use_game_state.Fuuro[k][l].consumed[a]) << ", ";
-                        cout << "||";
-                    }
-                    cout << endl;
-                }
-
-                vector<int> result_score = CalculateScore(use_game_state, last_move, "tsumo");
-                return result_score[PLAYER] - game_state.score[PLAYER];
+                cout << endl;
             }
-        //}
+            cout << "fuuro" << endl;
+            int j = next_actor;
+            for (int k = j; k < j + 1; k++) {
+                for (int l = 0; l < use_game_state.Fuuro[k].size(); l++) {
+                    cout << hai_int_to_str(use_game_state.Fuuro[k][l].hai) << ", ";
+                    for (int a = 0; a < use_game_state.Fuuro[k][l].consumed.size(); a++)
+                        cout << hai_int_to_str(use_game_state.Fuuro[k][l].consumed[a]) << ", ";
+                    cout << "||";
+                }
+                cout << endl;
+            }
+
+            vector<int> result_score = CalculateScore(use_game_state, last_move, "tsumo");
+            return result_score[PLAYER] - game_state.score[PLAYER];
+        }
+        
 
         if(depth == 0){
             int result = 0;
@@ -625,10 +613,25 @@ namespace Custom{
             }
 
             //do simulation
-            int count = 10;
+            int count = 5;
             for (int i = 0; i < count; i++) {
                 state next_game_state = use_game_state;
                 int random = rand() % possible_vec.size();
+
+                //cutsu heuristic   => too many toitoi, chitoitsu
+                while (use_game_state.tehai[next_actor][possible_vec[random]] >= 2 && (rand() % 10) > 4) {
+                    random = rand() % possible_vec.size();
+                }
+                //new cutsu heuristic only complete cutsu   => no effect
+                // while (use_game_state.tehai[next_actor][possible_vec[random]] == 3 && (rand() % 10) > 2) {
+                //     random = rand() % possible_vec.size();
+                // }
+
+                //mentsu heuristic
+                while ((use_game_state.tehai[next_actor][possible_vec[random] - 1] >= 1 
+                || use_game_state.tehai[next_actor][possible_vec[random] + 1] >= 1) && (rand() % 10) > 4) {
+                    random = rand() % possible_vec.size();
+                }
                 result += dahai(possible_vec[random], next_game_state, depth + 1, next_actor);
                 //cout<<result<<endl;
             }
@@ -648,6 +651,22 @@ namespace Custom{
             //do simulation
             state next_game_state = use_game_state;
             int random = rand() % possible_vec.size();
+
+            //cutsu heuristic   => too many toitoi, chitoitsu
+            while (use_game_state.tehai[next_actor][possible_vec[random]] == 2 && (rand() % 10) > 4) {
+                random = rand() % possible_vec.size();
+            }
+
+            //new cutsu heuristic only complete cutsu   => no effect
+            // while (use_game_state.tehai[next_actor][possible_vec[random]] == 3 && (rand() % 10) > 2) {
+            //     random = rand() % possible_vec.size();
+            // }
+
+            //mentsu heuristic
+            while ((use_game_state.tehai[next_actor][possible_vec[random] - 1] >= 1 
+                || use_game_state.tehai[next_actor][possible_vec[random] + 1] >= 1) && (rand() % 10) > 4) {
+                random = rand() % possible_vec.size();
+            }
             return dahai(possible_vec[random], next_game_state, depth + 1, next_actor);
         }
 
