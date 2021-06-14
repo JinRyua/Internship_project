@@ -20,7 +20,9 @@
 #define NONE -1
 #define PON 0
 #define CHI 1
-#define KAN 2
+#define DAIMINKAN 2
+#define KAKAN 3
+#define ANKAN 4
 
 namespace Custom
 {
@@ -128,11 +130,14 @@ namespace Custom
         //change state funcion
         void ChangeStateWithStartKyoku();
         void ChangeStateWithTsumo(state& game_state_, buffer& buf_info_, bool plan);
-        void ChangeStateWithDahai(state& game_state_, buffer& buf_info_);
+        void ChangeStateWithDahai(state& game_state_, buffer& buf_info_, bool plan);
         void ChangeStateWithHora();
         void ChangeStateWithRyokyoku();
-        void ChangeStateWithChi(state& game_state_, buffer& buf_info_);
-        void ChangeStateWithPon(state& game_state_, buffer& buf_info_);
+        void ChangeStateWithChi(state& game_state_, buffer& buf_info_, bool plan);
+        void ChangeStateWithPon(state& game_state_, buffer& buf_info_, bool plan);
+        void ChangeStateWithDaiminkan(state& game_state_, buffer& buf_info_, bool plan);
+        void ChangeStateWithKakan(state& game_state_, buffer& buf_info_, bool plan);
+        void ChangeStateWithAnkan(state& game_state_, buffer& buf_info_, bool plan);
         void ChangeStateWithRequest();
         void WriteDahai();
 

@@ -13,8 +13,10 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+
 //https://github.com/critter-mj/akochan
 //using mahjong calculator
+
 #define PORT 7777
 #define BUF_SIZE 3076
 const char IP[] = "127.0.0.1";  //loopback
@@ -115,7 +117,7 @@ namespace Custom{
                 cout<<endl;
 
                 for (int k = 0; k < possible.size(); k++) {
-                    //cout<<"start simulation : ";
+                    cout<<"start simulation : ";
                     result_vec[k] += DahaiSimulation(possible[k], new_game_state, 0, PLAYER) + PlayerHeuristic(new_game_state, possible[k]);
                     cout<<"end simulation ("<<k+1<<", "<<possible.size()<<")"<<endl;
                 }
@@ -419,7 +421,7 @@ namespace Custom{
         bool check_shanten_flag[4] = {false,};
         
        
-        ChangeStateWithDahai(use_game_state, new_buf_info);
+        ChangeStateWithDahai(use_game_state, new_buf_info, true);
        
         
         //cant do pon, chi...
@@ -459,8 +461,8 @@ namespace Custom{
         }
 
         for (int i = 0; i < 4; i++) {   //check ron
-            if (i == actor || i == PLAYER)//|| check_shanten_flag[i] == false) 
-                continue;       //only PLAYER want mensen tsumo
+            if (i == actor)//|| check_shanten_flag[i] == false) 
+                continue;       
             
             //cant ron dahai pai
             if (find(use_game_state.dahai[i].begin(), use_game_state.dahai[i].end(), use_game_state.recent_dahai) != use_game_state.dahai[i].end())
@@ -502,20 +504,37 @@ namespace Custom{
                 int j = i;
                 if (j > 3)
                     j = j % 4;
-                if (j == actor)
+                if (j == actor) 
                     continue;
                 bool last_actor_chi = false;
                 if (j == (actor + 1) % 4)
                     last_actor_chi = true;
                 vector<buffer> buf_check = CheckNaki(j, actor, use_game_state, last_actor_chi);
                 if (!buf_check.empty()) {
-                    if ((rand() % 10) < 1) {  //10% -> naki, 90% - >dont naki
+                    if(j == PLAYER){    //player call only pon
+                        for (int l = 0; l < buf_check.size(); l++) {
+                            if (buf_check[l].type == "pon") {
+                                ChangeStateWithPon(use_game_state, buf_check[l], true);
+
+                                vector<int> possible_vec;
+                                for (int k = 1; k < use_game_state.tehai[j].size(); k++) {  //make possible action
+                                    if (use_game_state.tehai[j][k] > 0)
+                                        possible_vec.push_back(k);
+                                }
+                                int random = rand() % possible_vec.size();
+                                state next_game_state = use_game_state;
+
+                                return DahaiSimulation(possible_vec[random], next_game_state, depth + 1, j);
+                            }
+                        }
+                    }
+                    else if ((rand() % 10) < 1) {  //10% -> naki, 90% - >dont naki
                         int select_naki = rand() % buf_check.size();
                         
                         if (buf_check[select_naki].type == "pon")
-                            ChangeStateWithPon(use_game_state, buf_check[select_naki]);
+                            ChangeStateWithPon(use_game_state, buf_check[select_naki], true);
                         else if (buf_check[select_naki].type == "chi")
-                            ChangeStateWithChi(use_game_state, buf_check[select_naki]);
+                            ChangeStateWithChi(use_game_state, buf_check[select_naki], true);
                         
                         vector<int> possible_vec;
                         for (int k = 1; k < use_game_state.tehai[j].size(); k++) {  //make possible action
@@ -545,7 +564,7 @@ namespace Custom{
 
         new_buf_info.actor = next_actor;
         new_buf_info.pai = hai_int_to_str(use_game_state.haipai[use_game_state.haipai.size() - (70 - use_game_state.turn) - 13]);
-        ChangeStateWithTsumo(use_game_state, new_buf_info,true);
+        ChangeStateWithTsumo(use_game_state, new_buf_info, true);
 
         //need check end
         json11::Json last_move = make_tsumo(next_actor, use_game_state.tsumo);
@@ -583,7 +602,7 @@ namespace Custom{
             
 
             //calc possible
-            cout<<"start sub simulation"<<endl;
+            cout<<"start sub simulation ";
             vector<int> possible_vec;
             for (int i = 1; i < use_game_state.tehai[next_actor].size(); i++) { //make possible action
                 if (use_game_state.tehai[next_actor][i] > 0)
@@ -611,8 +630,10 @@ namespace Custom{
                     random = rand() % possible_vec.size();
                 }
                 result += DahaiSimulation(possible_vec[random], next_game_state, depth + 1, next_actor);
+                cout<< count<<", ";
                 //cout<<result<<endl;
             }
+            cout<<endl;
             use_game_state = init;
             return result / count;
         }
@@ -659,7 +680,7 @@ namespace Custom{
         else if(buf_info.type == "tsumo")
             ChangeStateWithTsumo(game_state, buf_info,false);
         else if(buf_info.type == "dahai")
-            ChangeStateWithDahai(game_state, buf_info);
+            ChangeStateWithDahai(game_state, buf_info, false);
         //else if(buf_info.type == "reach")
             //TODO: reach
         else if(buf_info.type == "hora")
@@ -667,13 +688,21 @@ namespace Custom{
         else if(buf_info.type == "ryukyoku")
             ChangeStateWithRyokyoku();
         else if(buf_info.type == "chi")
-            ChangeStateWithChi(game_state, buf_info);
+            ChangeStateWithChi(game_state, buf_info, false);
         else if(buf_info.type == "pon")
-            ChangeStateWithPon(game_state, buf_info);
+            ChangeStateWithPon(game_state, buf_info, false);
+        else if(buf_info.type == "daiminkan")
+            ChangeStateWithPon(game_state, buf_info, false);
+        else if(buf_info.type == "kakan")
+            ChangeStateWithPon(game_state, buf_info, false);
+        else if(buf_info.type == "ankan")
+            ChangeStateWithPon(game_state, buf_info, false);
         else if(buf_info.type == "request")
             ChangeStateWithRequest();
         else if(buf_info.type == "need dahai")
             WriteDahai();
+        else if(buf_info.type == "end_game")
+            exit(1);
 
     }
 
@@ -731,18 +760,19 @@ namespace Custom{
         }
         game_state_.recent_dahai = -1;
     }
-    void Board::ChangeStateWithDahai(state& game_state_, buffer& buf_info_){
+    void Board::ChangeStateWithDahai(state& game_state_, buffer& buf_info_, bool plan){
         game_state_.actor = buf_info_.actor;
         if(game_state_.actor == PLAYER){ 
             string dahai;
-            //cin >> dahai;
-            //dahai = to_string(hai_str_to_int(dahai));
+
             game_state_.recent_dahai = hai_str_to_int(buf_info_.pai);
             game_state_.dahai[game_state_.actor].push_back(game_state_.recent_dahai);
             game_state_.tehai[game_state_.actor][game_state_.recent_dahai]--;
         } else {
             game_state_.recent_dahai = hai_str_to_int(buf_info_.pai);
             game_state_.dahai[game_state_.actor].push_back(game_state_.recent_dahai);
+            if(plan == false)  //if not planning except haipai
+                game_state_.haipai[game_state_.recent_dahai]--;
             if(game_state_.tehai[game_state_.actor][game_state_.recent_dahai]>0)
                 game_state_.tehai[game_state_.actor][game_state_.recent_dahai]--;
         }
@@ -755,7 +785,7 @@ namespace Custom{
         //TODO:
         game_state.score = buf_info.score;
     }
-    void Board::ChangeStateWithChi(state& game_state_, buffer& buf_info_){
+    void Board::ChangeStateWithChi(state& game_state_, buffer& buf_info_, bool plan){
         Fuuro_Elem_ temp;
         temp.type = CHI;
         temp.hai = hai_str_to_int(buf_info_.pai);
@@ -766,13 +796,82 @@ namespace Custom{
         game_state_.recent_dahai = 0;
 
         game_state_.actor = buf_info_.actor;
-        for (int i = 0; i < buf_info_.consumed.size(); i++)
-            game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
+
+        if (buf_info_.actor == PLAYER) {
+            for (int i = 0; i < buf_info_.consumed.size(); i++)
+                game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
+
+        } else {
+            if (plan == true) {
+                for (int i = 0; i < buf_info_.consumed.size(); i++)
+                    game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
+            } else {
+                for (int i = 0; i < buf_info_.consumed.size(); i++)
+                    game_state_.haipai[hai_str_to_int(buf_info_.consumed[i])]--;
+            }
+        }
 
         game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
-    void Board::ChangeStateWithPon(state& game_state_, buffer& buf_info_){
+    void Board::ChangeStateWithPon(state& game_state_, buffer& buf_info_, bool plan){
         Fuuro_Elem_ temp;
+        temp.type = PON;
+        temp.hai = hai_str_to_int(buf_info_.pai);
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[0]));
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[1]));
+        temp.target_relative = (buf_info_.actor + buf_info_.target) % 4;
+
+        game_state_.recent_dahai = 0;
+
+        game_state_.actor = buf_info_.actor;
+
+        if (buf_info_.actor == PLAYER) {
+            for (int i = 0; i < buf_info_.consumed.size(); i++)
+                game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
+
+        } else {
+            if (plan == true) {
+                for (int i = 0; i < buf_info_.consumed.size(); i++)
+                    game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
+            } else {
+                for (int i = 0; i < buf_info_.consumed.size(); i++)
+                    game_state_.haipai[hai_str_to_int(buf_info_.consumed[i])]--;
+            }
+        }
+
+        game_state_.Fuuro[game_state_.actor].push_back(temp);
+
+    }
+    void Board::ChangeStateWithDaiminkan(state& game_state_, buffer& buf_info_, bool plan) {
+        Fuuro_Elem_ temp;
+        temp.type = DAIMINKAN;
+        temp.hai = hai_str_to_int(buf_info_.pai);
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[0]));
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[1]));
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[2]));
+        temp.target_relative = (buf_info_.actor + buf_info_.target) % 4;
+
+        game_state_.recent_dahai = 0;
+
+        game_state_.actor = buf_info_.actor;
+        
+        if(buf_info_.actor == PLAYER){
+            for (int i = 0; i < buf_info_.consumed.size(); i++)
+                game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
+        } else {
+            if (plan == true) {
+                for (int i = 0; i < buf_info_.consumed.size(); i++)
+                    game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
+            } else {
+                for (int i = 0; i < buf_info_.consumed.size(); i++)
+                    game_state_.haipai[hai_str_to_int(buf_info_.consumed[i])]--;
+            }
+        }
+
+        game_state_.Fuuro[game_state_.actor].push_back(temp);
+    }
+    void Board::ChangeStateWithKakan(state& game_state_, buffer& buf_info_, bool plan) {
+        Fuuro_Elem_ temp;   //TODO:
         temp.type = PON;
         temp.hai = hai_str_to_int(buf_info_.pai);
         temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[0]));
@@ -786,21 +885,62 @@ namespace Custom{
             game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
 
         game_state_.Fuuro[game_state_.actor].push_back(temp);
+    }
+    void Board::ChangeStateWithAnkan(state& game_state_, buffer& buf_info_, bool plan) {
+        Fuuro_Elem_ temp;
+        temp.type = ANKAN;
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[0]));
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[1]));
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[2]));
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[3]));
 
+        game_state_.recent_dahai = 0;
+
+        game_state_.actor = buf_info_.actor;
+
+        if(buf_info_.actor == PLAYER){
+            for (int i = 0; i < buf_info_.consumed.size(); i++)
+                game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
+        } else {
+            if (plan == true) {
+                for (int i = 0; i < buf_info_.consumed.size(); i++)
+                    game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
+            } else {
+                for (int i = 0; i < buf_info_.consumed.size(); i++)
+                    game_state_.haipai[hai_str_to_int(buf_info_.consumed[i])]--;
+            }
+        }
+
+        game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
 
     void Board::ChangeStateWithRequest(){
         //TODO: select Fuuro number   0 => dont select 1~
         string buf = "no";  //test dont select
+        int pon_num = -1;
+        int kan_num = -1;
         for (int i = 0; i < buf_info.reqeust.size(); i++) {
             cout << i + 1 << " : ";
             cout << "type : ";
-            if (buf_info.reqeust[i].type == PON)
-                cout << "pon";
+            
+            if (buf_info.reqeust[i].type == PON){
+                cout <<"pon";
+                pon_num = i;
+            }
             else if (buf_info.reqeust[i].type == CHI)
                 cout << "chi";
-            else if (buf_info.reqeust[i].type == KAN)
-                cout << "kan";
+            else if (buf_info.reqeust[i].type == DAIMINKAN){
+                cout << "daiminkan";
+                kan_num = i;
+            }
+            else if (buf_info.reqeust[i].type == KAKAN){
+                cout << "kakan";
+                kan_num = i;
+            }
+            else if (buf_info.reqeust[i].type == ANKAN){
+                cout << "ankan";
+                kan_num = i;
+            }
             else if (buf_info.reqeust[i].type == NONE)
                 cout << "none";
             
@@ -821,7 +961,11 @@ namespace Custom{
 
       cout<<"please type number to select action:";
       //cin>>buf;   //no typing
-      buf = to_string(buf_info.reqeust.size()); //select NONE => only menjen tsumo
+      buf = to_string(buf_info.reqeust.size()); //select only pon => toitoi
+      if(kan_num != -1)
+        buf = to_string(kan_num + 1);
+      else if(pon_num != -1)
+        buf = to_string(pon_num + 1);
       cout<<buf<<endl;
       write(serv_sock,buf.c_str(),buf.size());
     }
@@ -922,8 +1066,12 @@ namespace Custom{
                         req_temp.type = PON;
                     else if (type_temp == "chi")
                         req_temp.type = CHI;
-                    else if (type_temp == "kan")
-                        req_temp.type = KAN;
+                    else if (type_temp == "daiminkan")
+                        req_temp.type = DAIMINKAN;
+                    else if (type_temp == "kakan")
+                        req_temp.type = KAKAN;
+                    else if (type_temp == "ankan")
+                        req_temp.type = ANKAN;
                     else if (type_temp == "none")
                         req_temp.type = NONE;
                 }
@@ -1247,7 +1395,10 @@ namespace Custom{
     int Board::PlayerHeuristic(state& use_game_state, const int pai){   //make my tataics
         vector<int>& tehai = use_game_state.tehai[PLAYER];
         vector<vector<int>>& dahai = use_game_state.dahai;
-        vector<int>& haipai = use_game_state.haipai;    
+        vector<int>& haipai = use_game_state.haipai;  
+        int kind = pai / 10;
+        int number = hai38_to_hai9(pai) + (kind * 10);  //except dora number
+        int score = 0;  
         if(pai>30){  //if honors
             int count_haipai = count(haipai.begin(), haipai.end(), pai);    //find in all haipai
 
@@ -1260,19 +1411,38 @@ namespace Custom{
                     return 1000; //add score to dahai pai if not my kaze honor
             }
 
+            if (tehai[pai] >= 2)   //sub score to save pai if can make honor body
+                return -600;
+
             if(use_game_state.turn>34)  //if turn over 35 turns, it is dangerous
                 return 1000;
+
             
+            
+
             
             return 0;
                 
         }
         else{   //TODO: pin, sou, man's tactics
+            int dora = 0;
+            if (pai % 10 == 0 || pai % 10 == 5) {  //if dora
+                dora = tehai[(kind + 1) * 10];
+            }
+
+            if (pai % 10 == 0)  //dora is important
+                score -= 200;
+
+            int count_haipai = count(haipai.begin(), haipai.end(), pai);    //find in all haipai
+
+            if (tehai[number] + dora + count_haipai < 3)    //cant make syuntsu
+                return 300;
+
+            //can make syuntsu
+            if (tehai[number] + dora >= 1)
+                return 200 + (-300 * (tehai[number] + dora)) + (-100 * count_haipai) + score;
+
             return 0;
-            
-            int kind = pai / 10;
-            
-            
         }
     }
 
@@ -1282,6 +1452,7 @@ namespace Custom{
         return kaze_str_to_int(order[kaze_num]);
     }
 
+ 
 
 
     std::vector<int> SplitToInt(std::string input, char delimiter) {
