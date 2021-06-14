@@ -72,6 +72,7 @@ namespace Custom
         std::vector<std::vector<std::string>> all_tehai;
         std::vector<std::string> consumed;
         std::vector<Fuuro_Elem_> reqeust;
+        std::vector<bool> reach_accepted;
         
     };
 
@@ -115,13 +116,14 @@ namespace Custom
 
         std::vector<int> CalculateScore(state& use_game_state, json11::Json& move, std::string type);
         int CalculateShanten(std::vector<int>& tehai, std::vector<Fuuro_Elem_>& Fuuro, int dahai);
+        int CalculatePlayerKazeFromOya(int oya);
 
         bool CheckTenpai(state& use_game_state, int actor);
         std::vector<buffer> CheckNaki(int actor, int target, state& use_game_state, bool last_actor_chi);
         bool CheckHora(state& use_game_state, int next_actor, json11::Json& last_act);
 
         std::string Planner(std::string act);
-        int dahai(int possible, state& use_game_state, int depth, int actor);
+        int DahaiSimulation(int possible, state& use_game_state, int depth, int actor);
 
         //change state funcion
         void ChangeStateWithStartKyoku();
@@ -134,6 +136,7 @@ namespace Custom
         void ChangeStateWithRequest();
         void WriteDahai();
 
+        int PlayerHeuristic(state& use_game_state, const int pai);  //Make player's heuristic
 
         buffer MakeChiBuffer(int actor, int target, int pai, std::vector<int> consumed);
  

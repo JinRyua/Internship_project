@@ -98,7 +98,6 @@ namespace Custom{
                 //finish setting
                 
                 
-                cout<<"gooood"<<endl;
                 for(int k =0;k<4;k++){
                     for(int l = 0;l<new_game_state.tehai[k].size();l++){
                         for (int a = 0; a < new_game_state.tehai[k][l]; a++)
@@ -106,7 +105,7 @@ namespace Custom{
                     }
                     cout<<endl;
                 }
-                cout<<"aa:"<<new_haipai.size()<<", "<<new_game_state.turn<<endl;
+                cout<<"turn : "<<new_game_state.turn<<endl;
                 for(int i = 0;i<new_haipai.size();i++){ //TODO: dora
                     if (i == (new_haipai.size()- (70 - new_game_state.turn) - 13))
                         cout << "\x1b[32m" << hai_int_to_str(new_haipai[i]) << "\x1b[0m, ";
@@ -116,9 +115,9 @@ namespace Custom{
                 cout<<endl;
 
                 for (int k = 0; k < possible.size(); k++) {
-                    cout<<"start simulation : ";
-                    result_vec[k] += dahai(possible[k], new_game_state, 0, PLAYER);
-                    cout<<"end simulation"<<endl;
+                    //cout<<"start simulation : ";
+                    result_vec[k] += DahaiSimulation(possible[k], new_game_state, 0, PLAYER) + PlayerHeuristic(new_game_state, possible[k]);
+                    cout<<"end simulation ("<<k+1<<", "<<possible.size()<<")"<<endl;
                 }
             }
             cout<<"end all simulation"<<endl;
@@ -322,10 +321,7 @@ namespace Custom{
                 }
             }
         }
-        cout<<tenpai_info.agari_vec.size()<<",,"<<agari_id<<endl;
-        for(int i = 0;i<tenpai_info.agari_vec.size();i++){
-            cout<<hai_int_to_str( tenpai_info.agari_vec[i].hai)<<endl;
-        }
+        
         cout<<hai_int_to_str( tenpai_info.agari_vec[agari_id].hai)<<" "<<tenpai_info.agari_vec[agari_id].han_tsumo;
         const int han = han_add + tenpai_info.agari_vec[agari_id].han_tsumo + dora_num;
         const int fu = tenpai_info.agari_vec[agari_id].fu_tsumo;
@@ -333,7 +329,6 @@ namespace Custom{
             actor, actor, han, fu, use_game_state.oya, stat.honba, use_game_state.kyotaku, false);
         
         std::array<int, 4> scores;
-        cout<<endl<<"score : ";
 
         vector<int> score_return;
         for (int pid = 0; pid < 4; pid++) {
@@ -341,7 +336,11 @@ namespace Custom{
             score_return.push_back(stat.player_state[pid].score + ten_move[pid]);
         }
         tehai[hai]--;
-        cout<<score_return[PLAYER]<<endl;
+        if (actor == PLAYER) {
+            cout << endl
+                 << "score : ";
+            cout << score_return[PLAYER] << endl;
+        }
         return score_return;
     }
 
@@ -404,34 +403,11 @@ namespace Custom{
         bool co = is_legal_hora(game_record, stat, hora_move);
 
         last_act = hora_move;
-        if (co == true) {
-            cout << "true" << endl;
-            // cout << "tsumo" << use_game_state.tehai[next_actor].size() << endl;
-            // for (int k = next_actor; k < next_actor + 1; k++) {
-            //     for (int l = 0; l < use_game_state.tehai[k].size(); l++) {
-            //         for (int a = 0; a < use_game_state.tehai[k][l]; a++)
-            //             cout << hai_int_to_str(l) << ", ";
-            //     }
-            //     cout << endl;
-            // }
-            // cout << "fuuro" << endl;
-            // int j = next_actor;
-            // for (int k = j; k < j + 1; k++) {
-            //     for (int l = 0; l < use_game_state.Fuuro[k].size(); l++) {
-            //         cout << hai_int_to_str(use_game_state.Fuuro[k][l].hai) << ", ";
-            //         for (int a = 0; a < use_game_state.Fuuro[k][l].consumed.size(); a++)
-            //             cout << hai_int_to_str(use_game_state.Fuuro[k][l].consumed[a]) << ", ";
-            //         cout << "||";
-            //     }
-            //     cout << endl;
-            // }
-            return true;
-        }
-        return false;
+        return co;
     }
 
-    int Board::dahai(int possible, state& use_game_state, int depth, int actor){    
-        state init =use_game_state;
+    int Board::DahaiSimulation(int possible, state& use_game_state, int depth, int actor){    
+        state init = use_game_state;
         
         int next_actor = actor + 1;
         if (next_actor > 3) next_actor = 0;
@@ -483,8 +459,9 @@ namespace Custom{
         }
 
         for (int i = 0; i < 4; i++) {   //check ron
-            if (i == actor )//|| check_shanten_flag[i] == false)
-                continue;
+            if (i == actor || i == PLAYER)//|| check_shanten_flag[i] == false) 
+                continue;       //only PLAYER want mensen tsumo
+            
             //cant ron dahai pai
             if (find(use_game_state.dahai[i].begin(), use_game_state.dahai[i].end(), use_game_state.recent_dahai) != use_game_state.dahai[i].end())
                 continue;
@@ -548,7 +525,7 @@ namespace Custom{
                         int random = rand() % possible_vec.size();
                         state next_game_state = use_game_state;
                         
-                        return dahai(possible_vec[random], next_game_state, depth + 1, j);
+                        return DahaiSimulation(possible_vec[random], next_game_state, depth + 1, j);
                     }
                 }
             }
@@ -606,6 +583,7 @@ namespace Custom{
             
 
             //calc possible
+            cout<<"start sub simulation"<<endl;
             vector<int> possible_vec;
             for (int i = 1; i < use_game_state.tehai[next_actor].size(); i++) { //make possible action
                 if (use_game_state.tehai[next_actor][i] > 0)
@@ -632,7 +610,7 @@ namespace Custom{
                 || use_game_state.tehai[next_actor][possible_vec[random] + 1] >= 1) && (rand() % 10) > 4) {
                     random = rand() % possible_vec.size();
                 }
-                result += dahai(possible_vec[random], next_game_state, depth + 1, next_actor);
+                result += DahaiSimulation(possible_vec[random], next_game_state, depth + 1, next_actor);
                 //cout<<result<<endl;
             }
             use_game_state = init;
@@ -667,7 +645,7 @@ namespace Custom{
                 || use_game_state.tehai[next_actor][possible_vec[random] + 1] >= 1) && (rand() % 10) > 4) {
                 random = rand() % possible_vec.size();
             }
-            return dahai(possible_vec[random], next_game_state, depth + 1, next_actor);
+            return DahaiSimulation(possible_vec[random], next_game_state, depth + 1, next_actor);
         }
 
         return 0;   //not use
@@ -839,8 +817,11 @@ namespace Custom{
             }
             cout<<endl;
         }
+
+
       cout<<"please type number to select action:";
-      cin>>buf;
+      //cin>>buf;   //no typing
+      buf = to_string(buf_info.reqeust.size()); //select NONE => only menjen tsumo
       cout<<buf<<endl;
       write(serv_sock,buf.c_str(),buf.size());
     }
@@ -1262,6 +1243,46 @@ namespace Custom{
 
         return answer;
     }
+
+    int Board::PlayerHeuristic(state& use_game_state, const int pai){   //make my tataics
+        vector<int>& tehai = use_game_state.tehai[PLAYER];
+        vector<vector<int>>& dahai = use_game_state.dahai;
+        vector<int>& haipai = use_game_state.haipai;    
+        if(pai>30){  //if honors
+            int count_haipai = count(haipai.begin(), haipai.end(), pai);    //find in all haipai
+
+            
+            if(tehai[pai]+count_haipai<3)
+                return 2000;    //add score to dahai pai if cant make honor body
+            
+            if(pai<35){   //if kaze honor
+                if(CalculatePlayerKazeFromOya( use_game_state.oya) != pai - 31)
+                    return 1000; //add score to dahai pai if not my kaze honor
+            }
+
+            if(use_game_state.turn>34)  //if turn over 35 turns, it is dangerous
+                return 1000;
+            
+            
+            return 0;
+                
+        }
+        else{   //TODO: pin, sou, man's tactics
+            return 0;
+            
+            int kind = pai / 10;
+            
+            
+        }
+    }
+
+    int Board::CalculatePlayerKazeFromOya(int oya){
+        vector<string> order = {"E", "N", "W", "S"};
+        int kaze_num = (4 - oya) % 4;
+        return kaze_str_to_int(order[kaze_num]);
+    }
+
+
 
     std::vector<int> SplitToInt(std::string input, char delimiter) {
         std::vector<int> answer;
