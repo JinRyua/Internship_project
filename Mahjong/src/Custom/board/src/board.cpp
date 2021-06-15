@@ -1100,6 +1100,7 @@ namespace Custom{
             string action_list = buf.substr(start_action_pos, end_action_pos - start_action_pos);
             vector<Custom::Fuuro_Elem_> action_list_vector;
             start_action_pos = 0;
+            end_action_pos = 0;
 
             while(1){
                 int check_pos = action_list.find("actor", start_action_pos);
@@ -1504,7 +1505,7 @@ namespace Custom{
         int number = hai38_to_hai9(pai) + (kind * 10);  //except dora number
         int score = 0;  
         //for defence
-        if (use_game_state.turn > 25) {
+        if (use_game_state.turn > 30) { //if turn 30 over , be careful dahai
             for (int i = 1; i < 4; i++) {
                 vector<int>& temp = use_game_state.dahai[i];
                 vector<int>::iterator it = find(temp.begin(), temp.end(), pai);
@@ -1583,7 +1584,7 @@ namespace Custom{
             }
 
             if (pai % 10 == 0)  //dora is important
-                score -= 200;
+                score -= 300;
 
             int count_haipai = count(haipai.begin(), haipai.end(), pai);    //find in all haipai
 
