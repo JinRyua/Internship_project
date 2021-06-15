@@ -23,6 +23,8 @@
 #define DAIMINKAN 2
 #define KAKAN 3
 #define ANKAN 4
+#define HORA 5
+#define REACH 6
 
 namespace Custom
 {
@@ -45,7 +47,9 @@ namespace Custom
         std::vector<std::vector<int>> chi;    //버림패
         std::vector<int> score;    //점수
         std::vector<int> dora_marker;   //도라 표시패
+        std::vector<int> dahai_order;   // actor * 100 + actor's dahai order
         std::string bakaze;     //바람(동풍)
+        std::vector<std::pair<bool,int>> reach; //accepted, dahai order
         int honba;      //본장
         int kyoku;      //국
         int kyotaku;    //남은 스틱
@@ -113,6 +117,7 @@ namespace Custom
         int hai_str_to_int(const std::string hai_str);  //convert 패 37가지 1~37
         std::string hai_int_to_str(int hai_int);
         int hai38_to_hai9(int hai_int38);
+        std::string TypeIntToStr(int type);
         
         void PrintTehai();  //print all tehai
 
@@ -138,6 +143,8 @@ namespace Custom
         void ChangeStateWithDaiminkan(state& game_state_, buffer& buf_info_, bool plan);
         void ChangeStateWithKakan(state& game_state_, buffer& buf_info_, bool plan);
         void ChangeStateWithAnkan(state& game_state_, buffer& buf_info_, bool plan);
+        void ChangeStateWithDora(state& game_state_, buffer& buf_info_, bool plan);
+        void ChangeStateWithReach(state& game_state_, buffer& buf_info_, bool plan);
         void ChangeStateWithRequest();
         void WriteDahai();
 

@@ -77,15 +77,17 @@ namespace Custom{
                 state new_game_state = game_state;
                 vector<int> new_haipai = haipai_temp;
 
-                for (int k = 1; k < 4; k++) {  //make ai's tehai
-                    for (int l = 0; l < 13 - fuuro[k]; l++) {
+                for (int l = 0; l < 13; l++)  {  //make ai's tehai
+                    for (int k = 1; k < 4; k++){
+                        if (l >= 13 - fuuro[k])
+                            break;
                         int random = rand() % new_haipai.size();
 
                         //heuristics -> dahai pai usually dont use tehai
                         if (find(new_game_state.dahai[k].begin(), new_game_state.dahai[k].end(),
                             new_haipai[random]) != new_game_state.dahai[k].end()) {
                             if ((rand() % 10) > 2) { //70% -> dont insert dahai pai
-                                l--;
+                                k--;
                                 continue;
                             }
                         }
@@ -111,6 +113,8 @@ namespace Custom{
                 for(int i = 0;i<new_haipai.size();i++){ //TODO: dora
                     if (i == (new_haipai.size()- (70 - new_game_state.turn) - 13))
                         cout << "\x1b[32m" << hai_int_to_str(new_haipai[i]) << "\x1b[0m, ";
+                    else if( i == (new_haipai.size()- 13))
+                        cout << "\x1b[31m" << hai_int_to_str(new_haipai[i]) << "\x1b[0m, ";
                     else
                         cout << hai_int_to_str(new_haipai[i]) << ", ";
                     }
@@ -147,7 +151,15 @@ namespace Custom{
                 fuuro_vec[i].type = FT_PON;
             else if (Fuuro[i].type == CHI)
                 fuuro_vec[i].type = FT_CHI;
-            fuuro_vec[i].hai = Fuuro[i].hai;
+            else if (Fuuro[i].type == DAIMINKAN)
+                fuuro_vec[i].type = FT_DAIMINKAN;
+            else if (Fuuro[i].type == ANKAN)
+                fuuro_vec[i].type = FT_ANKAN;
+            else if (Fuuro[i].type == KAKAN)
+                fuuro_vec[i].type = FT_KAKAN;
+
+            if(Fuuro[i].type != ANKAN)
+                fuuro_vec[i].hai = Fuuro[i].hai;
             //tehai[Fuuro[i].hai]--;
             fuuro_vec[i].consumed = Fuuro[i].consumed;  //TODO:
             //for(int j =0;j<Fuuro[i].consumed.size();j++)
@@ -190,7 +202,14 @@ namespace Custom{
                 fuuro_vec[i].type = FT_PON;
             else if (Fuuro[i].type == CHI)
                 fuuro_vec[i].type = FT_CHI;
-            fuuro_vec[i].hai = Fuuro[i].hai;
+            else if (Fuuro[i].type == DAIMINKAN)
+                fuuro_vec[i].type = FT_DAIMINKAN;
+            else if (Fuuro[i].type == ANKAN)
+                fuuro_vec[i].type = FT_ANKAN;
+            else if (Fuuro[i].type == KAKAN)
+                fuuro_vec[i].type = FT_KAKAN;
+            if(Fuuro[i].type != ANKAN)
+                fuuro_vec[i].hai = Fuuro[i].hai;
             //tehai[Fuuro[i].hai]--;
             fuuro_vec[i].consumed = Fuuro[i].consumed;  //TODO:
             //for(int j =0;j<Fuuro[i].consumed.size();j++)
@@ -270,7 +289,14 @@ namespace Custom{
                 fuuro_vec[i].type = FT_PON;
             else if (Fuuro[i].type == CHI)
                 fuuro_vec[i].type = FT_CHI;
-            fuuro_vec[i].hai = Fuuro[i].hai;
+            else if (Fuuro[i].type == DAIMINKAN)
+                fuuro_vec[i].type = FT_DAIMINKAN;
+            else if (Fuuro[i].type == ANKAN)
+                fuuro_vec[i].type = FT_ANKAN;
+            else if (Fuuro[i].type == KAKAN)
+                fuuro_vec[i].type = FT_KAKAN;
+            if(Fuuro[i].type != ANKAN)
+                fuuro_vec[i].hai = Fuuro[i].hai;
             //tehai[Fuuro[i].hai]--;
             fuuro_vec[i].consumed = Fuuro[i].consumed;  //TODO:
             //for(int j =0;j<Fuuro[i].consumed.size();j++)
@@ -293,7 +319,7 @@ namespace Custom{
         
         const Tenpai_Info tenpai_info = cal_tenpai_info(
             stat.bakaze, stat.player_state[actor].jikaze, tehai, stat.player_state[actor].fuuro);
-        
+        cout<<"shanten"<<tenpai_info.shanten_num()<<endl;
         int agari_id = -1;
         int agari_ten = 0;
         int han_add = 0;
@@ -394,7 +420,14 @@ namespace Custom{
                 fuuro_vec[i].type = FT_PON;
             else if (Fuuro[i].type == CHI)
                 fuuro_vec[i].type = FT_CHI;
-            fuuro_vec[i].hai = Fuuro[i].hai;
+            else if (Fuuro[i].type == DAIMINKAN)
+                fuuro_vec[i].type = FT_DAIMINKAN;
+            else if (Fuuro[i].type == ANKAN)
+                fuuro_vec[i].type = FT_ANKAN;
+            else if (Fuuro[i].type == KAKAN)
+                fuuro_vec[i].type = FT_KAKAN;
+            if (Fuuro[i].type != ANKAN)
+                fuuro_vec[i].hai = Fuuro[i].hai;
             fuuro_vec[i].consumed = Fuuro[i].consumed;  //TODO:
         }
         stat.player_state[next_actor].fuuro = fuuro_vec;
@@ -484,7 +517,9 @@ namespace Custom{
                 int j = i;
                 for (int k = j; k < j + 1; k++) {
                     for (int l = 0; l < use_game_state.Fuuro[k].size(); l++) {
-                        cout << hai_int_to_str(use_game_state.Fuuro[k][l].hai) << ", ";
+                        cout << TypeIntToStr(use_game_state.Fuuro[k][l].type) << " : ";
+                        if (use_game_state.Fuuro[k][l].hai > 0)
+                            cout << hai_int_to_str(use_game_state.Fuuro[k][l].hai) << ", ";
                         for (int a = 0; a < use_game_state.Fuuro[k][l].consumed.size(); a++)
                             cout << hai_int_to_str(use_game_state.Fuuro[k][l].consumed[a]) << ", ";
                         cout << "||";
@@ -583,7 +618,9 @@ namespace Custom{
             int j = next_actor;
             for (int k = j; k < j + 1; k++) {
                 for (int l = 0; l < use_game_state.Fuuro[k].size(); l++) {
-                    cout << hai_int_to_str(use_game_state.Fuuro[k][l].hai) << ", ";
+                    cout<<TypeIntToStr(use_game_state.Fuuro[k][l].type)<<" : ";
+                    if (use_game_state.Fuuro[k][l].hai > 0)
+                        cout << hai_int_to_str(use_game_state.Fuuro[k][l].hai) << ", ";
                     for (int a = 0; a < use_game_state.Fuuro[k][l].consumed.size(); a++)
                         cout << hai_int_to_str(use_game_state.Fuuro[k][l].consumed[a]) << ", ";
                     cout << "||";
@@ -681,8 +718,6 @@ namespace Custom{
             ChangeStateWithTsumo(game_state, buf_info,false);
         else if(buf_info.type == "dahai")
             ChangeStateWithDahai(game_state, buf_info, false);
-        //else if(buf_info.type == "reach")
-            //TODO: reach
         else if(buf_info.type == "hora")
             ChangeStateWithHora();
         else if(buf_info.type == "ryukyoku")
@@ -692,17 +727,21 @@ namespace Custom{
         else if(buf_info.type == "pon")
             ChangeStateWithPon(game_state, buf_info, false);
         else if(buf_info.type == "daiminkan")
-            ChangeStateWithPon(game_state, buf_info, false);
+            ChangeStateWithDaiminkan(game_state, buf_info, false);
         else if(buf_info.type == "kakan")
-            ChangeStateWithPon(game_state, buf_info, false);
+            ChangeStateWithKakan(game_state, buf_info, false);
         else if(buf_info.type == "ankan")
-            ChangeStateWithPon(game_state, buf_info, false);
+            ChangeStateWithAnkan(game_state, buf_info, false);
         else if(buf_info.type == "request")
             ChangeStateWithRequest();
         else if(buf_info.type == "need dahai")
             WriteDahai();
-        else if(buf_info.type == "end_game")
-            exit(1);
+        else if(buf_info.type == "dora")
+            ChangeStateWithDora(game_state, buf_info, false);
+        else if(buf_info.type == "reach_accepted")
+            ChangeStateWithReach(game_state, buf_info, false);
+        // else if(buf_info.type == "end_game")
+        //     exit(1);
 
     }
 
@@ -712,7 +751,8 @@ namespace Custom{
         game_state.haipai[10] = 1;  //dora
         game_state.haipai[20] = 1;  //dora
         game_state.haipai[30] = 1;  //dora
-
+        game_state.reach.clear();
+        game_state.reach.resize(4,pair<bool,int>(false, 0));
         game_state.bakaze = buf_info.bakaze;
         game_state.dora_marker.clear();
         game_state.dora_marker.push_back(hai_str_to_int(buf_info.dora_marker));
@@ -767,10 +807,12 @@ namespace Custom{
 
             game_state_.recent_dahai = hai_str_to_int(buf_info_.pai);
             game_state_.dahai[game_state_.actor].push_back(game_state_.recent_dahai);
+            game_state_.dahai_order.push_back((game_state_.actor * 100) + game_state_.dahai[game_state_.actor].size() -1);  //dahai order => actor * 100 + actor's dahai order 
             game_state_.tehai[game_state_.actor][game_state_.recent_dahai]--;
         } else {
             game_state_.recent_dahai = hai_str_to_int(buf_info_.pai);
             game_state_.dahai[game_state_.actor].push_back(game_state_.recent_dahai);
+            game_state_.dahai_order.push_back((game_state_.actor * 100) + game_state_.dahai[game_state_.actor].size() -1);  //dahai order  => actor * 100 + actor's dahai order
             if(plan == false)  //if not planning except haipai
                 game_state_.haipai[game_state_.recent_dahai]--;
             if(game_state_.tehai[game_state_.actor][game_state_.recent_dahai]>0)
@@ -872,23 +914,40 @@ namespace Custom{
     }
     void Board::ChangeStateWithKakan(state& game_state_, buffer& buf_info_, bool plan) {
         Fuuro_Elem_ temp;   //TODO:
-        temp.type = PON;
+        temp.type = KAKAN;
         temp.hai = hai_str_to_int(buf_info_.pai);
+        int actor = buf_info_.actor;
         temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[0]));
         temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[1]));
-        temp.target_relative = (buf_info_.actor + buf_info_.target) % 4;
+        temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[2]));
+
+        vector<Fuuro_Elem_>& fuuro_vec = game_state_.Fuuro[actor];
+        
+        for(int i = 0;i < fuuro_vec.size();i++){
+            if(fuuro_vec[i].hai == temp.hai && fuuro_vec[i].type == PON){   //remove PON
+                fuuro_vec.erase(fuuro_vec.begin() + i);
+            }
+        }
 
         game_state_.recent_dahai = 0;
 
         game_state_.actor = buf_info_.actor;
-        for (int i = 0; i < buf_info_.consumed.size(); i++)
-            game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.consumed[i])]--;
-
+        if(actor == PLAYER){
+            game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.pai)]--;
+        } else{
+            if(plan == true){
+                game_state_.tehai[game_state_.actor][hai_str_to_int(buf_info_.pai)]--;
+            } else {
+                game_state_.haipai[hai_str_to_int(buf_info_.pai)]--;
+            }
+        }
+            
         game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
     void Board::ChangeStateWithAnkan(state& game_state_, buffer& buf_info_, bool plan) {
         Fuuro_Elem_ temp;
         temp.type = ANKAN;
+        temp.hai = 0;
         temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[0]));
         temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[1]));
         temp.consumed.push_back(hai_str_to_int(buf_info_.consumed[2]));
@@ -913,12 +972,25 @@ namespace Custom{
 
         game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
+    void Board::ChangeStateWithDora(state& game_state_, buffer& buf_info_, bool plan){
+        game_state_.dora_marker.push_back(hai_str_to_int(buf_info_.dora_marker));
+        if (plan == false)
+            game_state_.haipai[hai_str_to_int(buf_info_.dora_marker)]--;
+        else{
+            //TODO:
+        }   
 
+    }
+    void Board::ChangeStateWithReach(state& game_state_, buffer& buf_info_, bool plan){
+        game_state_.reach[buf_info_.actor].first = true;
+        game_state_.reach[buf_info_.actor].second = game_state_.dahai_order.size() - 1;
+    }
     void Board::ChangeStateWithRequest(){
         //TODO: select Fuuro number   0 => dont select 1~
         string buf = "no";  //test dont select
         int pon_num = -1;
         int kan_num = -1;
+        int hora_num = -1;
         for (int i = 0; i < buf_info.reqeust.size(); i++) {
             cout << i + 1 << " : ";
             cout << "type : ";
@@ -941,8 +1013,17 @@ namespace Custom{
                 cout << "ankan";
                 kan_num = i;
             }
+            else if (buf_info.reqeust[i].type == HORA){
+                cout << "hora";
+                hora_num = i;
+            }
+            else if (buf_info.reqeust[i].type == REACH){
+                cout << "reach";
+                hora_num = i;
+            }
             else if (buf_info.reqeust[i].type == NONE)
                 cout << "none";
+                
             
             if (buf_info.reqeust[i].type != NONE) {
                 cout << ", ";
@@ -952,7 +1033,9 @@ namespace Custom{
                     if (j != buf_info.reqeust[i].consumed.size() - 1)
                         cout << ", ";
                 }
-                cout << "], pai : " << hai_int_to_str(buf_info.reqeust[i].hai);
+                if (buf_info.reqeust[i].hai > 0 && buf_info.reqeust[i].hai < 38)
+                    cout << "], pai : " << hai_int_to_str(buf_info.reqeust[i].hai);
+                if(buf_info.reqeust[i].type != ANKAN || buf_info.reqeust[i].type != HORA || buf_info.reqeust[i].type != REACH)
                 cout << ", target : " << buf_info.reqeust[i].target_relative;
             }
             cout<<endl;
@@ -962,7 +1045,9 @@ namespace Custom{
       cout<<"please type number to select action:";
       //cin>>buf;   //no typing
       buf = to_string(buf_info.reqeust.size()); //select only pon => toitoi
-      if(kan_num != -1)
+      if(hora_num != -1)
+        buf = to_string(hora_num + 1);
+      else if(kan_num != -1)
         buf = to_string(kan_num + 1);
       else if(pon_num != -1)
         buf = to_string(pon_num + 1);
@@ -1072,6 +1157,10 @@ namespace Custom{
                         req_temp.type = KAKAN;
                     else if (type_temp == "ankan")
                         req_temp.type = ANKAN;
+                    else if (type_temp == "hora")
+                        req_temp.type = HORA;
+                    else if (type_temp == "reach")
+                        req_temp.type = REACH;
                     else if (type_temp == "none")
                         req_temp.type = NONE;
                 }
@@ -1357,7 +1446,22 @@ namespace Custom{
         }
         return hai_str;
     }
-
+    std::string Board::TypeIntToStr(int type) {
+        if (type == NONE)
+            return "none";
+        else if (type == PON)
+            return "pon";
+        else if (type == CHI)
+            return "chi";
+        else if (type == DAIMINKAN)
+            return "daiminkan";
+        else if (type == KAKAN)
+            return "kakan";
+        else if (type == ANKAN)
+            return "ankan";
+        else if (type == HORA)
+            return "hora";
+    }
     std::vector<std::string> SplitToString(std::string input, char delimiter, bool remove) {
         std::vector<std::string> answer;
         std::stringstream ss(input);
@@ -1399,23 +1503,71 @@ namespace Custom{
         int kind = pai / 10;
         int number = hai38_to_hai9(pai) + (kind * 10);  //except dora number
         int score = 0;  
+        //for defence
+        if (use_game_state.turn > 25) {
+            for (int i = 1; i < 4; i++) {
+                vector<int>& temp = use_game_state.dahai[i];
+                vector<int>::iterator it = find(temp.begin(), temp.end(), pai);
+                if (it == temp.end()) {  //dangerous pai
+                    score -= 200 * (use_game_state.turn / 50);  //recommend dont dahai
+                }
+            }
+
+            for(int i = 0;i<4;i++){
+                int val = use_game_state.dahai_order[use_game_state.dahai_order.size() - i - 1];
+                int actor = val / 100;
+                int order = val % 100;
+                if(actor == PLAYER)
+                    continue;
+                    
+                if(dahai[actor][order] == pai) {
+                    score += 200;               //safe pai 
+                    break;
+                }
+            }
+        }
+
+        for (int i = 1; i < 4; i++) {
+            if (use_game_state.reach[i].first == false)
+                continue;
+            int order = use_game_state.reach[i].second;
+            bool finder = false;
+            for(int j = order;j<use_game_state.dahai_order.size();j++){
+                int val = use_game_state.dahai_order[j];
+                int actor = val / 100;
+                int order = val % 100;
+                if(dahai[actor][order] == pai){
+                    finder = true;
+                    break;
+                }
+            }
+            if(find(dahai[i].begin(), dahai[i].end(), pai) != dahai[i].end())
+                finder = true;
+
+            if (finder == false) {  //dangerous pai => reach player
+                score -= 300;        //recommend dont dahai
+            } else {                 //safe pai => reach player
+                score += 300;        //recommend dahai
+            }
+        }
+
         if(pai>30){  //if honors
             int count_haipai = count(haipai.begin(), haipai.end(), pai);    //find in all haipai
 
             
             if(tehai[pai]+count_haipai<3)
-                return 2000;    //add score to dahai pai if cant make honor body
+                return 2000 + score;    //add score to dahai pai if cant make honor body
             
-            if(pai<35){   //if kaze honor
-                if(CalculatePlayerKazeFromOya( use_game_state.oya) != pai - 31)
-                    return 1000; //add score to dahai pai if not my kaze honor
-            }
+            // if(pai<35){   //if kaze honor
+            //     if(CalculatePlayerKazeFromOya( use_game_state.oya) != pai - 31)
+            //         return 1000; //add score to dahai pai if not my kaze honor
+            // }
 
             if (tehai[pai] >= 2)   //sub score to save pai if can make honor body
-                return -600;
+                return -800 + score;
 
             if(use_game_state.turn>34)  //if turn over 35 turns, it is dangerous
-                return 1000;
+                return 1000 + score;
 
             
             
@@ -1436,11 +1588,11 @@ namespace Custom{
             int count_haipai = count(haipai.begin(), haipai.end(), pai);    //find in all haipai
 
             if (tehai[number] + dora + count_haipai < 3)    //cant make syuntsu
-                return 300;
+                return 300 + score;
 
             //can make syuntsu
             if (tehai[number] + dora >= 1)
-                return 200 + (-300 * (tehai[number] + dora)) + (-100 * count_haipai) + score;
+                return 200 + (-300 * (tehai[number] + dora)) + (-200 * count_haipai) + score;
 
             return 0;
         }
