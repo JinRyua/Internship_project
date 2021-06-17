@@ -9,3 +9,4 @@ Custom/board
 /home/jylee/jylee/Mahjong/devel/.private/board/lib/pkgconfig/board.pc /home/jylee/jylee/Mahjong/devel/lib/pkgconfig/board.pc
 /home/jylee/jylee/Mahjong/devel/.private/board/lib/python2.7/dist-packages/board/__init__.py /home/jylee/jylee/Mahjong/devel/lib/python2.7/dist-packages/board/__init__.py
 /home/jylee/jylee/Mahjong/devel/.private/board/lib/board/board /home/jylee/jylee/Mahjong/devel/lib/board/board
+/home/jylee/jylee/Mahjong/devel/.private/board/lib/board/simulation_process /home/jylee/jylee/Mahjong/devel/lib/board/simulation_process

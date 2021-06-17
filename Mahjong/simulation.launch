@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+<!-- arguments -->
+<!-- arguments -->
+	<!-- board -->
+	<node name="simulation1" pkg="board" type="simulation_process" respawn="false" output="screen">
+	</node>
+	
+	
+
+
+
+</launch>

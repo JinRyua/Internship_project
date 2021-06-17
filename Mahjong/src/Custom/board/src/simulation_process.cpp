@@ -1,4 +1,4 @@
-#include "board/board.h"
+#include "board/simulation_process.h"
 #include "board/types.h"
 
 #include <iostream>
@@ -19,8 +19,8 @@
 //https://github.com/critter-mj/akochan
 //using mahjong calculator
 
-#define PORT 7777
-#define BUF_SIZE 3076
+#define PORT 8888
+#define BUF_SIZE 7152
 const char IP[] = "127.0.0.1";  //loopback
 #define THREAD_SIZE 1;
 
@@ -30,35 +30,33 @@ void print_log(string node_name, string func,string str);
 
 
 namespace Custom{
-    Board::Board(ros::NodeHandle &nh, const int sock)   //생성자
+    SimulationProcess::SimulationProcess(ros::NodeHandle &nh, const int sock)   //생성자
     {
         
         
         node_handle = &nh;  //get node handle
         serv_sock = sock;
-        end_flag = false;   //server thread end_flag
-
-        thread_list.resize(1);
-        thread_list[0] = thread([&](){MulitProcessingServer();});
-
     }
     
-    Board::~Board() 
+    SimulationProcess::~SimulationProcess() 
     {   
-        end_flag = true;    //end server socket
-        thread_list[0].join();  //wait server socket end
+        
     }
 
-    void Board::MulitProcessingServer(){
-        MultiProcessing manager_sock_serv(que, result_simulation, end_flag);
+    void SimulationProcess::MulitProcessingServer(){
+        MultiProcessing manager_sock_serv(que, result, end_flag);
         int count = 0;
-        while(!end_flag){
+        while(1){
             sleep(0);
             manager_sock_serv.RunMultiProcessing();
+            count++;
+            if(count>100000000)
+                break;
+            
         }
     }
 
-    std::string Board::Planner(std::string act){
+    std::string SimulationProcess::Planner(std::string act){
         if(act == "dahai"){
             vector<int> possible;
             for (int i = 1; i < game_state.tehai[0].size(); i++) { //make possible action
@@ -133,30 +131,8 @@ namespace Custom{
                     }
                 cout<<endl;
 
-                //멀티 프로세스 시뮬레이션 준비
-                while(!que.empty())
-                    que.pop();
-                result_simulation.clear();
-                result_simulation.resize(possible.size());
-                for (int k = 0; k < possible.size(); k++) { //가능한 액션만큼 전부 시뮬레이션
-                    Queue_state temp;           //큐에 시뮬레이션 할 것 저장
-                    temp.game_state = new_game_state;
-                    temp.possible = possible[k];
-                    temp.result_num = k;
-                    que.push(temp);
-
-                    //그냥 단일 프로세스 시뮬레이션
-                    //result_vec[k] += DahaiSimulation(possible[k], new_game_state, 0, PLAYER) + PlayerHeuristic(new_game_state, possible[k]);
-                }
-
-                while(1){
-                    sleep(0);
-                    if(que.empty()) //시뮬레이션 끝날때까지 기다림
-                        break;
-                }
-
-                for (int k = 0; k < possible.size(); k++) { //결과 저장
-                    result_vec[k] += result_simulation[k];
+                for (int k = 0; k < possible.size(); k++) {
+                    result_vec[k] += DahaiSimulation(possible[k], new_game_state, 0, PLAYER) + PlayerHeuristic(new_game_state, possible[k]);
                 }
             }
             cout<<"end all simulation"<<endl;
@@ -174,7 +150,7 @@ namespace Custom{
         }
     }
 
-    bool Board::CheckTenpai(state& use_game_state, int actor){
+    bool SimulationProcess::CheckTenpai(state& use_game_state, int actor){
     
         vector<Fuuro_Elem_>& Fuuro = use_game_state.Fuuro[actor]; 
         Fuuro_Vector fuuro_vec;
@@ -217,7 +193,7 @@ namespace Custom{
         
     }
 
-    int Board::CalculateShanten(vector<int>& tehai, vector<Fuuro_Elem_>& Fuuro, int dahai) {
+    int SimulationProcess::CalculateShanten(vector<int>& tehai, vector<Fuuro_Elem_>& Fuuro, int dahai) {
 
         string man = "";
         string pin = "";
@@ -256,7 +232,7 @@ namespace Custom{
         return min(tehai_analyzer.get_mentu_shanten_num(), tehai_analyzer.get_titoi_shanten_num());
     }
 
-    std::vector<buffer> Board::CheckNaki(int actor, int target, state& use_game_state, bool last_actor_chi){
+    std::vector<buffer> SimulationProcess::CheckNaki(int actor, int target, state& use_game_state, bool last_actor_chi){
         int recent_dahai = use_game_state.recent_dahai;
         vector<int>& tehai = use_game_state.tehai[actor];
         vector<buffer> return_vec;
@@ -297,7 +273,7 @@ namespace Custom{
         return return_vec;
     }
 
-    std::vector<int> Board::CalculateScore(state& use_game_state, json11::Json& move, string type) {  
+    std::vector<int> SimulationProcess::CalculateScore(state& use_game_state, json11::Json& move, string type) {  
         cout<<"start score"<<endl;
         const json11::Json moves = move;
 
@@ -397,7 +373,7 @@ namespace Custom{
         return score_return;
     }
 
-    buffer Board::MakeChiBuffer(int actor, int target, int pai, vector<int> consumed) {
+    buffer SimulationProcess::MakeChiBuffer(int actor, int target, int pai, vector<int> consumed) {
         buffer temp;
         temp.actor = actor;
         temp.type = "chi";
@@ -411,7 +387,7 @@ namespace Custom{
         return temp;
     }
 
-    int Board::hai38_to_hai9(int hai_int38){
+    int SimulationProcess::hai38_to_hai9(int hai_int38){
         int hai_int9 = 0;
         if (hai_int38 % 10 == 0)
                 hai_int9 = 5;
@@ -421,7 +397,7 @@ namespace Custom{
         return hai_int9;
     }
 
-    bool Board::CheckHora(state& use_game_state, int next_actor, json11::Json& last_act){
+    bool SimulationProcess::CheckHora(state& use_game_state, int next_actor, json11::Json& last_act){
         json11::Json hora_move = make_hora(next_actor, next_actor, use_game_state.tsumo);
         json11::Json last_move = last_act;
         
@@ -466,7 +442,8 @@ namespace Custom{
         return co;
     }
 
-    int Board::DahaiSimulation(int possible, state& use_game_state, int depth, int actor){    
+    int SimulationProcess::DahaiSimulation(int possible, state& use_game_state, int depth, int actor){
+        cout<<"?"<<endl;    
         state init = use_game_state;
         
         int next_actor = actor + 1;
@@ -685,7 +662,7 @@ namespace Custom{
                     }
                 }
                 result += DahaiSimulation(possible_vec[random], next_game_state, depth + 1, next_actor);
-                
+                //cout<<result<<endl;
             }
             use_game_state = init;
             return result / count;
@@ -725,7 +702,7 @@ namespace Custom{
         return 0;   //not use
     }
     
-    void Board::run_board(){
+    void SimulationProcess::run_board(){
         //type = tsumo, dahai, start_kyoku, chi, pon, hora
         // reach, reach_accepted, end_kyoku, ryukyoku, end_game...
         if(buf_info.type == "start_kyoku")
@@ -761,7 +738,7 @@ namespace Custom{
 
     }
 
-    void Board::ChangeStateWithStartKyoku(){    //set game state init
+    void SimulationProcess::ChangeStateWithStartKyoku(){    //set game state init
         game_state.haipai.clear();
         game_state.haipai.resize(38,4);
         game_state.haipai[10] = 1;  //dora
@@ -798,7 +775,7 @@ namespace Custom{
     
         
     }
-    void Board::ChangeStateWithTsumo(state& game_state_, buffer& buf_info_, bool plan){
+    void SimulationProcess::ChangeStateWithTsumo(state& game_state_, buffer& buf_info_, bool plan){
         if(buf_info_.actor == PLAYER){   //if player's tsumo
             game_state_.actor = 0;
             game_state_.tsumo = hai_str_to_int(buf_info_.pai);
@@ -817,7 +794,7 @@ namespace Custom{
         }
         game_state_.recent_dahai = -1;
     }
-    void Board::ChangeStateWithDahai(state& game_state_, buffer& buf_info_, bool plan){
+    void SimulationProcess::ChangeStateWithDahai(state& game_state_, buffer& buf_info_, bool plan){
         game_state_.actor = buf_info_.actor;
         if(game_state_.actor == PLAYER){ 
             string dahai;
@@ -836,15 +813,15 @@ namespace Custom{
                 game_state_.tehai[game_state_.actor][game_state_.recent_dahai]--;
         }
     }
-    void Board::ChangeStateWithHora(){
+    void SimulationProcess::ChangeStateWithHora(){
         //TODO: 
         game_state.score = buf_info.score;
     }
-    void Board::ChangeStateWithRyokyoku(){
+    void SimulationProcess::ChangeStateWithRyokyoku(){
         //TODO:
         game_state.score = buf_info.score;
     }
-    void Board::ChangeStateWithChi(state& game_state_, buffer& buf_info_, bool plan){
+    void SimulationProcess::ChangeStateWithChi(state& game_state_, buffer& buf_info_, bool plan){
         Fuuro_Elem_ temp;
         temp.type = CHI;
         temp.hai = hai_str_to_int(buf_info_.pai);
@@ -872,7 +849,7 @@ namespace Custom{
 
         game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
-    void Board::ChangeStateWithPon(state& game_state_, buffer& buf_info_, bool plan){
+    void SimulationProcess::ChangeStateWithPon(state& game_state_, buffer& buf_info_, bool plan){
         Fuuro_Elem_ temp;
         temp.type = PON;
         temp.hai = hai_str_to_int(buf_info_.pai);
@@ -901,7 +878,7 @@ namespace Custom{
         game_state_.Fuuro[game_state_.actor].push_back(temp);
 
     }
-    void Board::ChangeStateWithDaiminkan(state& game_state_, buffer& buf_info_, bool plan) {
+    void SimulationProcess::ChangeStateWithDaiminkan(state& game_state_, buffer& buf_info_, bool plan) {
         Fuuro_Elem_ temp;
         temp.type = DAIMINKAN;
         temp.hai = hai_str_to_int(buf_info_.pai);
@@ -929,7 +906,7 @@ namespace Custom{
 
         game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
-    void Board::ChangeStateWithKakan(state& game_state_, buffer& buf_info_, bool plan) {
+    void SimulationProcess::ChangeStateWithKakan(state& game_state_, buffer& buf_info_, bool plan) {
         Fuuro_Elem_ temp;   //TODO:
         temp.type = KAKAN;
         temp.hai = hai_str_to_int(buf_info_.pai);
@@ -961,7 +938,7 @@ namespace Custom{
             
         game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
-    void Board::ChangeStateWithAnkan(state& game_state_, buffer& buf_info_, bool plan) {
+    void SimulationProcess::ChangeStateWithAnkan(state& game_state_, buffer& buf_info_, bool plan) {
         Fuuro_Elem_ temp;
         temp.type = ANKAN;
         temp.hai = 0;
@@ -989,7 +966,7 @@ namespace Custom{
 
         game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
-    void Board::ChangeStateWithDora(state& game_state_, buffer& buf_info_, bool plan){
+    void SimulationProcess::ChangeStateWithDora(state& game_state_, buffer& buf_info_, bool plan){
         game_state_.dora_marker.push_back(hai_str_to_int(buf_info_.dora_marker));
         if (plan == false)
             game_state_.haipai[hai_str_to_int(buf_info_.dora_marker)]--;
@@ -998,11 +975,11 @@ namespace Custom{
         }   
 
     }
-    void Board::ChangeStateWithReach(state& game_state_, buffer& buf_info_, bool plan){
+    void SimulationProcess::ChangeStateWithReach(state& game_state_, buffer& buf_info_, bool plan){
         game_state_.reach[buf_info_.actor].first = true;
         game_state_.reach[buf_info_.actor].second = game_state_.dahai_order.size() - 1;
     }
-    void Board::ChangeStateWithRequest(){
+    void SimulationProcess::ChangeStateWithRequest(){
         //TODO: select Fuuro number   0 => dont select 1~
         string buf = "no";  //test dont select
         int pon_num = -1;
@@ -1072,7 +1049,7 @@ namespace Custom{
       write(serv_sock,buf.c_str(),buf.size());
     }
 
-    void Board::WriteDahai(){
+    void SimulationProcess::WriteDahai(){
         //select Dahai  insert AI TODO:
             string dahai;
             for (int i = 0; i < buf_info.consumed.size(); i++) {
@@ -1090,7 +1067,7 @@ namespace Custom{
             }
     }
 
-    void Board::PrintTehai(){
+    void SimulationProcess::PrintTehai(){
         cout << "player's tehai : ";
         for (int i = 0; i < game_state.tehai[PLAYER].size(); i++) {
             for (int j = 0; j < game_state.tehai[PLAYER][i]; j++) {
@@ -1100,7 +1077,7 @@ namespace Custom{
         cout << endl;
     }
 
-    void Board::DivideAndParseBuffer(std::string buf) {
+    void SimulationProcess::DivideAndParseBuffer(std::string buf) {
         //TODO: divide buf
         int pos = 0;
         struct buffer new_buffer;
@@ -1300,7 +1277,7 @@ namespace Custom{
 
     }
 
-    int Board::hai_str_to_int(const std::string hai_str) {
+    int SimulationProcess::hai_str_to_int(const std::string hai_str) {
         if (hai_str == "1m") {
             return 1;
         } else if (hai_str == "2m") {
@@ -1383,7 +1360,7 @@ namespace Custom{
             return 0;
         }
     }
-    std::string Board::hai_int_to_str(int hai_int) {
+    std::string SimulationProcess::hai_int_to_str(int hai_int) {
         std::string hai_str = "";
         if (hai_int == 1) {
             hai_str = "1m";
@@ -1464,7 +1441,7 @@ namespace Custom{
         }
         return hai_str;
     }
-    std::string Board::TypeIntToStr(int type) {
+    std::string SimulationProcess::TypeIntToStr(int type) {
         if (type == NONE)
             return "none";
         else if (type == PON)
@@ -1514,7 +1491,7 @@ namespace Custom{
         return answer;
     }
 
-    int Board::PlayerHeuristic(state& use_game_state, const int pai){   //make my tataics
+    int SimulationProcess::PlayerHeuristic(state& use_game_state, const int pai){   //make my tataics
         vector<int>& tehai = use_game_state.tehai[PLAYER];
         vector<vector<int>>& dahai = use_game_state.dahai;
         vector<int>& haipai = use_game_state.haipai;  
@@ -1627,7 +1604,19 @@ namespace Custom{
         }
     }
 
-    int Board::CalculatePlayerKazeFromOya(int oya){
+    int SimulationProcess::run_simulation(std::string buffer) {
+        std::istringstream iss(buffer);
+        boost::archive::text_iarchive text_ia(iss);
+        Queue_state temp;
+        text_ia >> temp;  //역직렬화
+
+        int possible = temp.possible;                 //시뮬레이션 할 것
+        state new_game_state = temp.game_state;  //시뮬레이션 할 상태
+        cout<<"end process simulation"<<endl;
+        return DahaiSimulation(possible, new_game_state, 0, PLAYER);
+    }
+
+    int SimulationProcess::CalculatePlayerKazeFromOya(int oya){
         vector<string> order = {"E", "N", "W", "S"};
         int kaze_num = (4 - oya) % 4;
         return kaze_str_to_int(order[kaze_num]);
@@ -1656,13 +1645,6 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "board");//,  ros::init_options::NoSigintHandler);
     ros::NodeHandle nh("~");
     srand((unsigned int)time(NULL));        //set random seed
-    //signal(SIGINT, my_handler);
-    
-    //b = &bi;
-
-    //service
-
-    //subscriber
     
     int sock;
     struct sockaddr_in serv_addr;
@@ -1686,7 +1668,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    Custom::Board bi(nh, sock);
+    Custom::SimulationProcess si(nh, sock);
 
     std::cout<<"ready to run board"<<std::endl;
     ROS_INFO("Custom: (%s) Ready to receive", ros::this_node::getName().c_str());
@@ -1697,29 +1679,20 @@ int main(int argc, char **argv)
         double start_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         ros::spinOnce();    //check sub and pub and srv
 
-        
-        str_len = read(sock, buf, BUF_SIZE - 1);
-        if(str_len != 0){
-            buf[str_len] = 0;
-            buff = buf;
-            vector<string> buf_list = Custom::SplitToString(buff, '}' , false);
-            for(int i =0;i<buf_list.size();i++){
-            cout << buf_list[i] << endl;
-            //cout << str_len << endl;
-            //TODO: 겹치기 예외 처리
+        string buffer = "";
+        char buf_char[BUF_SIZE];
+        int buf_len = read(sock, &buf_char, BUF_SIZE - 1);
+        if (buf_len != 0) {
+            buf_char[buf_len] = 0;
+            buffer = buf_char;
+            cout<<buffer<<endl;
 
-            bi.DivideAndParseBuffer(buf_list[i]);
-            bi.run_board();  //run_board if received stream from socket
-            }
+            int result = si.run_simulation(buffer); //분산 시뮬레이션
+
+            buffer = to_string(result); //결과 저장 후 전송
+            write(sock, buffer.c_str(), buffer.size());
             
         }
-
-        // double finish_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        // double rate = (double)(act_time * 1000000000 - (finish_time - start_time)) / 1000000000;
-        // if (rate > 0){
-        //     ros::Rate wait = 1 / rate;
-        //     wait.sleep();
-        // }
     }
 
     close(sock);

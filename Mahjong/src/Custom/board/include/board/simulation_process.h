@@ -15,8 +15,8 @@
 #include <queue>
 #include <vector>
 
-#ifndef BOARD
-#define BOARD
+#ifndef SIMULATION_PROCESS
+#define SIMULATION_PROCESS
 
 #define PLAYER 0
 
@@ -32,7 +32,7 @@
 namespace Custom
 {
 
-    class Board{
+    class SimulationProcess{
 
     private:
         ros::NodeHandle *node_handle;
@@ -50,15 +50,15 @@ namespace Custom
         std::vector<std::thread> thread_list;   //thread list 
         bool end_flag;
         std::queue<Queue_state> que;
-        std::vector<int> result_simulation;
+        std::vector<int> result;
 
 
 
 
 
     public:
-        Board(ros::NodeHandle &nh, const int sock);
-        ~Board();
+        SimulationProcess(ros::NodeHandle &nh, const int sock);
+        ~SimulationProcess();
 
         void MulitProcessingServer();
 
@@ -103,6 +103,7 @@ namespace Custom
 
         buffer MakeChiBuffer(int actor, int target, int pai, std::vector<int> consumed);
  
+        int run_simulation(std::string buffer);
 
         //service client
 

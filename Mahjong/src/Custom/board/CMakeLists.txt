@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
+find_package(Boost REQUIRED COMPONENTS serialization system) 
+
 add_message_files(FILES 
 )
 
@@ -33,54 +35,56 @@ catkin_package(
 
 
 add_executable(board src/board.cpp)
-
 add_dependencies(board ${catkin_EXPORTED_TARGETS})
+add_executable(simulation_process src/simulation_process.cpp)
+add_dependencies(simulation_process ${catkin_EXPORTED_TARGETS})
 
-
-include_directories(~/jylee/Mahjong/mahjong_akochan)
-link_directories(~/jylee/Mahjong/mahjong_akochan)
+include_directories(${CMAKE_SOURCE_DIR}/../../../mahjong_akochan)
+link_directories(${CMAKE_SOURCE_DIR}/../../../mahjong_akochan)
 add_library(mahjong 
-~/jylee/Mahjong/mahjong_akochan/stats.cpp
-~/jylee/Mahjong/mahjong_akochan/mjai_manager.cpp
-~/jylee/Mahjong/mahjong_akochan/share/include.cpp
-~/jylee/Mahjong/mahjong_akochan/share/types.cpp
-~/jylee/Mahjong/mahjong_akochan/share/calc_agari.cpp
-~/jylee/Mahjong/mahjong_akochan/share/agari_ten.cpp
-~/jylee/Mahjong/mahjong_akochan/share/calc_yaku.cpp
-~/jylee/Mahjong/mahjong_akochan/share/calc_shanten.cpp
-~/jylee/Mahjong/mahjong_akochan/share/make_move.cpp
-~/jylee/Mahjong/mahjong_akochan/share/json11.cpp
-~/jylee/Mahjong/mahjong_akochan/main.cpp
-~/jylee/Mahjong/mahjong_akochan/pseudo_game.cpp
-~/jylee/Mahjong/mahjong_akochan/mjai_client.cpp
-~/jylee/Mahjong/mahjong_akochan/import.cpp
-~/jylee/Mahjong/mahjong_akochan/analyze.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_state2.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tenpai_prob_calc.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_cal_work.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/bit_hai_num.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_pat.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/betaori.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/exp_values.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/selector.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_cal_supl.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tenpai_est.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_change.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tactics.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_inout_pattern.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/combination.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_ana.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_action.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/yaku_pattern.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_group.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/jun_calc.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/ankan_after_reach.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/mjutil.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/tehai_cal.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/yaku_dist.cpp
-~/jylee/Mahjong/mahjong_akochan/ai_src/agari.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/stats.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/mjai_manager.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/share/include.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/share/types.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/share/calc_agari.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/share/agari_ten.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/share/calc_yaku.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/share/calc_shanten.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/share/make_move.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/share/json11.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/main.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/pseudo_game.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/mjai_client.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/import.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/analyze.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_state2.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tenpai_prob_calc.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_cal_work.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/bit_hai_num.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_pat.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/betaori.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/exp_values.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/selector.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_cal_supl.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tenpai_est.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_change.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tactics.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_inout_pattern.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/combination.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_ana.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_action.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/yaku_pattern.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_group.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/jun_calc.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/ankan_after_reach.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/mjutil.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/tehai_cal.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/yaku_dist.cpp
+${CMAKE_SOURCE_DIR}/../../../mahjong_akochan/ai_src/agari.cpp
+${CMAKE_SOURCE_DIR}/../../../src/Custom/board/src/multiprocessing.cpp
 			)
-target_link_libraries(board ${catkin_LIBRARIES} mahjong)
+target_link_libraries(board ${catkin_LIBRARIES} mahjong ${Boost_SERIALIZATION_LIBRARY})
+target_link_libraries(simulation_process ${catkin_LIBRARIES} mahjong ${Boost_SERIALIZATION_LIBRARY})
 
 
 include_directories(
