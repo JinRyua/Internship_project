@@ -41,3 +41,5 @@
 			https://github.com/critter-mj/akochan
 socket.cpp		소켓 연습 cpp
 
+주의 bash파일에 export LD_LIBRARY_PATH=~/jylee/Mahjong/mahjong_akochan:$LD_LIBRARY_PATH 같은 시뮬레이터 주소가 있어야 실행 가능
+

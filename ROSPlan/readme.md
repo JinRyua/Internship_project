@@ -2,11 +2,21 @@
 4명의 ai agent가 1명의 플레이어를 잡는 게임
 popf를 사용하지 않고 직접 코드를 작성하여 csp와 비슷한 느낌으로 플랜을 작성
 
+기타 파일 설명
+csp.cpp 	csp solver를 만들기 위한 cpp => 미사용
+a.cpp		problem generator
+map.csv		맵 구조 및 기타 데이터가 저장되어 있는 csv
+roslib.js	js와 ros간 통신을 위한 라이브러리 build 폴더에 있어야함
+all.launch 전체 실행 파일
+
+주의 cpp (board)에 절대 경로가 있음 경로 바뀌면 설정해주어야함
+
+
 노드 설명
 rosplan
 기본적인 구조는 popf(pddl)이므로 domain,problem이 있으며, 이를 kb에 저장하고 planner가 이를 읽어 변환한 뒤, 코드를 이용하여 가야할 곳을 계산한뒤 dispatch
 => 새롭게 rosplan_planning_system에 CSPPlannerInterface.cpp로 플래너 인터페이스 구현
-dispatch되는 내용은 누가 어디로 가
+dispatch되는 내용은 누가 어디로 가야 하는지 
 
 ai_agent 	ai_manager에게서 이동 plan을 dispatch를 받아 action을 수행 
 		grid cell 중심에 도착하면 그 위치를 kb에 등록
@@ -44,6 +54,7 @@ replanner	board에게서 상태를 요구하여 받거나, 그냥 받았을 때 
 	리플래닝 상황이어서 ai가 잠시 멈췄을 때는 player도 멈추는 기능
 	리플래닝 기능 
 	A* 알고리즘을 이용하여 자세한 경로 플랜을 세우는 기능
+	경로가 겹치지 않게 navi에서 A*를 사용할 때 이동한 경로를 피하게 하는 기능
 	자동으로 이동하는 기능, 그 때 벽에 막히면 자동으로 방향을 바꿔주는 기능
 	시간의 흐름에 따라 점수가 오르는 기능
 	일정 점수에 도달하면 게임이 종료되는 기능
@@ -52,10 +63,12 @@ replanner	board에게서 상태를 요구하여 받거나, 그냥 받았을 때 
 	ai들은 최대한 플레이어를 포위하여 잡아먹으려고 하게 구현
 	중간 양끝 통로를 이동할 수있는 기능
 	TIL을 이용하여 KB에 상태 update(미래의 행동)
+	
 
 미구현된 기능
 	중간 양끝 통로를 이용할 때 planner에 문제가 생김
 	ai_agent가 플랜을 다 마치면 더이상 이동하지 않음
 	리플래닝중에도 ai가 정지하여, 플레이어도 같이 짧은 시간동안 정지
 	메뉴 화면을 구현하지 못했음 
+	경로를 정할때 시간을 넣지 못함
  

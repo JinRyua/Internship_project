@@ -124,7 +124,7 @@ namespace Custom
         std::string path;    //path save log
         std::ofstream writeFile;  //ofstream to save log
 
-        int ai_win;
+        int ai_win;     //win count
         int player_win;
 
 
@@ -166,7 +166,7 @@ namespace Custom
        
         //service client
         ros::ServiceClient update_knowledge_client;
-        ros::ServiceClient ai_call_plan_client;
+        ros::ServiceClient ai_call_plan_client;     //call planning
         ros::ServiceClient player_call_plan_client;
 
         // //publisher

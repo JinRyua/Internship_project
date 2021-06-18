@@ -771,7 +771,7 @@ namespace KCL_rosplan {
             double rate = 0;
             
             int current_count = 0;
-            for(int j = 0;j<thread_size;j++){
+            for(int j = 0;j<thread_size;j++){   //multi thread
                 if (j == thread_size - 1) {
                     thread_list[j] = thread([&](){StartSimulationByThread(j, possible_action_list, rate, gameState, playerChar, current_count, count, depth);});
                 } else {

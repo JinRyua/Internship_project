@@ -123,7 +123,7 @@ namespace Custom{
         //simple ghost check
         // if(post_ghost.empty())
         //     return;
-        for(int i = 0; i < post_ghost.size(); i++){
+        for(int i = 0; i < post_ghost.size(); i++){     //call replan after check need replan
             if(ghost[i] != post_ghost[i]){
                 state = CANCEL;
                 return;
@@ -210,7 +210,7 @@ namespace Custom{
             // tm.state = "wait";
             // change_pub.publish(tm);
 
-            //get agent, player state   //TODO: time need
+            //get agent, player state   //TODO: time need       //FSM
             for(int i =0;i<agent_state_pub.size();i++){
                 agent_state_pub[i].publish(msg);
             }
@@ -274,7 +274,7 @@ int main(int argc, char **argv) {
 
     Custom::Replanner ri(nh, node_name);
 
-    //subscriber
+    //subscriber    //header 참조
     std::string state_topic = "/board/state_response";
     ros::Subscriber state_sub = nh.subscribe(state_topic, 10, &Custom::Replanner::state_Callback,
                                              dynamic_cast<Custom::Replanner *>(&ri));

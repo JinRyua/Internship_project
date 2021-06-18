@@ -1011,7 +1011,7 @@ int main(int argc, char **argv)
     Custom::Board bi(nh);
     //b = &bi;
 
-    //service
+    //service   //header 참조
     ros::ServiceServer ask_map_size = nh.advertiseService("/board/ask_map_size", &Custom::Board::ask_map_size_callback, dynamic_cast<Custom::Board *>(&bi));
     ros::ServiceServer move_check = nh.advertiseService("/board/move_check", &Custom::Board::move_check_srv_callback, dynamic_cast<Custom::Board *>(&bi));
     ros::ServiceServer player_action_srv = nh.advertiseService("/board/player_action", &Custom::Board::player_action_callback, dynamic_cast<Custom::Board *>(&bi));

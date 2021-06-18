@@ -49,26 +49,8 @@ int main(int argc, char **argv)
     ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Log_Display::exitCallback,
                                             dynamic_cast<Custom::Log_Display *>(&li));
 
-    // std::cout<<"ready to run display"<<std::endl;
-    // // ROS_INFO("Custom: (%s) Ready to receive", ros::this_node::getName().c_str());
 
-
-    // double act_time = 0.05;
-    // int count =0;
     ros::spin();
-    // while (1)
-    // {
-    //     sleep(0);
-    //     double start_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    //     ros::spinOnce();
-    //     di.display();
-    //     double finish_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    //     double rate = (double)(act_time * 1000000000 - (finish_time - start_time)) / 1000000000;
-    //     if (rate > 0)
-    //     {
-    //         ros::Rate wait = 1 / rate;
-    //         wait.sleep();
-    //     }
-    // }
+
     return 0;
 }

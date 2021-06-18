@@ -139,7 +139,7 @@ namespace Custom{
             }
             select_menu_pub.publish(msg_temp);
         }
-        else if(player_state == GAME){
+        else if(player_state == GAME){  //게임 상태일때 키보드
             if (buf == 68)
                 want_direction = LEFT;
             if (buf == 65)
@@ -158,10 +158,10 @@ namespace Custom{
     }
 
     void Player::run_action(double duration){
-        if(player_state == GAME){
+        if(player_state == GAME){           //게임 상태일때 action 취하기
             board::move_check_srv srv_temp;
             srv_temp.request.want_direction = want_direction;
-            if (move_check_cli.call(srv_temp)){
+            if (move_check_cli.call(srv_temp)){     //원하는 방향 가능한지 check srv
                 if(player[0].direction != srv_temp.response.direction)
                     want_direction = srv_temp.response.direction;
                 player[0].direction = srv_temp.response.direction;
@@ -171,7 +171,7 @@ namespace Custom{
             {
             }
             
-            float move_distance = duration * speed;
+            float move_distance = duration * speed;     //이동함
             if(player[0].direction == LEFT)
                 player[0].col -= move_distance;
             else if(player[0].direction == RIGHT)
@@ -184,7 +184,7 @@ namespace Custom{
             board::player_act_srv act_srv;
             act_srv.request.loc = player[0];
         
-            if (player_action_cli.call(act_srv)){
+            if (player_action_cli.call(act_srv)){       //이동해도 되는지 되면 이동 하게 하는 srv
                 player[0] =  act_srv.response.result;
             }
             else
@@ -196,7 +196,7 @@ namespace Custom{
     }
 
     void Player::change_state_Callback(const board::change_state_msg& msg){
-        if(msg.state == "wait"){
+        if(msg.state == "wait"){    //change state
             player_state = WAIT;
         }
         else if(msg.state == "playing game"){
@@ -217,7 +217,7 @@ namespace Custom{
     }
 
     bool Player::player_state_time_Callback(player::player_state_time_srv::Request& req, player::player_state_time_srv::Response& res){
-        int point_row = player[0].row;
+        int point_row = player[0].row;          //player의 현 상태를 return
         int point_col = player[0].col;
         float time;
         if(player[0].direction == LEFT){
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 
     Custom::Player pi(nh);
 
-    //service server
+    //service server        //header 참조
     ros::ServiceServer player_state_time = nh.advertiseService("/player/player_state_time", &Custom::Player::player_state_time_Callback, dynamic_cast<Custom::Player *>(&pi));
 
     //subscriber

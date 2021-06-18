@@ -154,7 +154,6 @@ namespace Custom{
                 }
             }
 
-            //cout<<node_name<<" : "<<agent.row<<", "<<agent.col<<", "<<agent.direction<<endl;
             agent.direction = direction;
             board::set_ai_loc_msg temp;
             temp.loc = agent;
@@ -198,7 +197,7 @@ namespace Custom{
         plan = msg.plan;
         plan_number = 0;
         state = RUN;
-        stop_flag = false;
+        stop_flag = false;      //dispatch 저장 및 초기화
         replan_flag = false;
         ai_manager::ai_feedback temp;
         temp.status = "enabled";
@@ -206,7 +205,7 @@ namespace Custom{
     }
 
     void Ai_Agent::state_Callback(const std_msgs::Empty& msg){
-        ai_agent::agent_state_time temp;
+        ai_agent::agent_state_time temp;        //현재 플랜 pub
            //TODO:
         if(state != IDLE)
             temp.axis = plan[plan_number];
@@ -216,7 +215,7 @@ namespace Custom{
     }
 
     void Ai_Agent::state_and_stop_Callback(const std_msgs::Empty& msg){
-        ai_manager::get_agent_state temp;
+        ai_manager::get_agent_state temp;   //현재 플랜 pub and stop_flag = true
            //TODO:
         if(state != IDLE)
             temp.agent = plan[plan_number];
@@ -226,7 +225,7 @@ namespace Custom{
         agent_state_pub.publish(temp);
     }
 
-    void Ai_Agent::stop_Callback(const std_msgs::Empty& msg){
+    void Ai_Agent::stop_Callback(const std_msgs::Empty& msg){       // 바로 정지 하고 response
         state = IDLE;
         ai_agent::stop_response temp;
         temp.axis = agent;
@@ -234,13 +233,13 @@ namespace Custom{
         
     }
     
-    void Ai_Agent::exit_Callback(const std_msgs::Empty& msg){
+    void Ai_Agent::exit_Callback(const std_msgs::Empty& msg){   //종료
         exit(0);
     }
 
     void Ai_Agent::set_ai_Callback(const board::set_ai_msg& msg){
         //TODO: set ai  speed, state....
-        state = IDLE;
+        state = IDLE;           //agent의 위치와 speed 변경 후 정지
         if(msg.speed != 0){
             agent = msg.loc;
             speed = msg.speed;
@@ -250,7 +249,7 @@ namespace Custom{
 
     void Ai_Agent::reset_ai_Callback(const board::reset_ai_msg& msg){
         //TODO: reset ai -> ai?
-        state = IDLE;
+        state = IDLE;       //reset 하고 위치 변경
         agent = msg.loc;
 
     }
@@ -268,36 +267,33 @@ int main(int argc, char **argv)
     Custom::Ai_Agent ai(nh);
 
     //subscriber
-    std::string dispatched_topic = "/ai_manager/ai_action/to_" + node_name;
+    std::string dispatched_topic = "/ai_manager/ai_action/to_" + node_name;     //plan dispatched
     nh.getParam("dispatched", dispatched_topic);
     ros::Subscriber dispatched_sub = nh.subscribe(dispatched_topic, 1000, &Custom::Ai_Agent::dispatched_Callback,
                                                dynamic_cast<Custom::Ai_Agent *>(&ai));
 
-    std::string state_topic = "/ai_agent/get_state_agent/to_"+node_name;
+    std::string state_topic = "/ai_agent/get_state_agent/to_"+node_name;        //ask agent's state
     ros::Subscriber state__sub = nh.subscribe(state_topic, 1000, &Custom::Ai_Agent::state_Callback,
                                                       dynamic_cast<Custom::Ai_Agent *>(&ai));
 
-    std::string state_stop_topic = "/ai_manager/get_state_stop_agent/to_" + node_name;
+    std::string state_stop_topic = "/ai_manager/get_state_stop_agent/to_" + node_name;  //order soft stop and aks agent's state
     ros::Subscriber state_and_stop_sub = nh.subscribe(state_stop_topic, 1000, &Custom::Ai_Agent::state_and_stop_Callback,
                                                dynamic_cast<Custom::Ai_Agent *>(&ai));
 
-    std::string stop_topic = "/ai_agent/stop_agent/to_" + node_name;
+    std::string stop_topic = "/ai_agent/stop_agent/to_" + node_name;        //order hard stop
     ros::Subscriber stop_sub = nh.subscribe(stop_topic, 1000, &Custom::Ai_Agent::stop_Callback,
                                                       dynamic_cast<Custom::Ai_Agent *>(&ai));
-
-    std::string exit_topic = "/board/exit_call";
+ 
+    std::string exit_topic = "/board/exit_call";        //exit call
     ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Ai_Agent::exit_Callback,
                                             dynamic_cast<Custom::Ai_Agent *>(&ai));
-    std::string set_ai_topic = "/board/set_ai/to_" + node_name;
+    std::string set_ai_topic = "/board/set_ai/to_" + node_name;                             //set ai state
     ros::Subscriber set_ai_sub = nh.subscribe(set_ai_topic, 1000, &Custom::Ai_Agent::set_ai_Callback,
                                             dynamic_cast<Custom::Ai_Agent *>(&ai));
-    std::string reset_topic = "/board/reset_ai";
+    std::string reset_topic = "/board/reset_ai";                                                    //reset ai state
     ros::Subscriber reset_sub = nh.subscribe(reset_topic, 1000, &Custom::Ai_Agent::reset_ai_Callback,
                                             dynamic_cast<Custom::Ai_Agent *>(&ai));
-    // std::string exit_topic = "/board/exit_call";
-    // nh.getParam("exit_name", exit_topic);
-    // ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Player::exitCallback,
-    //                                         dynamic_cast<Custom::Player *>(&ai));
+
 
     double act_time = 0.04;
     int i =0;
@@ -308,7 +304,7 @@ int main(int argc, char **argv)
         double start_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         ros::spinOnce();
 
-        ai.run_AI_Agent(act_time);
+        ai.run_AI_Agent(act_time);  //run
 
 
              
@@ -321,28 +317,6 @@ int main(int argc, char **argv)
         act_time = (finish_time - start_time) / 1000000000;
         if(act_time < 0.04) act_time = 0.04;
     }
-    // Custom::Ai_Manager mi(nh);
-
-    // //  //subscriber
-    // std::string act_dispatch_topic = "/rosplan_plan_dispatcher";
-    // nh.getParam("dispatcher", act_dispatch_topic);
-    // ros::Subscriber dispatched_sub = nh.subscribe(act_dispatch_topic + "/action_dispatch", 1000, &Custom::Ai_Manager::act_dispatched_Callback,
-    //                                            dynamic_cast<Custom::Ai_Manager *>(&mi));
-
-    // ros::Subscriber sub = nh.subscribe("/ai_manager/ai_feedback", 1000,
-    //                                    &Custom::Ai_Manager::act_dispatched_Callback, dynamic_cast<Custom::Ai_Manager *>(&mi));
-
-    // // std::string exit_topic = "/board/exit_call";
-    // nh.getParam("exit_name", exit_topic);
-    // ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Navi::exit_Callback,
-    //                                         dynamic_cast<Custom::Navi *>(&ni));
-
-    // std::string want_topic = "/navi/want_route";
-    // nh.getParam("want_name", want_topic);
-    // ros::Subscriber want_sub = nh.subscribe(want_topic, 1, &Custom::Navi::want_route_Callback, dynamic_cast<Custom::Navi *>(&ni));
-
-    // //service server
-    // ros::ServiceServer ask_dist_mat_srv = nh.advertiseService("/navi/ask_dist_mat", &Custom::Navi::ask_dist_mat_Callback, dynamic_cast<Custom::Navi *>(&ni));
     
 
     ros::spin();

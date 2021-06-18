@@ -52,13 +52,13 @@ namespace Custom {
         ros::ServiceClient get_agent_client = nh.serviceClient<board::ask_agent_srv>(get_agent_topic);
         board::ask_agent_srv get_agent_srv;
 
-        agent_names.clear();
+        agent_names.clear();        //init
 
         if (get_agent_client.call(get_agent_srv)){
             agent_names = get_agent_srv.response.agents_name;
         }
 
-        std::string path = "/home/jylee/jylee/ROSPlan/node.launch";
+        std::string path = "/home/jylee/jylee/ROSPlan/node.launch"; //to launch ai_agents
         nh.getParam("path", path);
         write_launch(agent_names, path);  //write_agent_launch
         path = "roslaunch " + path + " &";
@@ -99,7 +99,7 @@ namespace Custom {
             }
         }
         
-        init_oper();
+        init_oper();    //operator init
 
         
 
@@ -148,35 +148,8 @@ namespace Custom {
             cout<<number<<endl;
 
             std_msgs::Empty temp;
-            get_state_stop_agent_pub[number].publish(temp);
+            get_state_stop_agent_pub[number].publish(temp); //agent에게 전송
             
-            // int row, col;
-            // int point = to.find("_");
-            // row = stoi(to.substr(5, point - 5));
-            // col = stoi(to.substr(point + 1));
-            
-            // navi::want_route msg;
-            // msg.name = agent_names[number];
-            // msg.from = agents_axis[number];
-            // msg.to.row = row;
-            // msg.to.col = col;
-            // print_log(node_name, __func__, "ask route to navi");
-            // want_route_pub.publish(msg);
-
-            // vector<custom_msgs::axis> send_msg;
-            // custom_msgs::axis temp;
-            // temp.row = row;
-            // temp.col = col;
-            // send_msg.push_back(temp);
-            // ai_manager::ai_action msg_temp;
-            // msg_temp.plan = send_msg;
-            // //agent_pub[number].publish(msg_temp);
-            // big_plan = msg;
-            // dispatched = true;
-            // timer = 0;
-            // board::change_state_msg tm;
-            // tm.state = "playing game";
-            // change_pub.publish(tm);
         }
     }
 
@@ -199,14 +172,7 @@ namespace Custom {
             //update_start(i);
             action_feedback_pub.publish(msg);
             print_log(node_name, __func__, "publish enabled to dispatcher");
-            // //check all enable
-            // int count = 0;
-            // for (i = 0; i < agent_dispatched.size(); i++) {  //find agent number
-            //     if (agent_dispatched[i] == ENABLE)
-            //         count++;
-            // }
-            // if (count == agent_dispatched.size()) {  //publish
-            // }
+           
         } else if (data -> status == "achieved"){
             int i;
             print_log(node_name, __func__, "recieved achieved");
@@ -221,21 +187,7 @@ namespace Custom {
             //update_end(i);
             action_feedback_pub.publish(msg);
             print_log(node_name, __func__, "publish achieved to dispatcher");
-            // //check all achieved
-            // int count = 0;
-            // for (i = 0; i < agent_dispatched.size(); i++) {  //find agent number
-            //     if (agent_dispatched[i] == ACHIEVED)
-            //         count++;
-            // }
-            // if (count == agent_dispatched.size()) {       //publish
-            //     rosplan_dispatch_msgs::ActionFeedback msg;
-            //     msg.action_id = big_plan.action_id;
-            //     msg.status = "achieved";
-            //     action_feedback_pub.publish(msg);
-            //     for (i = 0; i < agent_dispatched.size(); i++) {  //init dispatched
-            //         agent_dispatched[i] = NOT_DISPATCHED;
-            //     }
-            // }
+            
         }
     }
 
@@ -245,7 +197,7 @@ namespace Custom {
 
     void Ai_Manager::stop_Callback(const std_msgs::Empty& msg){
         print_log(node_name, __func__, "received stop from replanner");
-        dispatched = false;
+        dispatched = false; //정지 및 초기화
         get_state = false;
         get_route = false;
         get_agent_state = false;
@@ -257,13 +209,13 @@ namespace Custom {
 
     void Ai_Manager::game_state_Callback(const board::game_state_msg& msg){
         //player_axis = msg.player_axis;
-        lcookies_loc = msg.lcookies_loc;
+        lcookies_loc = msg.lcookies_loc;    //큰 쿠키와 유령화 상태 받음
         ghost = msg.ghost;
         get_state = true;
     }
 
     void Ai_Manager::give_route_Callback(const navi::give_route& msg){
-        print_log(node_name, __func__, "received route from navi");
+        print_log(node_name, __func__, "received route from navi"); //경로 물어본거 받음 
         std::string name = msg.plan.name;
         int i;
         for (i = 0; i < agent_names.size(); i++) {
@@ -273,7 +225,7 @@ namespace Custom {
         vector<custom_msgs::axis> temp = msg.plan.plan;
         plans[i] = temp;
         ai_manager::ai_action msg_temp;
-        msg_temp.plan = plans[i];
+        msg_temp.plan = plans[i];       //자세한 plan 저장
         //if (ghost[i] != 1)
         agent_pub[i].publish(msg_temp);
         //cout<<"good"<<endl;
@@ -308,54 +260,27 @@ namespace Custom {
                 //get state and stop agent
                 std_msgs::Empty msg;
                 //publish
-                // get_state_stop_agent_pub.publish(msg);
-                // get_state = false;
+
             }
             else if(get_agent_state == true){
                 //calc dest
                 print_log(node_name, __func__, "calc_dest");
                 calc_dest();
-                //get route from Navi
-                //for(int i = 0; i < agents_axis.size(); i++){
-                    // navi::want_route msg;
-                    // msg.name = agent_names;
-                    // msg.from = agents_axis;
-                    // msg.to = destination;
-                    //if(ghost[i]!=1) //TODO:
-                    // print_log(node_name, __func__, "ask route to navi");
-                    //     want_route_pub.publish(msg);
-                //}
+
                 get_agent_state = false;
             }
             else if (get_route == true){    //check subscribed route and publish
                 print_log(node_name, __func__, "pub plan to agent");
                 for(int i = 0 ;i < agent_names.size(); i++){
-                    //if( agent_route_flag[i] == 1){   //get_route but dont publish
-                    //???? TODO: who think?
+
                     ai_manager::ai_action msg;
                     msg.plan = plans[i];
-                    //if (ghost[i] != 1)
-                        //agent_pub[i].publish(msg);
-                    //agent_route_flag[i] = 2;
-                    //}
+
                 }
                 double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 timer = time + ((double)(1.5) * 1000000000);    //set timer
                 get_route = false;
-                //check all get_route
-                // int count = 0;
-                // for(int i = 0; i < agent_route_flag.size(); i++){
-                //     if( agent_route_flag[i] == 2)
-                //         count++;
-                // }
-                // if( count == agent_route_flag.size()){
-                //     get_route = false;
-                //     double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                //     timer = time + ((double)(3) * 1000000000);    //set timer
-                //     for(int i = 0; i < agent_route_flag.size(); i++){
-                //         agent_route_flag[i] = 0;    //init route_flag
-                //     }
-                // }
+                
             }
 
         }
@@ -414,13 +339,7 @@ namespace Custom {
                         dest_temp[3] = i;
                 }
             }
-            // int j;
-            // for(j = 0; j < dest_temp.size(); j++){
-            //     if(dest_temp[j] == -1)
-            //         break;
-            // }
-            // if(j == dest_temp.size())
-            //     break;
+
         }
         for(int j = 1; j < dest_temp.size(); j++){      //보정(없을 경우)
             if(dest_temp[j] == -1){
@@ -510,20 +429,11 @@ namespace Custom {
         print_log(node_name, __func__, "ask route to navi");
         want_route_pub.publish(msg);
 
-        // for (i = 0; i < agent_stop_flag.size(); i++) {  //Check all agent stop
-        //     if (agent_stop_flag[i] == true)
-        //         count++;
-        // }
-        // if(count == agent_stop_flag.size()){
-        //     for (i = 0; i < agent_stop_flag.size(); i++) {  //Check all agent stop
-        //         agent_stop_flag[i] = false;
-        //     }
-        //     get_agent_state = true;
-        // }
+ 
     }
 
     void Ai_Manager::init_oper() {
-        std::string kb = "/rosplan_knowledge_base";
+        std::string kb = "/rosplan_knowledge_base"; //oper init for updating kb
         node_handle->getParam("knowledge_base", kb);
 
         // fetch action params
@@ -643,7 +553,7 @@ namespace Custom {
             sensed_predicates.clear();
         }
     }
-
+    //not use
     void Ai_Manager::update_start(int id) {
         std::string name = big_plan[id].name;
         std::map<std::string, rosplan_knowledge_msgs::DomainFormula> predicates = operator_info[name].predicates;
@@ -716,7 +626,7 @@ namespace Custom {
         std::string parameter_temp = big_plan[id].name + " " + to_string(big_plan[id].action_id);
         print_log(node_name, __func__, "update at start by agent" + to_string(id) + " [ " + parameter_temp + " ]");
     }
-
+    //not use
     void Ai_Manager::update_end(int id) {
         std::string name = big_plan[id].name;
         std::map<std::string, rosplan_knowledge_msgs::DomainFormula> predicates = operator_info[name].predicates;
@@ -801,7 +711,7 @@ int main(int argc, char **argv)
     node_name = node_name.substr(point + 1);            //노드 이름 저장
     Custom::Ai_Manager mi(nh, node_name);
 
-    //  //subscriber
+    //  //subscriber        //header 참조
     std::string act_dispatch_topic = "/rosplan_plan_dispatcher";
     nh.getParam("dispatcher", act_dispatch_topic);
     ros::Subscriber dispatched_sub = nh.subscribe(act_dispatch_topic + "/action_dispatch", 1000, &Custom::Ai_Manager::act_dispatched_Callback,
@@ -837,18 +747,7 @@ int main(int argc, char **argv)
     ros::AsyncSpinner spinner(4);  //다중 스레드 사용
     spinner.start();
     ros::waitForShutdown();
-    // std::string exit_topic = "/board/exit_call";
-    // nh.getParam("exit_name", exit_topic);
-    // ros::Subscriber exit_sub = nh.subscribe(exit_topic, 1, &Custom::Navi::exit_Callback,
-    //                                         dynamic_cast<Custom::Navi *>(&ni));
-
-    // std::string want_topic = "/navi/want_route";
-    // nh.getParam("want_name", want_topic);
-    // ros::Subscriber want_sub = nh.subscribe(want_topic, 1, &Custom::Navi::want_route_Callback, dynamic_cast<Custom::Navi *>(&ni));
-
-    // //service server
-    // ros::ServiceServer ask_dist_mat_srv = nh.advertiseService("/navi/ask_dist_mat", &Custom::Navi::ask_dist_mat_Callback, dynamic_cast<Custom::Navi *>(&ni));
-
+  
     return 0;
     }
 

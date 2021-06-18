@@ -140,28 +140,8 @@ namespace Custom{
 
         timer = 0;
 
-        use_world_map = world_map;
-        // custom_msgs::axis from;
-        // from.row = 2;
-        // from.col = 2;
-        // custom_msgs::axis to;
-        // to.row = 25;
-        // to.col = 20;
+        use_world_map = world_map;  //월드맵 저장
         
-        // double now_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        
-        // run_star(from, to,world_map);
-        // double noww_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-        // cout<<(noww_time-now_time)/1000000000<<endl;
-        
-
-        // for(int i = 0; i < world_map.size(); i++){
-        //     for(int j = 0; j < world_map[i].size(); j++){
-        //         cout<<world_map[i][j]<<" ";
-        //     }
-        //     cout<<endl;
-        // }
        
     }
     
@@ -171,7 +151,7 @@ namespace Custom{
 
     void Navi::reset_Callback(const std_msgs::Empty& msg){
         use_world_map = world_map;
-        player_mat.clear();
+        player_mat.clear(); //리셋
         return;
     }
     void Navi::exit_Callback(const std_msgs::Empty& msg){
@@ -179,7 +159,7 @@ namespace Custom{
     }
 
     bool Navi::ask_dist_mat_Callback(navi::ask_dist_mat::Request& req, navi::ask_dist_mat::Response& res){
-        vector<custom_msgs::matrix> temp_mat;
+        vector<custom_msgs::matrix> temp_mat;   //dist_mat return
         vector<custom_msgs::axis> temp_number;
         for(int i = 0; i < dist_mat.size(); i++){
             custom_msgs::matrix temp;
@@ -206,19 +186,7 @@ namespace Custom{
                 timer = now_time + ((double)(30) * 1000000000);
             }
 
-            //get player state  why need???
-            // std::string topic = "/player/player_state_time";
-            // ros::service::waitForService(topic, ros::Duration(20));
-            // ros::ServiceClient client = nh.serviceClient<player::player_state_time_srv>(topic);
-            // player::player_state_time_srv srv;
-
-            // vector<custom_msgs::axis> player;
-            // if (client.call(srv)){
-            //     player = srv.response.player;
-            // }
-            // else{
-            // }
-
+           
             //중복 처리
             //cout << "hi" << endl;
             auto it = player_mat.find(msg.name);
@@ -233,11 +201,6 @@ namespace Custom{
 
             vector<custom_msgs::axis> plan;
             run_star(msg.from, msg.to, use_world_map, plan);
-
-            // custom_msgs::plan response;
-            // response.name = msg.name;
-            // response.plan = plan;
-            //plans.push_back(response);
 
             //make player_mat and update use_world_map
             vector<int> temp(world_map[0].size(), 0);
@@ -264,7 +227,7 @@ int main(int argc, char **argv)
 
     Custom::Navi ni(nh);
 
-     //subscriber
+     //subscriber   //header 참조
     std::string reset_topic = "/navi/reset";
     nh.getParam("reset_name", reset_topic);
     ros::Subscriber reset_sub = nh.subscribe(reset_topic, 1000, &Custom::Navi::reset_Callback,

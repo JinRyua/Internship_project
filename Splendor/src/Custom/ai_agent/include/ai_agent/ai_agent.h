@@ -44,7 +44,7 @@ namespace Custom
         ros::ServiceClient do_action_cli;
 
         // //callback
-        void dispatch_callback(const rosplan_dispatch_msgs::ActionDispatch& msg);
+        void dispatch_callback(const rosplan_dispatch_msgs::ActionDispatch& msg);   //if dispatched convert do_action and publish 
     };
 }   //close namespace
 

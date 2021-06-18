@@ -25,10 +25,7 @@
 using namespace std;
 void print_log(string node_name, string func,string str);
 
-// vector<int> lv3 = {3,6,10,19,7,5,9,15,1,2,16,13,0,4,14,8,17,18,11,16};
-// vector<int> lv2 = {3,6,24,10,19,29,25,7,5,20,9,15,1,2,21,26,16,13,0,27,4,22,14,8,17,23,18,28,11,16};
-// vector<int> lv1 = {39,3,6,24,10,37,30,19,29,25,38,7,31,5,20,9,15,1,33,32,2,21,26,16,34,13,0,27,4,22,35,14,8,17,23,36,18,28,11,16};
-// vector<int> nob = {0,5,2,3,9,8,4,6,7,1};
+
 
 
 namespace Custom{
@@ -783,12 +780,12 @@ namespace Custom{
     
     void Board::change_state(){
         turn++;
-        if (game_state == PLAYER_TURN){
+        if (game_state == PLAYER_TURN){ //change ai
             game_state = AI_TURN;
             std_srvs::Empty temp;
             ai_call_plan_client.call(temp);
         }
-        else if (game_state == AI_TURN){
+        else if (game_state == AI_TURN){    //change player
             game_state = PLAYER_TURN;
             std_srvs::Empty temp;
             player_call_plan_client.call(temp);

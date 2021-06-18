@@ -56,7 +56,7 @@ namespace Custom{
         plan = msg;
         board::do_action_srv srv;
         srv.request.name = node_name;
-        if(msg.name == "three_coin"){
+        if(msg.name == "three_coin"){   //convert three action
             srv.request.action = 0;
             vector<int> details;
             vector<int> abandon;
@@ -77,7 +77,7 @@ namespace Custom{
             srv.request.details = details;
             srv.request.abandon = abandon;
         }
-        else if(msg.name == "two_coin"){
+        else if(msg.name == "two_coin"){    //convert two coin action
             srv.request.action = 1;
             vector<int> details;
 
@@ -88,7 +88,7 @@ namespace Custom{
 
             srv.request.details = details;
         }
-        else if(msg.name == "buy"){
+        else if(msg.name == "buy"){ //convert buy action
             srv.request.action = 2;
             vector<int> details;
 
@@ -115,7 +115,7 @@ namespace Custom{
 
         }
 
-        ros::service::waitForService("/board/do_action", ros::Duration(20));
+        ros::service::waitForService("/board/do_action", ros::Duration(20));    //publish
         if (do_action_cli.call(srv)) {
             if (srv.response.success == true) {
                 feed.status = "action achieved";
