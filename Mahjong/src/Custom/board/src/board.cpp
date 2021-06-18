@@ -38,7 +38,7 @@ namespace Custom{
         serv_sock = sock;
         end_flag = false;   //server thread end_flag
 
-        thread_list.resize(1);
+        thread_list.resize(1);  //멀티 프로세스를 위한 스레드
         thread_list[0] = thread([&](){MulitProcessingServer();});
 
     }
@@ -50,9 +50,10 @@ namespace Custom{
     }
 
     void Board::MulitProcessingServer(){
+        //que,vector 연결
         MultiProcessing manager_sock_serv(que, result_simulation, end_flag);
         int count = 0;
-        while(!end_flag){
+        while(!end_flag){ //멀티 프로세싱 시작  
             sleep(0);
             manager_sock_serv.RunMultiProcessing();
         }
@@ -65,12 +66,13 @@ namespace Custom{
                 if (game_state.tehai[0][i] > 0)
                     possible.push_back(i);
             }
-            vector<int> haipai_temp;
+            vector<int> haipai_temp;    //남은 패 계산
             for (int i = 1; i < game_state.haipai.size(); i++) {
                 for (int j = 0; j < game_state.haipai[i]; j++)
                     haipai_temp.push_back(i);
             }
-            vector<int> fuuro;
+
+            vector<int> fuuro;  //furro 데이터도 계산해 만듬
             fuuro.resize(4);
             for (int i = 1; i < 4; i++) {
                 int count = 0;
@@ -82,15 +84,17 @@ namespace Custom{
                 }
                 fuuro[i] = count;
             }
+
             int act = 0;
             int result = -999999999;
-            int simulation_count = 40;
+            int simulation_count = 40;  //40번 함
             int result_vec[possible.size()] = {0,};
+
             for (int j = 0; j < simulation_count; j++) {
-                state new_game_state = game_state;
+                state new_game_state = game_state;  //상태 저장
                 vector<int> new_haipai = haipai_temp;
 
-                for (int l = 0; l < 13; l++)  {  //make ai's tehai
+                for (int l = 0; l < 13; l++)  {  //make ai's tehai => random
                     for (int k = 1; k < 4; k++){
                         if (l >= 13 - fuuro[k])
                             break;
@@ -105,16 +109,16 @@ namespace Custom{
                             }
                         }
 
-                        new_game_state.tehai[k][new_haipai[random]]++;
+                        new_game_state.tehai[k][new_haipai[random]]++;  //상태 변경
                         new_game_state.haipai[new_haipai[random]]--;
                         new_haipai.erase(new_haipai.begin() + random);
                     }
                 }
-                random_shuffle(new_haipai.begin(), new_haipai.end());
+                random_shuffle(new_haipai.begin(), new_haipai.end());   //패산 랜덤 셔플
                 new_game_state.haipai = new_haipai;
                 //finish setting
                 
-                
+                //상태 출력
                 for(int k =0;k<4;k++){
                     for(int l = 0;l<new_game_state.tehai[k].size();l++){
                         for (int a = 0; a < new_game_state.tehai[k][l]; a++)
@@ -134,12 +138,13 @@ namespace Custom{
                 cout<<endl;
 
                 //멀티 프로세스 시뮬레이션 준비
-                while(!que.empty())
+                while (!que.empty())    //queue, vector 초기화
                     que.pop();
                 result_simulation.clear();
                 result_simulation.resize(possible.size());
-                for (int k = 0; k < possible.size(); k++) { //가능한 액션만큼 전부 시뮬레이션
-                    Queue_state temp;           //큐에 시뮬레이션 할 것 저장
+                
+                for (int k = 0; k < possible.size(); k++) {  //가능한 액션만큼 전부 시뮬레이션
+                    Queue_state temp;                        //큐에 시뮬레이션 할 것 저장
                     temp.game_state = new_game_state;
                     temp.possible = possible[k];
                     temp.result_num = k;
@@ -176,10 +181,10 @@ namespace Custom{
 
     bool Board::CheckTenpai(state& use_game_state, int actor){
     
-        vector<Fuuro_Elem_>& Fuuro = use_game_state.Fuuro[actor]; 
+        vector<Fuuro_Elem_>& Fuuro = use_game_state.Fuuro[actor];       //actor의 fuuro 상태 가져옴
         Fuuro_Vector fuuro_vec;
         fuuro_vec.resize(Fuuro.size());
-        for (int i = 0; i < Fuuro.size(); i++) {
+        for (int i = 0; i < Fuuro.size(); i++) {        //시뮬레이터의 furro vector 상태로 변경
             if (Fuuro[i].type == PON)
                 fuuro_vec[i].type = FT_PON;
             else if (Fuuro[i].type == CHI)
@@ -195,22 +200,23 @@ namespace Custom{
                 fuuro_vec[i].hai = Fuuro[i].hai;
             fuuro_vec[i].consumed = Fuuro[i].consumed;  
         }
-        Hai_Array tehai;
+
+        Hai_Array tehai;    //simulator의 hai_array로 패 상태 convert
         vector<int>& tehai_vec = use_game_state.tehai[actor];
         std::copy_n(tehai_vec.begin(), 38, tehai.begin());
-        
-        
 
-        Game_State stat;
+        Game_State stat;    //마작 시뮬레이터의 Game_state 형태로 변경
         stat.bakaze = kaze_str_to_int(use_game_state.bakaze);
         stat.player_state[actor].fuuro = fuuro_vec;
         stat.player_state[actor].jikaze = use_game_state.kyoku;
         for(int i = 0;i<4;i++)
             stat.player_state[i].score = use_game_state.score[i];
         
+        //패상태 분석을 위한 클래스
         const Tenpai_Info tenpai_info = cal_tenpai_info(
             stat.bakaze, stat.player_state[actor].jikaze, tehai, stat.player_state[actor].fuuro);
-
+        
+        //agari_vec -> 대기 패 상태
         if(tenpai_info.agari_vec.size()!=0) //tenpai => agari pai exist
             return true;
         return false;
@@ -218,14 +224,9 @@ namespace Custom{
     }
 
     int Board::CalculateShanten(vector<int>& tehai, vector<Fuuro_Elem_>& Fuuro, int dahai) {
-
-        string man = "";
-        string pin = "";
-        string sou = "";
-        string honors = "";
         vector<int> temp = tehai;
         Tehai_Analyzer tehai_analyzer;
-        Fuuro_Vector fuuro_vec;
+        Fuuro_Vector fuuro_vec;  //마작 시뮬레이터의 클래스로 furro, tehai convert
         fuuro_vec.resize(Fuuro.size());
         for (int i = 0; i < Fuuro.size(); i++) {
             if (Fuuro[i].type == PON)
@@ -240,26 +241,27 @@ namespace Custom{
                 fuuro_vec[i].type = FT_KAKAN;
             if(Fuuro[i].type != ANKAN)
                 fuuro_vec[i].hai = Fuuro[i].hai;
-            fuuro_vec[i].consumed = Fuuro[i].consumed;  
-
+            fuuro_vec[i].consumed = Fuuro[i].consumed;
         }
         Hai_Array hai;
         std::copy_n(tehai.begin(), 38, hai.begin());
 
-        Game_State stat;
+        Game_State stat;                //게임 스테이트도 convert
         stat.player_state[0].tehai = hai;
         stat.player_state[0].fuuro = fuuro_vec;
 
         tehai_analyzer.reset_tehai_analyzer_with(hai, false, fuuro_vec);
-        tehai_analyzer.analyze_tenpai(0, stat);
+        tehai_analyzer.analyze_tenpai(0, stat);     //샨텐 상태 계산
         tehai = temp;
+        //샨텐까지 남은 패 계산
         return min(tehai_analyzer.get_mentu_shanten_num(), tehai_analyzer.get_titoi_shanten_num());
     }
 
     std::vector<buffer> Board::CheckNaki(int actor, int target, state& use_game_state, bool last_actor_chi){
-        int recent_dahai = use_game_state.recent_dahai;
-        vector<int>& tehai = use_game_state.tehai[actor];
-        vector<buffer> return_vec;
+        int recent_dahai = use_game_state.recent_dahai; //최근에 버린패
+        vector<int>& tehai = use_game_state.tehai[actor];   //액터의 패
+        vector<buffer> return_vec;  //울 수 있는 행동들
+
         if (tehai[recent_dahai] == 2) {  //PON  //TODO: dont check dora
             buffer temp;
             temp.actor = actor;
@@ -299,13 +301,12 @@ namespace Custom{
 
     std::vector<int> Board::CalculateScore(state& use_game_state, json11::Json& move, string type) {  
         cout<<"start score"<<endl;
-        const json11::Json moves = move;
+        const json11::Json moves = move;    //hora move
 
         const int actor = moves["actor"].int_value();
         const int hai = hai_str_to_int(moves["pai"].string_value());
-        //const Game_State game_state = get_game_state(game_record);
-        // legal_check;
-        //Hai_Array tehai = game_state.player_state[actor].tehai;
+        
+        //legal check
         vector<Fuuro_Elem_>& Fuuro = use_game_state.Fuuro[actor]; 
         Fuuro_Vector fuuro_vec;
         fuuro_vec.resize(Fuuro.size());
@@ -322,33 +323,30 @@ namespace Custom{
                 fuuro_vec[i].type = FT_KAKAN;
             if(Fuuro[i].type != ANKAN)
                 fuuro_vec[i].hai = Fuuro[i].hai;
-            //tehai[Fuuro[i].hai]--;
-            fuuro_vec[i].consumed = Fuuro[i].consumed;  //TODO:
-            //for(int j =0;j<Fuuro[i].consumed.size();j++)
-                //tehai[Fuuro[i].consumed[j]]--;
+            fuuro_vec[i].consumed = Fuuro[i].consumed;  
         }
         Hai_Array tehai;
         vector<int>& tehai_vec = use_game_state.tehai[actor];
         std::copy_n(tehai_vec.begin(), 38, tehai.begin());
         // dora_count
-        if (type == "tsumo") 
+        if (type == "tsumo")    //론과 츠모오름일때 다름
             tehai[hai]--;
         
 
-        Game_State stat;
+        Game_State stat;        //state convert -> simulator class
         stat.bakaze = kaze_str_to_int(use_game_state.bakaze);
         stat.player_state[actor].fuuro = fuuro_vec;
         stat.player_state[actor].jikaze = use_game_state.kyoku;
         for(int i = 0;i<4;i++)
             stat.player_state[i].score = use_game_state.score[i];
         
-        const Tenpai_Info tenpai_info = cal_tenpai_info(
+        const Tenpai_Info tenpai_info = cal_tenpai_info(    //패분석
             stat.bakaze, stat.player_state[actor].jikaze, tehai, stat.player_state[actor].fuuro);
-        cout<<"shanten"<<tenpai_info.shanten_num()<<endl;
+        
         int agari_id = -1;
         int agari_ten = 0;
         int han_add = 0;
-        if (stat.player_state[actor].reach_accepted) {
+        if (stat.player_state[actor].reach_accepted) {  //리치 되었으면 점수 올림
             han_add++;
             // if (is_ippatsu_valid(game_record, actor)) {  //dont calc ippatsu//TODO:
             //     han_add++;
@@ -356,14 +354,18 @@ namespace Custom{
         }
         // ハイテイ、
         tehai[hai]++;
+
         int dora_num = 0;
         std::vector<int> uradora_marker;
+        //리치 체크
         if (stat.player_state[actor].reach_accepted) {
             for (int i = 0; i < stat.dora_marker.size(); i++) {
                 uradora_marker.push_back(use_game_state.haipai[use_game_state.haipai.size() - 1 - 5 - 2 * i]);
             }
         }
+        //도라 체크
         dora_num = count_dora(tehai, stat.player_state[actor].fuuro, stat.dora_marker, uradora_marker);
+        //날수있는지 체크
         for (int i = 0; i < tenpai_info.agari_vec.size(); i++) {
             if (haikind(hai) == tenpai_info.agari_vec[i].hai &&
                 han_add + tenpai_info.agari_vec[i].han_tsumo > 0) {
@@ -375,6 +377,7 @@ namespace Custom{
             }
         }
         
+        //점수 계산
         cout<<hai_int_to_str( tenpai_info.agari_vec[agari_id].hai)<<" "<<tenpai_info.agari_vec[agari_id].han_tsumo;
         const int han = han_add + tenpai_info.agari_vec[agari_id].han_tsumo + dora_num;
         const int fu = tenpai_info.agari_vec[agari_id].fu_tsumo;
@@ -383,12 +386,14 @@ namespace Custom{
         
         std::array<int, 4> scores;
 
+        //점수 저장
         vector<int> score_return;
         for (int pid = 0; pid < 4; pid++) {
-            //scores[pid] = stat.player_state[pid].score + ten_move[pid];
             score_return.push_back(stat.player_state[pid].score + ten_move[pid]);
         }
+        //상태 복원
         tehai[hai]--;
+
         if (actor == PLAYER) {
             cout << endl
                  << "score : ";
@@ -422,11 +427,12 @@ namespace Custom{
     }
 
     bool Board::CheckHora(state& use_game_state, int next_actor, json11::Json& last_act){
-        json11::Json hora_move = make_hora(next_actor, next_actor, use_game_state.tsumo);
-        json11::Json last_move = last_act;
+        json11::Json hora_move = make_hora(next_actor, next_actor, use_game_state.tsumo);   //오름 액션
+        json11::Json last_move = last_act;  //최근 액션
         
-        Moves game_record(1, last_move);
-        array<int, 4UL> arr;
+        Moves game_record(1, last_move);    
+        array<int, 4UL> arr;    
+        //convert to simulator class
         std::copy_n(use_game_state.score.begin(), 4, arr.begin());
         game_record.push_back(make_start_kyoku(kaze_str_to_int(use_game_state.bakaze), use_game_state.kyoku, use_game_state.honba, use_game_state.kyotaku, arr));
         game_record.push_back(last_move);
@@ -438,7 +444,6 @@ namespace Custom{
         stat.player_state[next_actor].tehai = temp_hai;
         Fuuro_Vector fuuro_vec;
         vector<Fuuro_Elem_> Fuuro = use_game_state.Fuuro[next_actor];
-        //cout << Fuuro.size() << endl;
         fuuro_vec.resize(Fuuro.size());
         for (int i = 0; i < Fuuro.size(); i++) {
             if (Fuuro[i].type == PON)
@@ -453,65 +458,59 @@ namespace Custom{
                 fuuro_vec[i].type = FT_KAKAN;
             if (Fuuro[i].type != ANKAN)
                 fuuro_vec[i].hai = Fuuro[i].hai;
-            fuuro_vec[i].consumed = Fuuro[i].consumed;  //TODO:
+            fuuro_vec[i].consumed = Fuuro[i].consumed;
         }
         stat.player_state[next_actor].fuuro = fuuro_vec;
         stat.player_state[next_actor].jikaze = use_game_state.kyoku;
-        // for(int i = 0;i<temp_hai.size();i++)
-        //     cout<<temp_hai[i]<<", ";
-        // cout<<endl;
+  
+        //legal check
         bool co = is_legal_hora(game_record, stat, hora_move);
 
+        //save hora action
         last_act = hora_move;
         return co;
     }
 
     int Board::DahaiSimulation(int possible, state& use_game_state, int depth, int actor){    
         state init = use_game_state;
-        
-        int next_actor = actor + 1;
+        //상태 저장
+        int next_actor = actor + 1; //다음 액터
         if (next_actor > 3) next_actor = 0;
 
-        buffer new_buf_info;
+        buffer new_buf_info;        //dahai를 위한 buffer 생성
         new_buf_info.actor = actor;
         new_buf_info.pai = hai_int_to_str(possible);
 
         bool check_shanten_flag[4] = {false,};
         
        
-        ChangeStateWithDahai(use_game_state, new_buf_info, true);
-       
-        
-        //cant do pon, chi...
-        
-        // if (CalculateShanten(use_game_state.tehai[actor],use_game_state.Fuuro[actor], -1) == 0)
-        //         check_shanten_flag[actor] = true;
+        ChangeStateWithDahai(use_game_state, new_buf_info, true);   //dahai action
 
         //need check end to return
-        if (use_game_state.turn >= 70){  //ryukyoku  
-            bool checktenpai[4] = {0,};
+        if (use_game_state.turn >= 70) {  //ryukyoku   check
+            bool checktenpai[4] = {
+                0,
+            };
             int count = 0;
-            for(int i =0 ;i<4;i++){
+            for (int i = 0; i < 4; i++) {  //tenpai 한 사람 계산
                 checktenpai[i] = CheckTenpai(use_game_state, i);
-                if(checktenpai[i]==true)
+                if (checktenpai[i] == true)
                     count++;
             }
-            if(count == 0 || count ==4)
+            if (count == 0 || count == 4)  //아무도 tenpai x, 모두 tenpai o
                 return 0;
-            else if(count == 1){
-                if(checktenpai[PLAYER] == true)
+            else if (count == 1) {  //한사람만 tenpai => 3000점 나머지 -1000
+                if (checktenpai[PLAYER] == true)
                     return 3000;
                 else
                     return -1000;
-            }
-            else if(count == 2){
-                if(checktenpai[PLAYER] == true)
+            } else if (count == 2) {    //두사람 tenpai => 두명 1500 , 나머지 -1500
+                if (checktenpai[PLAYER] == true)
                     return 1500;
                 else
                     return -1500;
-            }
-            else if(count == 3){
-                if(checktenpai[PLAYER] == true)
+            } else if (count == 3) {   //세사람 tenpai => 세명 1000, 나머지 -3000
+                if (checktenpai[PLAYER] == true)
                     return 1000;
                 else
                     return -3000;
@@ -519,24 +518,25 @@ namespace Custom{
         }
 
         for (int i = 0; i < 4; i++) {   //check ron
-            if (i == actor)//|| check_shanten_flag[i] == false) 
+            if (i == actor)//|| check_shanten_flag[i] == false)     //자신 ron 불가
                 continue;       
             
-            //cant ron dahai pai
+            //cant ron dahai pai 자신이 버린패랑 같으면 불가
             if (find(use_game_state.dahai[i].begin(), use_game_state.dahai[i].end(), use_game_state.recent_dahai) != use_game_state.dahai[i].end())
                 continue;
-            //cout<< depth<<" "<<i<<" : ";
-            //use_game_state.tehai[i][use_game_state.recent_dahai]++;
+
             json11::Json last_move = make_dahai(actor, use_game_state.recent_dahai, false);
-            if(CheckHora(use_game_state, i, last_move)){
-            //if (CalculateShanten(use_game_state.tehai[i], use_game_state.Fuuro[i], use_game_state.recent_dahai) == -1) {  //hora TODO:
-                cout<<"dahai "<<hai_int_to_str( use_game_state.recent_dahai)<<i<<actor<<endl;
-                for(int k =i;k<i+1;k++){
-                    for(int l = 0;l<use_game_state.tehai[k].size();l++){
+            //날 수 있는지 체크함
+            if (CheckHora(use_game_state, i, last_move)) {
+                //날 수 있음
+                cout << "dahai " << hai_int_to_str(use_game_state.recent_dahai) << i << actor << endl;
+                //상태 출력
+                for (int k = i; k < i + 1; k++) {
+                    for (int l = 0; l < use_game_state.tehai[k].size(); l++) {
                         for (int a = 0; a < use_game_state.tehai[k][l]; a++)
                             cout << hai_int_to_str(l) << ", ";
                     }
-                    cout<<endl;
+                    cout << endl;
                 }
                 cout << "fuuro" << endl;
                 int j = i;
@@ -551,29 +551,75 @@ namespace Custom{
                     }
                     cout << endl;
                 }
-                vector<int> result_score = CalculateScore(use_game_state,last_move,"dahai");
+                //점수 계산
+                vector<int> result_score = CalculateScore(use_game_state, last_move, "dahai");
                 int score = 0;
-                if(i == PLAYER)
+                if (i == PLAYER)    //플레이어면 추가 점수 (휴리스틱)
                     score += 1500;
                 return result_score[PLAYER] - game_state.score[PLAYER] + score;
-            
-
             }
-            //use_game_state.tehai[i][use_game_state.recent_dahai]--;
         }
-        //check pon,chi...
-        if (depth != 0) {
-            end_flag= true;
-            for (int i = actor + 2; i < actor + 6; i++) {
+        
+        for (int i = 0; i < 4; i++) {   //check ron
+            if (i == actor)//|| check_shanten_flag[i] == false)     //자신 ron 불가
+                continue;       
+            
+            //cant ron dahai pai 자신이 버린패랑 같으면 불가
+            if (find(use_game_state.dahai[i].begin(), use_game_state.dahai[i].end(), use_game_state.recent_dahai) != use_game_state.dahai[i].end())
+                continue;
+
+            json11::Json last_move = make_dahai(actor, use_game_state.recent_dahai, false);
+            //날 수 있는지 체크함
+            if (CheckHora(use_game_state, i, last_move)) {
+                //날 수 있음
+                cout << "dahai " << hai_int_to_str(use_game_state.recent_dahai) << i << actor << endl;
+                //상태 출력
+                for (int k = i; k < i + 1; k++) {
+                    for (int l = 0; l < use_game_state.tehai[k].size(); l++) {
+                        for (int a = 0; a < use_game_state.tehai[k][l]; a++)
+                            cout << hai_int_to_str(l) << ", ";
+                    }
+                    cout << endl;
+                }
+                cout << "fuuro" << endl;
                 int j = i;
+                for (int k = j; k < j + 1; k++) {
+                    for (int l = 0; l < use_game_state.Fuuro[k].size(); l++) {
+                        cout << TypeIntToStr(use_game_state.Fuuro[k][l].type) << " : ";
+                        if (use_game_state.Fuuro[k][l].hai > 0)
+                            cout << hai_int_to_str(use_game_state.Fuuro[k][l].hai) << ", ";
+                        for (int a = 0; a < use_game_state.Fuuro[k][l].consumed.size(); a++)
+                            cout << hai_int_to_str(use_game_state.Fuuro[k][l].consumed[a]) << ", ";
+                        cout << "||";
+                    }
+                    cout << endl;
+                }
+                //점수 계산
+                vector<int> result_score = CalculateScore(use_game_state, last_move, "dahai");
+                int score = 0;
+                if (i == PLAYER)    //플레이어면 추가 점수 (휴리스틱)
+                    score += 1500;
+                return result_score[PLAYER] - game_state.score[PLAYER] + score;
+            }
+        }
+
+         //check pon,chi...
+        if (depth != 0) {
+            for (int i = actor + 2; i < actor + 6; i++) {   //actor 오른쪽부터
+                int j = i;  //actor 계산
                 if (j > 3)
                     j = j % 4;
                 if (j == actor) 
                     continue;
-                bool last_actor_chi = false;
+                    
+                bool last_actor_chi = false;    //chi 가능한 사람인지
                 if (j == (actor + 1) % 4)
                     last_actor_chi = true;
+
+                //울 수 있는지
                 vector<buffer> buf_check = CheckNaki(j, actor, use_game_state, last_actor_chi);
+                
+                //있음
                 if (!buf_check.empty()) {
                     if(j == PLAYER){    //player call only pon
                         for (int l = 0; l < buf_check.size(); l++) {
@@ -615,14 +661,15 @@ namespace Custom{
         }
 
 
+        //tsumo함
         new_buf_info.actor = next_actor;
         new_buf_info.pai = hai_int_to_str(use_game_state.haipai[use_game_state.haipai.size() - (70 - use_game_state.turn) - 13]);
         ChangeStateWithTsumo(use_game_state, new_buf_info, true);
 
         //need check end
         json11::Json last_move = make_tsumo(next_actor, use_game_state.tsumo);
-        if (CheckHora(use_game_state, next_actor, last_move)) {
-            //if (CalculateShanten(use_game_state.tehai[next_actor], use_game_state.Fuuro[next_actor], -1) == 0) {  //hora TODO:
+        if (CheckHora(use_game_state, next_actor, last_move)) { //울수있음
+            //상태 출력
             cout << endl
                  << "tsumo " << next_actor << hai_int_to_str(use_game_state.tsumo) << endl;
             for (int k = next_actor; k < next_actor + 1; k++) {
@@ -645,19 +692,20 @@ namespace Custom{
                 }
                 cout << endl;
             }
-
+            //점수계산
             vector<int> result_score = CalculateScore(use_game_state, last_move, "tsumo");
             int score = 0;
-            if (next_actor == PLAYER)
+            if (next_actor == PLAYER)   //플레이어는 추가점수
                 score += 1500;
+            
             return result_score[PLAYER] - game_state.score[PLAYER] + score;
         }
         
 
-        if(depth == 0){
+        if(depth == 0){ //시뮬레이션 시작일때
             int result = 0;
             //calc possible
-            vector<int> possible_vec;
+            vector<int> possible_vec;   
             for (int i = 1; i < use_game_state.tehai[next_actor].size(); i++) { //make possible action
                 if (use_game_state.tehai[next_actor][i] > 0)
                     possible_vec.push_back(i);
@@ -665,7 +713,7 @@ namespace Custom{
 
             //do simulation
             int count = 5;
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < count; i++) {   //count 만큼 시뮬레이션
                 state next_game_state = use_game_state;
                 int random = rand() % possible_vec.size();
 
@@ -673,6 +721,7 @@ namespace Custom{
                 while (use_game_state.tehai[next_actor][possible_vec[random]] >= 2 && (rand() % 10) > 4) {
                     random = rand() % possible_vec.size();
                 }
+
                 //new cutsu heuristic only complete cutsu   => no effect
                 // while (use_game_state.tehai[next_actor][possible_vec[random]] == 3 && (rand() % 10) > 2) {
                 //     random = rand() % possible_vec.size();
@@ -685,12 +734,12 @@ namespace Custom{
                     }
                 }
                 result += DahaiSimulation(possible_vec[random], next_game_state, depth + 1, next_actor);
-                
             }
+            //평균 계산
             use_game_state = init;
             return result / count;
         }
-        else{
+        else{   //시뮬레이션 중
             int result = 0;
 
             //calc possible
@@ -728,6 +777,7 @@ namespace Custom{
     void Board::run_board(){
         //type = tsumo, dahai, start_kyoku, chi, pon, hora
         // reach, reach_accepted, end_kyoku, ryukyoku, end_game...
+        // 헤더 참조
         if(buf_info.type == "start_kyoku")
             ChangeStateWithStartKyoku();
         else if(buf_info.type == "tsumo")
@@ -930,7 +980,7 @@ namespace Custom{
         game_state_.Fuuro[game_state_.actor].push_back(temp);
     }
     void Board::ChangeStateWithKakan(state& game_state_, buffer& buf_info_, bool plan) {
-        Fuuro_Elem_ temp;   //TODO:
+        Fuuro_Elem_ temp;   
         temp.type = KAKAN;
         temp.hai = hai_str_to_int(buf_info_.pai);
         int actor = buf_info_.actor;
@@ -1003,7 +1053,6 @@ namespace Custom{
         game_state_.reach[buf_info_.actor].second = game_state_.dahai_order.size() - 1;
     }
     void Board::ChangeStateWithRequest(){
-        //TODO: select Fuuro number   0 => dont select 1~
         string buf = "no";  //test dont select
         int pon_num = -1;
         int kan_num = -1;
@@ -1073,16 +1122,12 @@ namespace Custom{
     }
 
     void Board::WriteDahai(){
-        //select Dahai  insert AI TODO:
             string dahai;
             for (int i = 0; i < buf_info.consumed.size(); i++) {
                 game_state.tehai[PLAYER][hai_str_to_int(buf_info.consumed[i])]--;
             }
             dahai = Planner("dahai");
             PrintTehai();
-            //dahai = buf_info.pai;   //test
-            // cout << "please type pai to dahai : ";
-            // cin >> dahai;
             write(serv_sock,dahai.c_str(),dahai.size());
 
             for (int i = 0; i < buf_info.consumed.size(); i++) {
@@ -1101,7 +1146,6 @@ namespace Custom{
     }
 
     void Board::DivideAndParseBuffer(std::string buf) {
-        //TODO: divide buf
         int pos = 0;
         struct buffer new_buffer;
         if (buf.find("need dahai", pos) != -1) {
@@ -1656,15 +1700,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "board");//,  ros::init_options::NoSigintHandler);
     ros::NodeHandle nh("~");
     srand((unsigned int)time(NULL));        //set random seed
-    //signal(SIGINT, my_handler);
     
-    //b = &bi;
-
-    //service
-
-    //subscriber
-    
-    int sock;
+    int sock;       //소켓 통신 구조체
     struct sockaddr_in serv_addr;
     char buf[BUF_SIZE];
     string buff(BUF_SIZE, 0);
@@ -1681,7 +1718,7 @@ int main(int argc, char **argv)
     serv_addr.sin_addr.s_addr = inet_addr(IP);
     serv_addr.sin_port = htons(PORT);
 
-    if(connect(sock,(struct sockaddr*)&serv_addr,sizeof(serv_addr))==-1){
+    if(connect(sock,(struct sockaddr*)&serv_addr,sizeof(serv_addr))==-1){   //connect
         cout<<"connect error"<<endl;
         return 0;
     }
@@ -1694,32 +1731,21 @@ int main(int argc, char **argv)
     while (ros::ok())
     {
         sleep(0);
-        double start_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        ros::spinOnce();    //check sub and pub and srv
 
-        
-        str_len = read(sock, buf, BUF_SIZE - 1);
+        str_len = read(sock, buf, BUF_SIZE - 1);    //소켓과 통신
         if(str_len != 0){
             buf[str_len] = 0;
             buff = buf;
             vector<string> buf_list = Custom::SplitToString(buff, '}' , false);
             for(int i =0;i<buf_list.size();i++){
             cout << buf_list[i] << endl;
-            //cout << str_len << endl;
-            //TODO: 겹치기 예외 처리
 
-            bi.DivideAndParseBuffer(buf_list[i]);
+            bi.DivideAndParseBuffer(buf_list[i]);   //통신 내용 분리
             bi.run_board();  //run_board if received stream from socket
             }
             
         }
 
-        // double finish_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        // double rate = (double)(act_time * 1000000000 - (finish_time - start_time)) / 1000000000;
-        // if (rate > 0){
-        //     ros::Rate wait = 1 / rate;
-        //     wait.sleep();
-        // }
     }
 
     close(sock);

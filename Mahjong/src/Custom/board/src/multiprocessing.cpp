@@ -7,13 +7,11 @@ namespace Custom
 
     
     MultiProcessing::MultiProcessing(std::queue<Queue_state>& use_queue, std::vector<int>& result, bool& flag) {
-        que = &use_queue;
-        processing_result = &result;
-        end_flag = &flag;
+        que = &use_queue;           //multiprocessing을 원하는 곳에서 주는 que와 연결
+        processing_result = &result;    //multiprocessing을 원하는 곳에서 주는 result_vector와 연결 => vector의 크기는 할수있는 행동의 크기
+        end_flag = &flag;           //end_flag
         process_num = 0;
-        // for (int i = 0; i < MULTI_PROCESS_MAX; i++) {  //init cli_socket
-        //     cli_socket[i] = -1;
-        // }
+        
 
         char buf[1024] = "Hello";
         string buff = "hello";
@@ -41,7 +39,7 @@ namespace Custom
 
         
     }
-    MultiProcessing::~MultiProcessing(){
+    MultiProcessing::~MultiProcessing(){            //close socket
         for (int i = 0; i < cli_socket.size(); i++) {
             close(cli_socket[i]);
         }
@@ -51,10 +49,10 @@ namespace Custom
     void MultiProcessing::RunMultiProcessing() {  //run multiprocessing
 
         //set fd_set
-        FD_ZERO(&fs_stat);
-        FD_SET(serv_sock, &fs_stat);
+        FD_ZERO(&fs_stat);          
+        FD_SET(serv_sock, &fs_stat);    //accept를 위한 serv socket set
         timeout.tv_sec = 0;
-        timeout.tv_usec = 500;
+        timeout.tv_usec = 500;          //0.5초 마다 select
 
         for (int i = 0; i < process_num; i++) {  //접속 인원 체크
             if (cli_socket[i] != -1){
@@ -84,8 +82,8 @@ namespace Custom
                     temp.result_num = -1;
                     processing_state.push_back(temp);
 
-                    std::cout<<clnt_sock<<endl;
-                    process_num++;
+                    std::cout<<clnt_sock<<endl;             
+                    process_num++;                      //프로세스 개수 ++
                 }
                 else{
                     std::cout<<"process 초과"<<endl;
@@ -96,13 +94,13 @@ namespace Custom
 
         for (int i = 0; i < process_num; i++) { //프로세스에서 들어온 것 검색
             if(1==FD_ISSET(cli_socket[i], &fs_stat)){   //read  프로세스 완료 여부
+
                 char read_buf[3076];
                 int str_len = read(cli_socket[i], read_buf, 7152 - 1);
                 read_buf[str_len] = 0;
                 read_str = read_buf;
-                std::cout<<read_str<<endl;
                 processing_result->at(processing_state[i].result_num) = stoi(read_str); //결과 저장
-                processing_state[i].result_num = -1;
+                processing_state[i].result_num = -1;        //프로세스 지정 일 해제
 
                 can_work_process_flag[i] = false;   //유휴 상태
             }
@@ -117,13 +115,10 @@ namespace Custom
                     text_oa << que->front();
 
                     write(cli_socket[i], oss.str().c_str(), oss.str().size());  //전송 프로세스에게
-                    cout<<oss.str()<<endl;
                     can_work_process_flag[i] = true;    //프로세스 일하는 중 
                     processing_state[i] = que->front(); //일하는 일 저장
                     que->pop(); //큐제거
-                    continue;
                 } 
-                break;
             }
             if (i == cli_socket.size()) //전부다 사용중이면 넘김
                 break;

@@ -5,6 +5,12 @@
 	<!-- board -->
 	<node name="simulation1" pkg="board" type="simulation_process" respawn="false" output="screen">
 	</node>
+<node name="simulation2" pkg="board" type="simulation_process" respawn="false" output="screen">
+	</node>
+<node name="simulation3" pkg="board" type="simulation_process" respawn="false" output="screen">
+	</node>
+<node name="simulation4" pkg="board" type="simulation_process" respawn="false" output="screen">
+	</node>
 	
 	
 

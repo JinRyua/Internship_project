@@ -9,31 +9,22 @@
 #ifndef CUSTOM_TYPES
 #define CUSTOM_TYPES
 
-// std::ostringstream oss;
-// boost::archive::text_oarchive oa(oss);
-// oa << game_state;
-// cout << oss.str() << endl;
-// std::istringstream iss(oss.str());
-// //text_iarchive 생성 시 역직렬화를 위한 입력 데이터 스트림 지정
-// boost::archive::text_iarchive ia(iss);
 
-// //text_iarchive >> 연산자를 이용해 역직렬화를 통한 객체 생성
-// ia >> game_state;
 namespace Custom
 {
      class Fuuro_Elem_ {  //pon, kan, chi
        public:
-        int type;
+        int type;   //운 타입
         int hai;    //가져온 패
-        std::vector<int> consumed;
-        int target_relative;  
+        std::vector<int> consumed;  //운 패들
+        int target_relative;   //actor, target relative
 
         Fuuro_Elem_(){};
 
         friend class boost::serialization::access;
         
         template<typename Archive>
-        void serialize(Archive& ar, const unsigned int version){
+        void serialize(Archive& ar, const unsigned int version){    //직렬화 역직렬화
             ar& type;
             ar& hai;
             ar& consumed;
@@ -43,7 +34,7 @@ namespace Custom
 
     class state{
         public:
-        std::vector<std::vector<Fuuro_Elem_>> Fuuro;
+        std::vector<std::vector<Fuuro_Elem_>> Fuuro;    //pon,chi... 상태
         std::vector<int> haipai;   //안나온 패    
         std::vector<std::vector<int>> tehai;    //손패  37가지 1~37 [4][38]
         int recent_dahai;   //최근 버림패
@@ -65,7 +56,7 @@ namespace Custom
         friend class boost::serialization::access;
         
         template<typename Archive>
-        void serialize(Archive& ar, const unsigned int version){
+        void serialize(Archive& ar, const unsigned int version){    //직렬화 역직렬화
             ar& Fuuro;
             ar& haipai;
             ar& tehai;
@@ -88,7 +79,7 @@ namespace Custom
 
     };
 
-    class buffer{  //buffer information
+    class buffer{  //buffer information => 용도는 state와 같음
        public:
         std::string type;
         std::string bakaze;
@@ -112,20 +103,20 @@ namespace Custom
         
     };
 
-    struct end_info{
+    struct end_info{    //not use
         int turns;
         std::string winner;    
     };
 
-    class Queue_state{
+    class Queue_state{  //queue에 저장하는 일 클래스
         public:
-        state game_state;
-        int possible;
-        int result_num;
+        state game_state;   //게임 상태
+        int possible;       //시뮬레이션할 행동
+        int result_num;     //result_vector에 들어갈 위ㅎ치
 
         friend class boost::serialization::access;
 
-        template <typename Archive>
+        template <typename Archive> //직렬화, 역직렬화
         void serialize(Archive& ar, const unsigned int version) {
             ar& game_state;
             ar& possible;

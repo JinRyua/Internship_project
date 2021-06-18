@@ -32,36 +32,33 @@ namespace Custom
         bool* end_flag;
 
         int serv_sock;    //socket server
-        int descriptor;     //디스크립터 저장
-        int maxds;
-        int accept_value;
         std::vector<int> cli_socket;  //접속 가능 프로세스
         std::vector<bool> can_work_process_flag;    //일할 수 있는 프로세스 
-        std::vector<Queue_state> processing_state; 
+        std::vector<Queue_state> processing_state; //프로세스에 지정된 일
         int clnt_sock;                      //client socket
 
-        struct sockaddr_in serv_addr;
+        struct sockaddr_in serv_addr;       //소켓 통신을 위한 구조체
         struct sockaddr_in clnt_addr;
         socklen_t clnt_addr_size;
-        int process_num;
 
-        fd_set fs_stat;
+        int process_num;        //연결 프로세스 개수
 
-        std::string read_str;
+        fd_set fs_stat;         //select를 위한 fd_set
 
-        timeval timeout;
-        /* params */
+        std::string read_str;   //read buffer
+
+        timeval timeout;        //select timeval
 
 
-        std::queue<Queue_state>* que;
-        std::vector<int>* processing_result;
+        std::queue<Queue_state>* que;           //해야할 일 queue
+        std::vector<int>* processing_result;    //결과 저장할 vector
 
 
     public:
      MultiProcessing(std::queue<Queue_state>& use_queue, std::vector<int>& use_result, bool& flag);
      ~MultiProcessing();
 
-     void RunMultiProcessing();
+     void RunMultiProcessing();     //멀티 프로세싱 기능
 
     };
 
