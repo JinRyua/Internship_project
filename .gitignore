@@ -19,6 +19,7 @@ Splendor/logs/
 Splendor/.vscode/
 Splendor/.catkin_tools/
 Splendor/src/ROSPlan/
+!Splendor/src/ROSPlan/rosplan_planning_system/src/PlannerInterface/MINIMAXPlannerInterface.cpp
 Mahjong/devel/
 Mahjong/build/
 Mahjong/log/

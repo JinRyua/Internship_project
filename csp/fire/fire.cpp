@@ -213,7 +213,7 @@ int main(int argc, char* argv[]) {
     string temp;
     fs.open(s,ios::in);
     int max=0;
-    while(!fs.eof())
+    while(!fs.eof())    //csv 파싱
     {
         getline(fs,temp);
         int com=temp.find(",");
@@ -317,12 +317,7 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    // for(int i=0;i<matrix.size();i++){
-    //     for(int j=0;j<matrix.size();j++){
-    //         cout<<matrix[i][j]<<" ";
-    //     }
-    //     cout<<endl;
-    // }
+ 
 
     fs.close();
    
